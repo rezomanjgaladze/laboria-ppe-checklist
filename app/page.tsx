@@ -15,6 +15,8 @@ import {
 
 import { georgianFont } from "@/utils/georgianFont";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -104,6 +106,20 @@ const TEXT = {
 ========================= */
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getSession();
+
+      if (!data.session) {
+        router.push("/login");
+      }
+    };
+
+    checkUser();
+  }, []);
+
   const [activeChecklistId, setActiveChecklistId] = useState("ppe");
 
   const activeChecklist =
