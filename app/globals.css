@@ -1,3 +1,10 @@
+@font-face {
+  font-family: "NotoSansGeorgian";
+  src: url("/fonts/NotoSansGeorgian-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
 @import "tailwindcss";
 
 :root {
