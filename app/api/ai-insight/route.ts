@@ -28,11 +28,13 @@ export async function POST(req: Request) {
     return NextResponse.json({
       result: completion.choices[0].message.content,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "AI request failed.";
+
     return NextResponse.json(
       {
-        error: error.message,
-        fullError: error,
+        error: message,
       },
       { status: 500 },
     );

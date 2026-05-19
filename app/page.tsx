@@ -11,17 +11,33 @@ import {
   Flame,
   Zap,
   Building2,
+  type LucideIcon,
 } from "lucide-react";
 
-import { georgianFont } from "@/utils/georgianFont";
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { ALL_CHECKLISTS } from "./data/checklists";
-const ICON_MAP: Record<string, any> = {
+
+type InspectionResult = {
+  percent: number;
+  status: string;
+};
+
+type SavedInspection = {
+  id: number;
+  company: string;
+  site: string;
+  inspector: string;
+  inspectionDate: string;
+  answers: Record<string, string>;
+  risk: Record<string, string>;
+  result: InspectionResult;
+  savedAt: string;
+};
+
+const ICON_MAP: Record<string, LucideIcon> = {
   ppe: ShieldCheck,
   emergency: HeartPulse,
   ergonomics: Cpu,
@@ -32,6 +48,25 @@ const ICON_MAP: Record<string, any> = {
   fire: Flame,
   electrical: Zap,
   general: Building2,
+};
+
+const getHistoryStorageKey = (checklistId: string) =>
+  `laboria_${checklistId}_history`;
+
+const readHistoryForChecklist = (checklistId: string): SavedInspection[] => {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const existing = window.localStorage.getItem(
+      getHistoryStorageKey(checklistId),
+    );
+
+    return existing ? (JSON.parse(existing) as SavedInspection[]) : [];
+  } catch {
+    return [];
+  }
 };
 
 /* =========================
@@ -106,26 +141,11 @@ const TEXT = {
 ========================= */
 
 export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data } = await supabase.auth.getSession();
-
-      if (!data.session) {
-        router.push("/login");
-      }
-    };
-
-    checkUser();
-  }, []);
-
   const [activeChecklistId, setActiveChecklistId] = useState("ppe");
 
   const activeChecklist =
     ALL_CHECKLISTS.find((c) => c.id === activeChecklistId) ?? ALL_CHECKLISTS[0];
 
-  const CHECKLIST = activeChecklist.sections;
   const [lang, setLang] = useState<Lang>("EN");
   const t = TEXT[lang];
 
@@ -140,28 +160,10 @@ export default function Home() {
   );
 
   const [openSection, setOpenSection] = useState<number | null>(0);
-  const [isMobile, setIsMobile] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [showFab, setShowFab] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
-  const [aiInsight, setAiInsight] = useState<string | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
-
-  /* =========================
-     RESPONSIVE DETECTION
-  ========================= */
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const [history, setHistory] = useState<SavedInspection[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   /* =========================
      SCROLL DETECTION
@@ -172,8 +174,6 @@ export default function Home() {
 
     const handleScroll = () => {
       const current = window.scrollY;
-
-      setScrolled(current > 10);
 
       if (current > lastScrollY) {
         setShowFab(false);
@@ -187,29 +187,6 @@ export default function Home() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  useEffect(() => {
-    const existing = localStorage.getItem("laboria_ppe_history");
-    if (existing) {
-      setHistory(JSON.parse(existing));
-    }
-  }, []);
-  /* =========================
-   RESET ON CHECKLIST CHANGE
-========================= */
-
-  useEffect(() => {
-    // reset answers & risk
-    setAnswers({});
-    setRisk({});
-
-    // reset open section
-    setOpenSection(0);
-
-    // reset AI
-    setAiInsight(null);
-    setAiError(null);
-  }, [activeChecklistId]);
 
   /* =========================
      CALCULATIONS
@@ -248,9 +225,7 @@ export default function Home() {
     const section = activeChecklist.sections[sectionIndex];
     if (!section) return { percent: 0 };
 
-    const ids = section.items.map(
-      (_: any, qi: number) => `${sectionIndex}-${qi}`,
-    );
+    const ids = section.items.map((_, qi) => `${sectionIndex}-${qi}`);
     const values = ids
       .map((id: string) => answers[id])
       .filter((v: string) => v && v !== "na");
@@ -303,11 +278,7 @@ export default function Home() {
     pdf.save(`LABORIA_${activeChecklistId}_Checklist.pdf`);
   };
 
-  const [history, setHistory] = useState<any[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showSavedToast, setShowSavedToast] = useState(false);
-
-  const loadFromHistory = (item: any) => {
+  const loadFromHistory = (item: SavedInspection) => {
     setAnswers(item.answers || {});
     setRisk(item.risk || {});
     setCompany(item.company || "");
@@ -316,13 +287,18 @@ export default function Home() {
     setInspectionDate(item.inspectionDate || "");
   };
 
+  const openHistory = () => {
+    setHistory(readHistoryForChecklist(activeChecklistId));
+    setShowHistory(true);
+  };
+
   const deleteInspection = (id: number) => {
     const updated = history.filter((item) => item.id !== id);
 
     setHistory(updated);
 
     localStorage.setItem(
-      `laboria_${activeChecklistId}_history`,
+      getHistoryStorageKey(activeChecklistId),
       JSON.stringify(updated),
     );
   };
@@ -341,52 +317,16 @@ export default function Home() {
     };
 
     const existing = localStorage.getItem(
-      `laboria_${activeChecklistId}_history`,
+      getHistoryStorageKey(activeChecklistId),
     );
-    const historyData = existing ? JSON.parse(existing) : [];
+    const historyData = existing
+      ? (JSON.parse(existing) as SavedInspection[])
+      : [];
 
     historyData.push(inspectionData);
 
     // Update state immediately (no refresh needed)
     setHistory(historyData);
-
-    // Show toast
-    setShowSavedToast(true);
-
-    // Hide toast after 2.5 seconds
-    setTimeout(() => {
-      setShowSavedToast(false);
-    }, 2500);
-  };
-
-  const generateAIInsight = async () => {
-    try {
-      setAiLoading(true);
-      setAiError(null);
-
-      const res = await fetch("/api/ai-insight", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          answers,
-          lang,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "AI request failed");
-      }
-
-      setAiInsight(data.result);
-    } catch (err: any) {
-      setAiError(err.message);
-    } finally {
-      setAiLoading(false);
-    }
   };
 
   return (
@@ -424,7 +364,7 @@ export default function Home() {
                     setAnswers({});
                     setRisk({});
                     setOpenSection(0);
-                    setAiInsight(null);
+                    setHistory(readHistoryForChecklist(checklist.id));
                   }}
                   className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     activeChecklistId === checklist.id
@@ -484,7 +424,7 @@ export default function Home() {
                     </button>
 
                     <button
-                      onClick={() => setShowHistory(true)}
+                      onClick={openHistory}
                       className={`w-10 h-10 rounded-xl flex items-center justify-center
   transition-all duration-200 shadow-md
   ${
@@ -755,7 +695,7 @@ export default function Home() {
 
                 {openSection === si && (
                   <div className="px-6 py-6 space-y-6">
-                    {sec.items.map((q: any, qi: number) => {
+                    {sec.items.map((q, qi) => {
                       const id = `${si}-${qi}`;
                       return (
                         <div
@@ -984,7 +924,7 @@ export default function Home() {
               {lang === "EN" ? sec.sectionEN : sec.sectionKA}
             </div>
 
-            {sec.items.map((q: any, qi: number) => {
+            {sec.items.map((q, qi) => {
               const id = `${si}-${qi}`;
               const status = answers[id] || "N/A";
 
