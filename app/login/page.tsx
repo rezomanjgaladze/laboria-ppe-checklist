@@ -26,6 +26,8 @@ const providerOptions: Record<
   },
 };
 
+const PRODUCTION_SITE_URL = "https://laboria-ppe-checklist.vercel.app";
+
 function getNextPath() {
   const params = new URLSearchParams(window.location.search);
   const nextPath = params.get("next");
@@ -35,6 +37,24 @@ function getNextPath() {
   }
 
   return nextPath;
+}
+
+function getSiteOrigin() {
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+
+  if (configuredSiteUrl) {
+    return configuredSiteUrl.replace(/\/+$/, "");
+  }
+
+  if (window.location.hostname === "localhost") {
+    return window.location.origin;
+  }
+
+  if (window.location.hostname === "127.0.0.1") {
+    return window.location.origin;
+  }
+
+  return PRODUCTION_SITE_URL;
 }
 
 export default function LoginPage() {
@@ -71,7 +91,7 @@ export default function LoginPage() {
     setError("");
     setLoadingProvider(provider);
 
-    const redirectTo = new URL("/auth/callback", window.location.origin);
+    const redirectTo = new URL("/auth/callback", getSiteOrigin());
     redirectTo.searchParams.set("next", getNextPath());
 
     const { error: signInError } = await supabase.auth.signInWithOAuth({
