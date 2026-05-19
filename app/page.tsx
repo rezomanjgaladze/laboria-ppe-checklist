@@ -11,14 +11,17 @@ import {
   Flame,
   Zap,
   Building2,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { ALL_CHECKLISTS } from "./data/checklists";
+import { createClient } from "@/lib/supabase/client";
 
 type InspectionResult = {
   percent: number;
@@ -141,6 +144,8 @@ const TEXT = {
 ========================= */
 
 export default function Home() {
+  const router = useRouter();
+  const supabase = createClient();
   const [activeChecklistId, setActiveChecklistId] = useState("ppe");
 
   const activeChecklist =
@@ -329,6 +334,12 @@ export default function Home() {
     setHistory(historyData);
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  };
+
   return (
     <div className="min-h-screen flex justify-center relative overflow-hidden bg-[#050816]">
       {/* SPACE GLOW BACKGROUND */}
@@ -447,6 +458,21 @@ export default function Home() {
                       title="Theme"
                     >
                       {darkMode ? "☀" : "🌙"}
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center
+  transition-all duration-200 shadow-md
+  ${
+    darkMode
+      ? "bg-slate-800 hover:bg-slate-700 text-white"
+      : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
+  }
+`}
+                      title="Logout"
+                      aria-label="Logout"
+                    >
+                      <LogOut size={18} />
                     </button>
                   </div>
                 </div>
