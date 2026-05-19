@@ -289,7 +289,10 @@ export default function LoginPage() {
                           className="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/70 to-transparent transition-transform duration-700 group-hover:translate-x-[120%]"
                         />
                         <span className="relative flex items-center gap-3">
-                          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-base font-bold text-[#1E90FF] shadow-sm">
+                          <span
+                            aria-hidden
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-base font-bold text-[#1E90FF] shadow-sm"
+                          >
                             G
                           </span>
                           <span>{providerOptions[provider].label}</span>
