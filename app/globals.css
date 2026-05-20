@@ -34,18 +34,29 @@ body {
 
 .laboria-login-grid {
   background-image:
-    linear-gradient(rgba(77, 235, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(77, 235, 255, 0.07) 1px, transparent 1px);
+    linear-gradient(rgba(77, 235, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77, 235, 255, 0.09) 1px, transparent 1px);
   background-size: 72px 72px;
   mask-image: radial-gradient(circle at 50% 40%, black 0%, transparent 78%);
+  animation: laboria-login-grid-drift 22s linear infinite;
 }
 
 .laboria-login-scan {
-  animation: laboria-login-scan 8s ease-in-out infinite;
+  animation: laboria-login-scan 7s ease-in-out infinite;
+}
+
+.laboria-login-blueprint-line {
+  background: rgba(77, 235, 255, 0.24);
+  box-shadow: 0 0 20px rgba(77, 235, 255, 0.18);
+  animation: laboria-login-blueprint 10s ease-in-out infinite;
+}
+
+.laboria-login-glow {
+  animation: laboria-login-glow 13s ease-in-out infinite;
 }
 
 .laboria-login-particle {
-  animation: laboria-login-float 7s ease-in-out infinite;
+  animation: laboria-login-float 9s ease-in-out infinite;
 }
 
 .laboria-login-orbit {
@@ -56,15 +67,52 @@ body {
   animation: laboria-login-pulse 6s ease-in-out infinite;
 }
 
+@keyframes laboria-login-grid-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 72px 72px;
+  }
+}
+
 @keyframes laboria-login-scan {
   0%,
   100% {
-    transform: translateY(0);
-    opacity: 0.18;
+    transform: translateY(-4vh);
+    opacity: 0.16;
+  }
+  46% {
+    transform: translateY(58vh);
+    opacity: 0.55;
+  }
+  72% {
+    transform: translateY(82vh);
+    opacity: 0.22;
+  }
+}
+
+@keyframes laboria-login-blueprint {
+  0%,
+  100% {
+    opacity: 0.16;
+    transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translateY(72vh);
-    opacity: 0.55;
+    opacity: 0.5;
+    transform: translate3d(18px, -8px, 0);
+  }
+}
+
+@keyframes laboria-login-glow {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate3d(28px, -18px, 0) scale(1.08);
   }
 }
 
@@ -75,8 +123,12 @@ body {
     opacity: 0.28;
   }
   50% {
-    transform: translate3d(10px, -18px, 0);
-    opacity: 0.9;
+    transform: translate3d(14px, -22px, 0);
+    opacity: 0.82;
+  }
+  75% {
+    transform: translate3d(-8px, -10px, 0);
+    opacity: 0.56;
   }
 }
 
@@ -102,7 +154,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .laboria-login-grid,
   .laboria-login-scan,
+  .laboria-login-blueprint-line,
+  .laboria-login-glow,
   .laboria-login-particle,
   .laboria-login-orbit,
   .laboria-login-halo {

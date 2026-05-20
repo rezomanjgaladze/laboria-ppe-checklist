@@ -44,12 +44,24 @@ const platformSignals = [
 ];
 
 const particles = [
-  { className: "left-[8%] top-[18%] h-1.5 w-1.5", delay: "0s" },
-  { className: "left-[18%] top-[72%] h-1 w-1", delay: "1.3s" },
-  { className: "left-[42%] top-[14%] h-2 w-2", delay: "0.5s" },
-  { className: "left-[64%] top-[28%] h-1 w-1", delay: "2s" },
-  { className: "left-[78%] top-[78%] h-1.5 w-1.5", delay: "0.9s" },
-  { className: "left-[92%] top-[42%] h-1 w-1", delay: "1.6s" },
+  { className: "left-[7%] top-[18%] h-1.5 w-1.5", delay: "0s" },
+  { className: "left-[14%] top-[58%] h-1 w-1", delay: "1.3s" },
+  { className: "left-[24%] top-[79%] h-1.5 w-1.5", delay: "3.1s" },
+  { className: "left-[39%] top-[12%] h-2 w-2", delay: "0.5s" },
+  { className: "left-[54%] top-[66%] h-1 w-1", delay: "2.4s" },
+  { className: "left-[66%] top-[29%] h-1 w-1", delay: "2s" },
+  { className: "left-[76%] top-[82%] h-1.5 w-1.5", delay: "0.9s" },
+  { className: "left-[88%] top-[18%] h-1 w-1", delay: "3.6s" },
+  { className: "left-[93%] top-[45%] h-1 w-1", delay: "1.6s" },
+];
+
+const blueprintLines = [
+  { className: "left-[6%] top-[29%] h-px w-40", delay: "0s" },
+  { className: "left-[15%] top-[86%] h-px w-56", delay: "2.4s" },
+  { className: "left-[36%] top-[22%] h-28 w-px", delay: "1.2s" },
+  { className: "right-[8%] top-[21%] h-px w-48", delay: "3.1s" },
+  { className: "right-[18%] top-[61%] h-36 w-px", delay: "1.8s" },
+  { className: "right-[4%] top-[78%] h-px w-64", delay: "0.8s" },
 ];
 
 function getNextPath() {
@@ -139,29 +151,50 @@ export default function LoginPage() {
     <main className="relative min-h-screen overflow-hidden bg-[#071225] text-[#F5F7FA]">
       <div
         aria-hidden
-        className="laboria-login-grid absolute inset-0 opacity-55"
+        className="laboria-login-grid absolute inset-0 opacity-70"
       />
       <div
         aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(77,235,255,0.16),transparent_30%),radial-gradient(circle_at_82%_64%,rgba(30,144,255,0.18),transparent_34%),linear-gradient(180deg,rgba(7,18,37,0.35),#071225_86%)]"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(77,235,255,0.16),transparent_30%),radial-gradient(circle_at_82%_64%,rgba(30,144,255,0.18),transparent_34%),linear-gradient(180deg,rgba(7,18,37,0.28),#071225_86%)]"
+      />
+      <div
+        aria-hidden
+        className="laboria-login-glow absolute -left-24 top-20 h-72 w-72 rounded-full bg-[#1E90FF]/18 blur-[92px]"
+      />
+      <div
+        aria-hidden
+        className="laboria-login-glow absolute bottom-12 right-[-7rem] h-96 w-96 rounded-full bg-[#4DEBFF]/12 blur-[110px]"
+        style={{ animationDelay: "2.8s" }}
       />
       <div
         aria-hidden
         className="laboria-login-scan absolute left-0 top-0 h-px w-full bg-gradient-to-r from-transparent via-[#4DEBFF]/70 to-transparent"
       />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        {blueprintLines.map((line) => (
+          <span
+            key={line.className}
+            className={`laboria-login-blueprint-line absolute ${line.className}`}
+            style={{ animationDelay: line.delay }}
+          />
+        ))}
+      </div>
 
       {particles.map((particle) => (
         <span
           aria-hidden
           key={particle.className}
-          className={`laboria-login-particle absolute rounded-full bg-[#4DEBFF] shadow-[0_0_20px_rgba(77,235,255,0.85)] ${particle.className}`}
+          className={`laboria-login-particle absolute rounded-full bg-[#4DEBFF]/75 shadow-[0_0_20px_rgba(77,235,255,0.75)] ${particle.className}`}
           style={{ animationDelay: particle.delay }}
         />
       ))}
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-6 sm:px-6 lg:px-8">
         <section className="grid w-full gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(390px,0.72fr)] lg:items-stretch">
-          <div className="relative min-h-[560px] overflow-hidden rounded-[28px] border border-[#4DEBFF]/14 bg-[#F5F7FA]/[0.045] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.38)] backdrop-blur-2xl sm:p-8 lg:min-h-[680px] lg:p-10">
+          <div className="relative min-h-[560px] overflow-hidden rounded-[28px] border border-[#4DEBFF]/14 bg-[#F5F7FA]/[0.045] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.38)] backdrop-blur-2xl sm:p-8 lg:min-h-[640px] lg:p-10">
             <div
               aria-hidden
               className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#4DEBFF]/70 to-transparent"
@@ -179,35 +212,45 @@ export default function LoginPage() {
               className="laboria-login-orbit absolute bottom-12 right-10 hidden h-56 w-56 rounded-full border border-dashed border-[#4DEBFF]/20 lg:block"
             />
 
-            <div className="relative z-10 flex h-full min-h-[512px] flex-col justify-between gap-10 lg:min-h-[600px]">
-              <div className="flex items-start justify-between gap-4">
-                <div className="rounded-[24px] border border-white/10 bg-white/[0.055] px-5 py-4 shadow-[0_22px_70px_rgba(30,144,255,0.16)] backdrop-blur-xl sm:px-6 sm:py-5">
-                  <Image
-                    src="/laboria-logo.png"
-                    alt="Laboria"
-                    width={430}
-                    height={140}
-                    className="h-auto w-[210px] object-contain drop-shadow-[0_0_28px_rgba(77,235,255,0.22)] sm:w-[280px] lg:w-[390px]"
-                    priority
-                  />
+            <div className="relative z-10 flex h-full min-h-[512px] flex-col justify-between gap-8 lg:min-h-[560px]">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex min-w-0 flex-col gap-4">
+                  <div className="w-fit shrink-0 rounded-[24px] border border-white/10 bg-white/[0.055] px-5 py-4 shadow-[0_22px_70px_rgba(30,144,255,0.16)] backdrop-blur-xl sm:px-6 sm:py-5">
+                    <Image
+                      src="/laboria-logo.png"
+                      alt="Laboria"
+                      width={430}
+                      height={140}
+                      className="h-auto w-[190px] object-contain drop-shadow-[0_0_28px_rgba(77,235,255,0.22)] sm:w-[230px] lg:w-[280px] xl:w-[320px]"
+                      priority
+                    />
+                  </div>
+
+                  <div className="min-w-0 max-w-xl">
+                    <p className="text-sm font-semibold text-[#4DEBFF]">
+                      Laboria platform
+                    </p>
+                    <h1 className="mt-2 text-4xl font-semibold leading-[1.02] text-[#F5F7FA] sm:text-5xl">
+                      Laboria Safety Checklists
+                    </h1>
+                    <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#4DEBFF]/18 bg-[#4DEBFF]/8 px-4 py-2 text-sm font-semibold text-[#BFF8FF] shadow-[0_0_30px_rgba(77,235,255,0.08)]">
+                      <ShieldCheck size={16} aria-hidden />
+                      Digital inspection access
+                    </div>
+                  </div>
                 </div>
 
-                <div className="hidden items-center gap-2 rounded-full border border-[#4DEBFF]/20 bg-[#4DEBFF]/8 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#4DEBFF] lg:flex">
+                <div className="hidden items-center gap-2 rounded-full border border-[#4DEBFF]/20 bg-[#4DEBFF]/8 px-4 py-2 text-xs font-semibold text-[#4DEBFF] lg:flex">
                   <Sparkles size={14} aria-hidden />
                   Secure
                 </div>
               </div>
 
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#4DEBFF]/18 bg-[#4DEBFF]/8 px-4 py-2 text-sm font-semibold text-[#BFF8FF] shadow-[0_0_30px_rgba(77,235,255,0.08)]">
-                  <ShieldCheck size={16} aria-hidden />
-                  Laboria Safety System
-                </div>
-
-                <h1 className="mt-7 max-w-3xl text-4xl font-semibold leading-[1.04] text-[#F5F7FA] sm:text-5xl lg:text-7xl">
+                <h2 className="max-w-2xl text-2xl font-semibold leading-[1.1] text-[#F5F7FA] sm:text-3xl lg:text-4xl">
                   AI-Powered Industrial Safety Workspace
-                </h1>
-                <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+                </h2>
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
                   Secure access for Laboria inspection teams, auditors, and
                   safety managers.
                 </p>
@@ -225,7 +268,7 @@ export default function LoginPage() {
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#4DEBFF]/18 bg-[#4DEBFF]/10 text-[#4DEBFF]">
                         <Icon size={18} aria-hidden />
                       </div>
-                      <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      <p className="mt-4 text-xs font-semibold uppercase text-slate-400">
                         {item.label}
                       </p>
                       <p className="mt-1 text-sm font-semibold text-[#F5F7FA]">
@@ -254,7 +297,7 @@ export default function LoginPage() {
                   <Factory size={22} aria-hidden />
                 </span>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#4DEBFF]">
+                  <p className="text-xs font-semibold uppercase text-[#4DEBFF]">
                     Auth Gateway
                   </p>
                   <p className="mt-1 text-sm text-slate-400">
@@ -264,7 +307,7 @@ export default function LoginPage() {
               </div>
 
               <div className="rounded-[24px] border border-white/10 bg-[#071225]/72 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_70px_rgba(0,0,0,0.25)] sm:p-6">
-                <h2 className="text-2xl font-semibold tracking-tight text-[#F5F7FA]">
+                <h2 className="text-2xl font-semibold text-[#F5F7FA]">
                   Sign in securely
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-slate-400">
