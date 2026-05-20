@@ -38,6 +38,7 @@ type SavedInspection = {
   inspectionDate: string;
   answers: Record<string, string>;
   risk: Record<string, string>;
+  comments?: Record<string, string>;
   result: InspectionResult;
   savedAt: string;
 };
@@ -326,6 +327,7 @@ export default function Home() {
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [risk, setRisk] = useState<Record<string, string>>({});
+  const [comments, setComments] = useState<Record<string, string>>({});
 
   const [company, setCompany] = useState("");
   const [site, setSite] = useState("");
@@ -475,6 +477,11 @@ export default function Home() {
         delete updated[id];
         return updated;
       });
+      setComments((current) => {
+        const updated = { ...current };
+        delete updated[id];
+        return updated;
+      });
     }
   };
 
@@ -483,6 +490,17 @@ export default function Home() {
       Object.entries(risk).filter(
         ([id]) => answers[id] === "yes" || answers[id] === "no",
       ),
+    );
+
+  const getSelectedFindingComments = () =>
+    Object.fromEntries(
+      Object.entries(comments)
+        .filter(
+          ([id, value]) =>
+            (answers[id] === "yes" || answers[id] === "no") &&
+            value.trim().length > 0,
+        )
+        .map(([id, value]) => [id, value.trim()]),
     );
 
   const calculateSectionResult = (sectionIndex: number) => {
@@ -546,6 +564,7 @@ export default function Home() {
     try {
       setAnswers(item.answers || {});
       setRisk(item.risk || {});
+      setComments(item.comments || {});
       setCompany(item.company || "");
       setSite(item.site || "");
       setInspector(item.inspector || "");
@@ -607,6 +626,7 @@ export default function Home() {
         inspectionDate,
         answers,
         risk: getSelectedFindingRisks(),
+        comments: getSelectedFindingComments(),
         result,
         savedAt: new Date().toISOString(),
       };
@@ -672,6 +692,7 @@ export default function Home() {
                     setActiveChecklistId(checklist.id);
                     setAnswers({});
                     setRisk({});
+                    setComments({});
                     setOpenSection(0);
                     try {
                       setHistory(
@@ -1245,6 +1266,37 @@ export default function Home() {
                                   ))}
                                 </div>
                               </details>
+
+                              <div className="mt-4">
+                                <label
+                                  htmlFor={`comment-${id}`}
+                                  className={`mb-2 block text-sm font-semibold ${
+                                    darkMode
+                                      ? "text-slate-100"
+                                      : "text-gray-800"
+                                  }`}
+                                >
+                                  Comment / Observation
+                                </label>
+
+                                <textarea
+                                  id={`comment-${id}`}
+                                  value={comments[id] || ""}
+                                  onChange={(e) =>
+                                    setComments((current) => ({
+                                      ...current,
+                                      [id]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Add observation, evidence, location detail, or corrective note..."
+                                  rows={3}
+                                  className={`w-full resize-y rounded-xl border px-4 py-3 text-sm leading-6 transition-all ${
+                                    darkMode
+                                      ? "border-[#334155] bg-[#0F172A] text-slate-100 placeholder:text-slate-500"
+                                      : "border-gray-300 bg-white text-gray-800 placeholder:text-gray-400"
+                                  }`}
+                                />
+                              </div>
                             </div>
                           ) : null}
                         </div>
@@ -1425,29 +1477,50 @@ export default function Home() {
               const status = answers[id] || "N/A";
               const findingRisk =
                 status === "yes" || status === "no" ? risk[id] || "-" : "-";
+              const findingComment =
+                status === "yes" || status === "no"
+                  ? comments[id]?.trim()
+                  : "";
 
               return (
                 <div
                   key={id}
                   style={{
-                    display: "flex",
                     pageBreakInside: "avoid",
                     breakInside: "avoid",
-
-                    justifyContent: "space-between",
-                    marginBottom: "6px",
+                    marginBottom: findingComment ? "12px" : "6px",
                     fontSize: "13px",
                   }}
                 >
-                  <div style={{ width: "70%" }}>
-                    {lang === "EN" ? q.EN : q.KA}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div style={{ width: "70%" }}>
+                      {lang === "EN" ? q.EN : q.KA}
+                    </div>
+
+                    <div style={{ width: "30%", textAlign: "right" }}>
+                      <strong>{status.toUpperCase()}</strong>
+                      {" | "}
+                      {t.riskLabel}: {findingRisk}
+                    </div>
                   </div>
 
-                  <div style={{ width: "30%", textAlign: "right" }}>
-                    <strong>{status.toUpperCase()}</strong>
-                    {" | "}
-                    {t.riskLabel}: {findingRisk}
-                  </div>
+                  {findingComment ? (
+                    <div
+                      style={{
+                        marginTop: "4px",
+                        color: "#4B5563",
+                        fontSize: "12px",
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      <strong>{t.comments}:</strong> {findingComment}
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
