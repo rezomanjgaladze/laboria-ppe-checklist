@@ -48,6 +48,24 @@ type HistoryNotice = {
   message: string;
 };
 
+type WorkflowWarning = {
+  action: "save" | "export";
+  unansweredCount: number;
+};
+
+type AutosaveStatus = "dirty" | "saving" | "saved";
+
+type InspectionDraft = {
+  company: string;
+  site: string;
+  inspector: string;
+  inspectionDate: string;
+  answers: Record<string, string>;
+  risk: Record<string, string>;
+  comments: Record<string, string>;
+  updatedAt: string;
+};
+
 type AuthProfile = {
   email: string;
   name: string;
@@ -178,6 +196,99 @@ const getHistoryStorageKey = (checklistId: string, userId: string | null) =>
   userId
     ? `laboria_${encodeURIComponent(userId)}_${checklistId}_history`
     : getLegacyHistoryStorageKey(checklistId);
+
+const getLegacyDraftStorageKey = (checklistId: string) =>
+  `laboria_${checklistId}_draft`;
+
+const getDraftStorageKey = (checklistId: string, userId: string | null) =>
+  userId
+    ? `laboria_${encodeURIComponent(userId)}_${checklistId}_draft`
+    : getLegacyDraftStorageKey(checklistId);
+
+const parseDraftValue = (value: string | null): InspectionDraft | null => {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    const candidate = parsed as Partial<InspectionDraft>;
+
+    return {
+      company: typeof candidate.company === "string" ? candidate.company : "",
+      site: typeof candidate.site === "string" ? candidate.site : "",
+      inspector:
+        typeof candidate.inspector === "string" ? candidate.inspector : "",
+      inspectionDate:
+        typeof candidate.inspectionDate === "string"
+          ? candidate.inspectionDate
+          : new Date().toISOString().split("T")[0],
+      answers:
+        candidate.answers && typeof candidate.answers === "object"
+          ? (candidate.answers as Record<string, string>)
+          : {},
+      risk:
+        candidate.risk && typeof candidate.risk === "object"
+          ? (candidate.risk as Record<string, string>)
+          : {},
+      comments:
+        candidate.comments && typeof candidate.comments === "object"
+          ? (candidate.comments as Record<string, string>)
+          : {},
+      updatedAt:
+        typeof candidate.updatedAt === "string"
+          ? candidate.updatedAt
+          : new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+};
+
+const readDraftForChecklist = (
+  checklistId: string,
+  userId: string | null,
+): InspectionDraft | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const draft = parseDraftValue(
+    window.localStorage.getItem(getDraftStorageKey(checklistId, userId)),
+  );
+
+  if (draft || !userId) {
+    return draft;
+  }
+
+  return parseDraftValue(
+    window.localStorage.getItem(getLegacyDraftStorageKey(checklistId)),
+  );
+};
+
+const writeDraftForChecklist = (
+  checklistId: string,
+  userId: string | null,
+  draft: InspectionDraft,
+) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    getDraftStorageKey(checklistId, userId),
+    JSON.stringify(draft),
+  );
+
+  if (userId) {
+    window.localStorage.removeItem(getLegacyDraftStorageKey(checklistId));
+  }
+};
 
 const parseHistoryValue = (value: string | null): SavedInspection[] => {
   if (!value) {
@@ -380,8 +491,16 @@ export default function Home() {
   const [historyNotice, setHistoryNotice] = useState<HistoryNotice | null>(
     null,
   );
+  const [workflowWarning, setWorkflowWarning] =
+    useState<WorkflowWarning | null>(null);
+  const [autosaveStatus, setAutosaveStatus] =
+    useState<AutosaveStatus>("saved");
   const sectionRefs = useRef<Array<HTMLDivElement | null>>([]);
   const sectionScrollFrameRef = useRef<number | null>(null);
+  const autosaveTimeoutRef = useRef<number | null>(null);
+  const isDraftLoadedRef = useRef(false);
+  const skipNextAutosaveRef = useRef(true);
+  const lastAutosavedSnapshotRef = useRef("");
 
   /* =========================
      SCROLL DETECTION
@@ -436,6 +555,114 @@ export default function Home() {
 
     return () => window.clearTimeout(timeoutId);
   }, [activeChecklistId, authUserId]);
+
+  useEffect(() => {
+    isDraftLoadedRef.current = false;
+    skipNextAutosaveRef.current = true;
+
+    const draft = readDraftForChecklist(activeChecklistId, authUserId);
+    const nextCompany = draft?.company ?? "";
+    const nextSite = draft?.site ?? "";
+    const nextInspector = draft?.inspector ?? "";
+    const nextInspectionDate =
+      draft?.inspectionDate || new Date().toISOString().split("T")[0];
+    const nextAnswers = draft?.answers ?? {};
+    const nextRisk = draft?.risk ?? {};
+    const nextComments = draft?.comments ?? {};
+
+    setAnswers(nextAnswers);
+    setRisk(nextRisk);
+    setComments(nextComments);
+    setCompany(nextCompany);
+    setSite(nextSite);
+    setInspector(nextInspector);
+    setInspectionDate(nextInspectionDate);
+    setWorkflowWarning(null);
+    setAutosaveStatus("saved");
+    lastAutosavedSnapshotRef.current = JSON.stringify({
+      company: nextCompany,
+      site: nextSite,
+      inspector: nextInspector,
+      inspectionDate: nextInspectionDate,
+      answers: nextAnswers,
+      risk: nextRisk,
+      comments: nextComments,
+    });
+
+    isDraftLoadedRef.current = true;
+  }, [activeChecklistId, authUserId]);
+
+  useEffect(() => {
+    if (!isDraftLoadedRef.current) {
+      return;
+    }
+
+    if (skipNextAutosaveRef.current) {
+      skipNextAutosaveRef.current = false;
+      setAutosaveStatus("saved");
+      return;
+    }
+
+    const draftSnapshot = JSON.stringify({
+      company,
+      site,
+      inspector,
+      inspectionDate,
+      answers,
+      risk,
+      comments,
+    });
+
+    if (draftSnapshot === lastAutosavedSnapshotRef.current) {
+      setAutosaveStatus("saved");
+      return;
+    }
+
+    if (autosaveTimeoutRef.current !== null) {
+      window.clearTimeout(autosaveTimeoutRef.current);
+    }
+
+    setAutosaveStatus("dirty");
+
+    autosaveTimeoutRef.current = window.setTimeout(() => {
+      setAutosaveStatus("saving");
+
+      try {
+        writeDraftForChecklist(activeChecklistId, authUserId, {
+          company,
+          site,
+          inspector,
+          inspectionDate,
+          answers,
+          risk,
+          comments,
+          updatedAt: new Date().toISOString(),
+        });
+        lastAutosavedSnapshotRef.current = draftSnapshot;
+        setAutosaveStatus("saved");
+      } catch {
+        setAutosaveStatus("dirty");
+      } finally {
+        autosaveTimeoutRef.current = null;
+      }
+    }, 700);
+
+    return () => {
+      if (autosaveTimeoutRef.current !== null) {
+        window.clearTimeout(autosaveTimeoutRef.current);
+      }
+    };
+  }, [
+    activeChecklistId,
+    answers,
+    authUserId,
+    comments,
+    company,
+    inspectionDate,
+    inspector,
+    risk,
+    site,
+  ]);
 
   useEffect(() => {
     if (!historyNotice) {
@@ -549,6 +776,47 @@ export default function Home() {
 
   const riskSummary = calculateRiskSummary();
 
+  const totalQuestions = useMemo(
+    () =>
+      activeChecklist.sections.reduce(
+        (total, section) => total + section.items.length,
+        0,
+      ),
+    [activeChecklist],
+  );
+
+  const completedQuestions = useMemo(
+    () =>
+      activeChecklist.sections.reduce(
+        (total, section, sectionIndex) =>
+          total +
+          section.items.filter((_, questionIndex) => {
+            const id = `${sectionIndex}-${questionIndex}`;
+            return Boolean(answers[id]);
+          }).length,
+        0,
+      ),
+    [activeChecklist, answers],
+  );
+
+  const unansweredQuestions = totalQuestions - completedQuestions;
+  const checklistProgressPercent =
+    totalQuestions > 0
+      ? Math.round((completedQuestions / totalQuestions) * 100)
+      : 0;
+  const autosaveStatusText =
+    autosaveStatus === "saving"
+      ? "Saving..."
+      : autosaveStatus === "dirty"
+        ? "Unsaved changes"
+        : "All changes saved";
+
+  useEffect(() => {
+    if (workflowWarning && unansweredQuestions <= 0) {
+      setWorkflowWarning(null);
+    }
+  }, [unansweredQuestions, workflowWarning]);
+
   const handleAnswerChange = (id: string, value: string) => {
     setAnswers((current) => ({ ...current, [id]: value }));
 
@@ -603,11 +871,49 @@ export default function Home() {
     return { percent };
   };
 
+  const calculateSectionProgress = (sectionIndex: number) => {
+    const section = activeChecklist.sections[sectionIndex];
+
+    if (!section) {
+      return { completed: 0, total: 0, isComplete: false };
+    }
+
+    const completed = section.items.filter((_, questionIndex) => {
+      const id = `${sectionIndex}-${questionIndex}`;
+      return Boolean(answers[id]);
+    }).length;
+
+    return {
+      completed,
+      total: section.items.length,
+      isComplete: section.items.length > 0 && completed === section.items.length,
+    };
+  };
+
   /* =========================
      PDF EXPORT
   ========================= */
 
-  const handleExportPDF = async () => {
+  const requestWorkflowConfirmation = (action: WorkflowWarning["action"]) => {
+    if (unansweredQuestions <= 0) {
+      return false;
+    }
+
+    setWorkflowWarning({
+      action,
+      unansweredCount: unansweredQuestions,
+    });
+
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById("inspection-report")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    return true;
+  };
+
+  const exportInspectionPDF = async () => {
     const element = document.getElementById("clean-export");
     if (!element) return;
 
@@ -677,6 +983,14 @@ export default function Home() {
     pdf.save(`LABORIA_${activeChecklistId}_Checklist.pdf`);
   };
 
+  const handleExportPDF = () => {
+    if (requestWorkflowConfirmation("export")) {
+      return;
+    }
+
+    void exportInspectionPDF();
+  };
+
   const loadFromHistory = (item: SavedInspection) => {
     try {
       setAnswers(item.answers || {});
@@ -733,7 +1047,7 @@ export default function Home() {
     }
   };
 
-  const saveInspection = () => {
+  const persistInspection = () => {
     try {
       const inspectionData: SavedInspection = {
         id: Date.now(),
@@ -755,16 +1069,59 @@ export default function Home() {
       const updated = [inspectionData, ...storedHistory];
 
       writeHistoryForChecklist(activeChecklistId, authUserId, updated);
+      writeDraftForChecklist(activeChecklistId, authUserId, {
+        company,
+        site,
+        inspector,
+        inspectionDate,
+        answers,
+        risk,
+        comments,
+        updatedAt: new Date().toISOString(),
+      });
+      lastAutosavedSnapshotRef.current = JSON.stringify({
+        company,
+        site,
+        inspector,
+        inspectionDate,
+        answers,
+        risk,
+        comments,
+      });
       setHistory(updated);
       setHistoryNotice({
         type: "success",
         message: "Inspection saved.",
       });
+      setAutosaveStatus("saved");
     } catch {
       setHistoryNotice({
         type: "error",
         message: "Could not save inspection.",
       });
+    }
+  };
+
+  const saveInspection = () => {
+    if (requestWorkflowConfirmation("save")) {
+      return;
+    }
+
+    persistInspection();
+  };
+
+  const continueWorkflowAction = () => {
+    const action = workflowWarning?.action;
+
+    setWorkflowWarning(null);
+
+    if (action === "save") {
+      persistInspection();
+      return;
+    }
+
+    if (action === "export") {
+      void exportInspectionPDF();
     }
   };
 
@@ -1039,6 +1396,65 @@ export default function Home() {
                   </div>
                 </div>
 
+                <div
+                  className={`mt-3 flex justify-end text-xs font-semibold ${
+                    autosaveStatus === "dirty"
+                      ? darkMode
+                        ? "text-amber-200"
+                        : "text-amber-700"
+                      : autosaveStatus === "saving"
+                        ? darkMode
+                          ? "text-cyan-200"
+                          : "text-[#1E90FF]"
+                        : darkMode
+                          ? "text-slate-400"
+                          : "text-gray-500"
+                  }`}
+                  aria-live="polite"
+                >
+                  {autosaveStatusText}
+                </div>
+
+                {workflowWarning ? (
+                  <div
+                    className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
+                      darkMode
+                        ? "border-amber-400/30 bg-amber-400/10 text-amber-100"
+                        : "border-amber-200 bg-amber-50 text-amber-800"
+                    }`}
+                    role="alert"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="font-semibold">
+                        There are {workflowWarning.unansweredCount} unanswered
+                        questions.
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setWorkflowWarning(null)}
+                          className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                            darkMode
+                              ? "bg-white/10 text-white hover:bg-white/15"
+                              : "bg-white text-amber-800 hover:bg-amber-100"
+                          }`}
+                        >
+                          Review first
+                        </button>
+                        <button
+                          type="button"
+                          onClick={continueWorkflowAction}
+                          className="rounded-lg bg-[#1E90FF] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#1878d6]"
+                        >
+                          {workflowWarning.action === "save"
+                            ? "Continue save"
+                            : "Continue export"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
                 {historyNotice ? (
                   <div
                     className={`mt-4 rounded-xl px-4 py-3 text-sm font-semibold ${
@@ -1084,6 +1500,33 @@ export default function Home() {
                     : "ინსპექტირების შესაბამისობის ჩექლისტი"}
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* CHECKLIST PROGRESS */}
+          <div
+            className={`mb-6 rounded-2xl border px-5 py-4 transition-all duration-300 ${
+              darkMode
+                ? "border-[#1F2937] bg-[#111827] text-slate-100"
+                : "border-gray-200 bg-white text-gray-800 shadow-sm"
+            }`}
+          >
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm font-semibold">Checklist progress</div>
+              <div className="text-sm font-medium opacity-70">
+                {completedQuestions} / {totalQuestions} questions completed
+              </div>
+            </div>
+            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-700/20">
+              <div
+                className="h-full rounded-full bg-[#1E90FF] transition-all duration-500"
+                style={{ width: `${checklistProgressPercent}%` }}
+              />
+            </div>
+            <div className="mt-2 text-xs opacity-60">
+              {unansweredQuestions > 0
+                ? `${unansweredQuestions} unanswered questions remaining`
+                : "All questions completed"}
             </div>
           </div>
 
@@ -1282,13 +1725,28 @@ export default function Home() {
                       : "bg-white/70 border-gray-200 hover:bg-white"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="relative flex flex-col gap-2 pr-8">
                     <span className="font-semibold tracking-wide text-sm uppercase">
                       {lang === "EN" ? sec.sectionEN : sec.sectionKA}
                     </span>
+                    {calculateSectionProgress(si).isComplete ? (
+                      <span
+                        className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${
+                          darkMode
+                            ? "bg-emerald-400/10 text-emerald-200"
+                            : "bg-emerald-50 text-emerald-700"
+                        }`}
+                      >
+                        Complete
+                      </span>
+                    ) : null}
                     <div className="text-xs mt-1 opacity-70">
                       {calculateSectionResult(si).percent}%{" "}
                       {lang === "EN" ? "Compliant" : "შესაბამისობა"}
+                    </div>
+                    <div className="text-xs mt-1 opacity-70">
+                      {calculateSectionProgress(si).completed} /{" "}
+                      {calculateSectionProgress(si).total} answered
                     </div>
                     <div className="mt-2 h-1 w-full bg-gray-300 rounded-full overflow-hidden">
                       <div
@@ -1313,17 +1771,29 @@ export default function Home() {
                   <div className="px-6 py-6 space-y-6">
                     {sec.items.map((q, qi) => {
                       const id = `${si}-${qi}`;
+                      const isHighRiskFinding =
+                        (answers[id] === "yes" || answers[id] === "no") &&
+                        risk[id] === "H";
                       return (
                         <div
                           key={id}
                           className={`p-6 rounded-2xl border transition-all duration-300 ${
-                            darkMode
-                              ? "bg-[#1E293B] border-[#334155]"
-                              : "bg-white border-gray-200"
+                            isHighRiskFinding
+                              ? darkMode
+                                ? "bg-[#1E293B] border-rose-400/70 shadow-[inset_4px_0_0_rgba(244,63,94,0.65)]"
+                                : "bg-white border-rose-300 shadow-[inset_4px_0_0_rgba(225,29,72,0.28)]"
+                              : darkMode
+                                ? "bg-[#1E293B] border-[#334155]"
+                                : "bg-white border-gray-200"
                           }`}
                         >
-                          <div className="mb-4">
-                            {lang === "EN" ? q.EN : q.KA}
+                          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>{lang === "EN" ? q.EN : q.KA}</div>
+                            {isHighRiskFinding ? (
+                              <span className="shrink-0 rounded-full bg-rose-500/10 px-2.5 py-1 text-xs font-bold text-rose-500">
+                                High risk
+                              </span>
+                            ) : null}
                           </div>
 
                           <div className="flex gap-2 mb-4">
