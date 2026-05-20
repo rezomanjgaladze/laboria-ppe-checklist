@@ -11,6 +11,7 @@ import {
   Flame,
   Zap,
   Building2,
+  ChevronDown,
   LogOut,
   type LucideIcon,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { ALL_CHECKLISTS } from "./data/checklists";
 import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 type InspectionResult = {
   percent: number;
@@ -43,6 +45,13 @@ type SavedInspection = {
 type HistoryNotice = {
   type: "success" | "error";
   message: string;
+};
+
+type AuthProfile = {
+  email: string;
+  name: string;
+  avatarUrl: string | null;
+  initials: string;
 };
 
 const riskGuidance = [
@@ -72,6 +81,48 @@ const riskGuidance = [
     ],
   },
 ];
+
+const getInitials = (value: string) => {
+  const parts = value
+    .trim()
+    .split(/\s+|@/)
+    .filter(Boolean);
+
+  const initials = parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+
+  return initials || "U";
+};
+
+const buildAuthProfile = (user: User | null): AuthProfile | null => {
+  if (!user) {
+    return null;
+  }
+
+  const metadata = user.user_metadata;
+  const name =
+    typeof metadata.full_name === "string"
+      ? metadata.full_name
+      : typeof metadata.name === "string"
+        ? metadata.name
+        : user.email || "Signed-in user";
+  const avatarUrl =
+    typeof metadata.avatar_url === "string"
+      ? metadata.avatar_url
+      : typeof metadata.picture === "string"
+        ? metadata.picture
+        : null;
+  const email = user.email || "No email available";
+
+  return {
+    email,
+    name,
+    avatarUrl,
+    initials: getInitials(name || email),
+  };
+};
 
 const ICON_MAP: Record<string, LucideIcon> = {
   ppe: ShieldCheck,
@@ -287,6 +338,8 @@ export default function Home() {
   const [showFab, setShowFab] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const [authProfile, setAuthProfile] = useState<AuthProfile | null>(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [history, setHistory] = useState<SavedInspection[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [historyNotice, setHistoryNotice] = useState<HistoryNotice | null>(
@@ -314,12 +367,15 @@ export default function Home() {
       }
 
       setAuthUserId(data.user?.id ?? null);
+      setAuthProfile(buildAuthProfile(data.user ?? null));
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthUserId(session?.user.id ?? null);
+      setAuthProfile(buildAuthProfile(session?.user ?? null));
+      setShowProfileMenu(false);
     });
 
     return () => {
@@ -576,6 +632,7 @@ export default function Home() {
   };
 
   const handleLogout = async () => {
+    setShowProfileMenu(false);
     await supabase.auth.signOut();
     router.replace("/login");
     router.refresh();
@@ -654,11 +711,11 @@ export default function Home() {
 
           {/* PREMIUM GLASS HEADER */}
           <div className="mb-6">
-            <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-transparent backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
+            <div className="relative rounded-3xl border border-white/10 bg-transparent backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
               {/* subtle glow */}
 
               <div className="relative z-10 px-8 py-6">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <Image
                     src="/laboria-logo.png"
                     alt="Laboria"
@@ -668,7 +725,7 @@ export default function Home() {
                   />
 
                   {/* Top Right Controls */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
                     <button
                       onClick={saveInspection}
                       className={`w-10 h-10 rounded-xl flex items-center justify-center
@@ -711,21 +768,105 @@ export default function Home() {
                     >
                       {darkMode ? "☀" : "🌙"}
                     </button>
-                    <button
-                      onClick={handleLogout}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center
-  transition-all duration-200 shadow-md
-  ${
-    darkMode
-      ? "bg-slate-800 hover:bg-slate-700 text-white"
-      : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
-  }
-`}
-                      title="Logout"
-                      aria-label="Logout"
-                    >
-                      <LogOut size={18} />
-                    </button>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowProfileMenu((open) => !open)}
+                        className={`flex h-10 items-center gap-2 rounded-xl pl-1.5 pr-2.5 shadow-md transition-all duration-200 ${
+                          darkMode
+                            ? "bg-slate-800 text-white hover:bg-slate-700"
+                            : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-100"
+                        }`}
+                        aria-label="Open user menu"
+                        aria-haspopup="menu"
+                        aria-expanded={showProfileMenu}
+                      >
+                        <span
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#1E90FF] bg-cover bg-center text-xs font-bold text-white ring-1 ring-white/20"
+                          style={{
+                            backgroundImage: authProfile?.avatarUrl
+                              ? `url("${authProfile.avatarUrl.replaceAll('"', '\\"')}")`
+                              : undefined,
+                          }}
+                        >
+                          <span
+                            className={
+                              authProfile?.avatarUrl ? "sr-only" : undefined
+                            }
+                          >
+                            {authProfile?.initials ?? "U"}
+                          </span>
+                        </span>
+                        <span className="hidden max-w-28 truncate text-xs font-semibold sm:block">
+                          {authProfile?.name ?? "User"}
+                        </span>
+                        <ChevronDown
+                          size={14}
+                          className={`transition-transform ${
+                            showProfileMenu ? "rotate-180" : ""
+                          }`}
+                          aria-hidden
+                        />
+                      </button>
+
+                      {showProfileMenu ? (
+                        <div
+                          className={`absolute right-0 top-12 z-50 w-72 rounded-2xl border p-3 shadow-2xl ${
+                            darkMode
+                              ? "border-white/10 bg-[#0F172A] text-white"
+                              : "border-gray-200 bg-white text-gray-900"
+                          }`}
+                          role="menu"
+                        >
+                          <div className="flex items-center gap-3 rounded-xl p-2">
+                            <span
+                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1E90FF] bg-cover bg-center text-sm font-bold text-white ring-1 ring-white/20"
+                              style={{
+                                backgroundImage: authProfile?.avatarUrl
+                                  ? `url("${authProfile.avatarUrl.replaceAll('"', '\\"')}")`
+                                  : undefined,
+                              }}
+                            >
+                              <span
+                                className={
+                                  authProfile?.avatarUrl
+                                    ? "sr-only"
+                                    : undefined
+                                }
+                              >
+                                {authProfile?.initials ?? "U"}
+                              </span>
+                            </span>
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-semibold">
+                                {authProfile?.name ?? "Signed-in user"}
+                              </div>
+                              <div
+                                className={`truncate text-xs ${
+                                  darkMode ? "text-slate-400" : "text-gray-500"
+                                }`}
+                              >
+                                Signed in as {authProfile?.email ?? "unknown"}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleLogout}
+                            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                              darkMode
+                                ? "bg-white/10 text-white hover:bg-white/15"
+                                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                            }`}
+                            role="menuitem"
+                          >
+                            <LogOut size={16} aria-hidden />
+                            Logout
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
