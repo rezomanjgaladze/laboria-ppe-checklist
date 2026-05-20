@@ -18,8 +18,9 @@ const notoGeorgian = Noto_Sans_Georgian({
 });
 
 export const metadata: Metadata = {
-  title: "Laboria PPE Checklist",
-  description: "Health and safety checklist app for Laboria.",
+  title: "Laboria Safety Checklists",
+  description:
+    "Digital health and safety inspection checklists for modern workplaces.",
 };
 
 export default function RootLayout({

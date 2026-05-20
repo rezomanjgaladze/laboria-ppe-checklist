@@ -228,7 +228,7 @@ export default function LoginPage() {
 
                   <div className="min-w-0 max-w-xl">
                     <p className="text-sm font-semibold text-[#4DEBFF]">
-                      Laboria platform
+                      Digital health and safety inspection checklists
                     </p>
                     <h1 className="mt-2 text-4xl font-semibold leading-[1.02] text-[#F5F7FA] sm:text-5xl">
                       Laboria Safety Checklists
@@ -248,11 +248,12 @@ export default function LoginPage() {
 
               <div className="max-w-3xl">
                 <h2 className="max-w-2xl text-2xl font-semibold leading-[1.1] text-[#F5F7FA] sm:text-3xl lg:text-4xl">
-                  AI-Powered Industrial Safety Workspace
+                  A professional inspection workspace for safety managers,
+                  auditors, and supervisors.
                 </h2>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                  Secure access for Laboria inspection teams, auditors, and
-                  safety managers.
+                  Digital health and safety inspection checklists for modern
+                  workplaces.
                 </p>
               </div>
 
