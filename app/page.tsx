@@ -45,6 +45,34 @@ type HistoryNotice = {
   message: string;
 };
 
+const riskGuidance = [
+  {
+    level: "Low",
+    color: "text-emerald-500",
+    guidance: [
+      "Minor issue.",
+      "Unlikely to cause injury.",
+      "No immediate danger.",
+    ],
+  },
+  {
+    level: "Medium",
+    color: "text-amber-500",
+    guidance: [
+      "Could cause injury or health issue if not corrected.",
+      "Control exists but is weak/incomplete.",
+    ],
+  },
+  {
+    level: "High",
+    color: "text-rose-500",
+    guidance: [
+      "Serious injury, fatality, or severe health risk possible.",
+      "Immediate action needed.",
+    ],
+  },
+];
+
 const ICON_MAP: Record<string, LucideIcon> = {
   ppe: ShieldCheck,
   emergency: HeartPulse,
@@ -369,7 +397,9 @@ export default function Home() {
   };
   const result = calculateResult();
   const calculateRiskSummary = () => {
-    const values = Object.values(risk);
+    const values = Object.entries(risk)
+      .filter(([id]) => answers[id] === "yes" || answers[id] === "no")
+      .map(([, value]) => value);
 
     const high = values.filter((v) => v === "H").length;
     const medium = values.filter((v) => v === "M").length;
@@ -379,6 +409,25 @@ export default function Home() {
   };
 
   const riskSummary = calculateRiskSummary();
+
+  const handleAnswerChange = (id: string, value: string) => {
+    setAnswers((current) => ({ ...current, [id]: value }));
+
+    if (value === "na") {
+      setRisk((current) => {
+        const updated = { ...current };
+        delete updated[id];
+        return updated;
+      });
+    }
+  };
+
+  const getSelectedFindingRisks = () =>
+    Object.fromEntries(
+      Object.entries(risk).filter(
+        ([id]) => answers[id] === "yes" || answers[id] === "no",
+      ),
+    );
 
   const calculateSectionResult = (sectionIndex: number) => {
     const section = activeChecklist.sections[sectionIndex];
@@ -501,7 +550,7 @@ export default function Home() {
         inspector,
         inspectionDate,
         answers,
-        risk,
+        risk: getSelectedFindingRisks(),
         result,
         savedAt: new Date().toISOString(),
       };
@@ -969,9 +1018,7 @@ export default function Home() {
                               <button
                                 key={v}
                                 type="button"
-                                onClick={() =>
-                                  setAnswers({ ...answers, [id]: v })
-                                }
+                                onClick={() => handleAnswerChange(id, v)}
                                 className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all ${
                                   answers[id] === v
                                     ? v === "yes"
@@ -989,22 +1036,76 @@ export default function Home() {
                             ))}
                           </div>
 
-                          <select
-                            value={risk[id] || ""}
-                            onChange={(e) =>
-                              setRisk({ ...risk, [id]: e.target.value })
-                            }
-                            className={`w-full px-4 py-3 rounded-xl border transition-all ${
-                              darkMode
-                                ? "bg-[#0F172A] text-slate-100 border-[#334155]"
-                                : "bg-white text-gray-800 border-gray-300"
-                            }`}
-                          >
-                            <option value="">Select Risk</option>
-                            <option value="L">Low</option>
-                            <option value="M">Medium</option>
-                            <option value="H">High</option>
-                          </select>
+                          {answers[id] === "yes" || answers[id] === "no" ? (
+                            <div
+                              className={`mt-5 rounded-2xl border p-4 ${
+                                darkMode
+                                  ? "border-[#334155] bg-[#0F172A]/70"
+                                  : "border-gray-200 bg-gray-50"
+                              }`}
+                            >
+                              <label
+                                htmlFor={`risk-${id}`}
+                                className={`mb-2 block text-sm font-semibold ${
+                                  darkMode ? "text-slate-100" : "text-gray-800"
+                                }`}
+                              >
+                                Finding Risk Level
+                              </label>
+
+                              <select
+                                id={`risk-${id}`}
+                                value={risk[id] || ""}
+                                onChange={(e) =>
+                                  setRisk((current) => ({
+                                    ...current,
+                                    [id]: e.target.value,
+                                  }))
+                                }
+                                className={`w-full px-4 py-3 rounded-xl border transition-all ${
+                                  darkMode
+                                    ? "bg-[#0F172A] text-slate-100 border-[#334155]"
+                                    : "bg-white text-gray-800 border-gray-300"
+                                }`}
+                              >
+                                <option value="" disabled>
+                                  Choose risk level
+                                </option>
+                                <option value="L">Low</option>
+                                <option value="M">Medium</option>
+                                <option value="H">High</option>
+                              </select>
+
+                              <details
+                                className={`mt-3 rounded-xl border px-4 py-3 text-xs ${
+                                  darkMode
+                                    ? "border-white/10 bg-white/[0.03] text-slate-300"
+                                    : "border-gray-200 bg-white text-gray-600"
+                                }`}
+                              >
+                                <summary className="cursor-pointer font-semibold text-[#1E90FF]">
+                                  How to choose risk level?
+                                </summary>
+
+                                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                                  {riskGuidance.map((item) => (
+                                    <div key={item.level}>
+                                      <div
+                                        className={`font-bold uppercase ${item.color}`}
+                                      >
+                                        {item.level}
+                                      </div>
+                                      <ul className="mt-1 space-y-1 leading-5">
+                                        {item.guidance.map((line) => (
+                                          <li key={line}>{line}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                            </div>
+                          ) : null}
                         </div>
                       );
                     })}
@@ -1181,6 +1282,8 @@ export default function Home() {
             {sec.items.map((q, qi) => {
               const id = `${si}-${qi}`;
               const status = answers[id] || "N/A";
+              const findingRisk =
+                status === "yes" || status === "no" ? risk[id] || "-" : "-";
 
               return (
                 <div
@@ -1202,7 +1305,7 @@ export default function Home() {
                   <div style={{ width: "30%", textAlign: "right" }}>
                     <strong>{status.toUpperCase()}</strong>
                     {" | "}
-                    {t.riskLabel}: {risk[id] || "-"}
+                    {t.riskLabel}: {findingRisk}
                   </div>
                 </div>
               );
