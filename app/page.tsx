@@ -15,7 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import jsPDF from "jspdf";
@@ -40,6 +40,11 @@ type SavedInspection = {
   savedAt: string;
 };
 
+type HistoryNotice = {
+  type: "success" | "error";
+  message: string;
+};
+
 const ICON_MAP: Record<string, LucideIcon> = {
   ppe: ShieldCheck,
   emergency: HeartPulse,
@@ -53,23 +58,108 @@ const ICON_MAP: Record<string, LucideIcon> = {
   general: Building2,
 };
 
-const getHistoryStorageKey = (checklistId: string) =>
+const getLegacyHistoryStorageKey = (checklistId: string) =>
   `laboria_${checklistId}_history`;
 
-const readHistoryForChecklist = (checklistId: string): SavedInspection[] => {
+const getHistoryStorageKey = (checklistId: string, userId: string | null) =>
+  userId
+    ? `laboria_${encodeURIComponent(userId)}_${checklistId}_history`
+    : getLegacyHistoryStorageKey(checklistId);
+
+const parseHistoryValue = (value: string | null): SavedInspection[] => {
+  if (!value) {
+    return [];
+  }
+
+  const parsed: unknown = JSON.parse(value);
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed.filter((item): item is SavedInspection => {
+    if (!item || typeof item !== "object") {
+      return false;
+    }
+
+    const candidate = item as Partial<SavedInspection>;
+    return typeof candidate.id === "number";
+  });
+};
+
+const mergeHistory = (items: SavedInspection[]) => {
+  const seen = new Set<number>();
+
+  return items
+    .filter((item) => {
+      if (seen.has(item.id)) {
+        return false;
+      }
+
+      seen.add(item.id);
+      return true;
+    })
+    .sort((a, b) => {
+      const aTime = new Date(a.savedAt).getTime();
+      const bTime = new Date(b.savedAt).getTime();
+
+      return (
+        (Number.isFinite(bTime) ? bTime : b.id) -
+        (Number.isFinite(aTime) ? aTime : a.id)
+      );
+    });
+};
+
+const readHistoryForChecklist = (
+  checklistId: string,
+  userId: string | null,
+): SavedInspection[] => {
   if (typeof window === "undefined") {
     return [];
   }
 
-  try {
-    const existing = window.localStorage.getItem(
-      getHistoryStorageKey(checklistId),
-    );
+  const keys = [getHistoryStorageKey(checklistId, userId)];
+  const legacyKey = getLegacyHistoryStorageKey(checklistId);
 
-    return existing ? (JSON.parse(existing) as SavedInspection[]) : [];
-  } catch {
-    return [];
+  if (userId && !keys.includes(legacyKey)) {
+    keys.push(legacyKey);
   }
+
+  return mergeHistory(
+    keys.flatMap((key) => parseHistoryValue(window.localStorage.getItem(key))),
+  );
+};
+
+const writeHistoryForChecklist = (
+  checklistId: string,
+  userId: string | null,
+  inspections: SavedInspection[],
+) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    getHistoryStorageKey(checklistId, userId),
+    JSON.stringify(inspections),
+  );
+
+  if (userId) {
+    window.localStorage.removeItem(getLegacyHistoryStorageKey(checklistId));
+  }
+};
+
+const loadHistoryForChecklist = (
+  checklistId: string,
+  userId: string | null,
+) => {
+  const inspections = readHistoryForChecklist(checklistId, userId);
+
+  if (userId) {
+    writeHistoryForChecklist(checklistId, userId, inspections);
+  }
+
+  return inspections;
 };
 
 /* =========================
@@ -146,7 +236,7 @@ const TEXT = {
 
 export default function Home() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [activeChecklistId, setActiveChecklistId] = useState("ppe");
 
   const activeChecklist =
@@ -168,12 +258,75 @@ export default function Home() {
   const [openSection, setOpenSection] = useState<number | null>(0);
   const [showFab, setShowFab] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [history, setHistory] = useState<SavedInspection[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [historyNotice, setHistoryNotice] = useState<HistoryNotice | null>(
+    null,
+  );
 
   /* =========================
      SCROLL DETECTION
   ========================= */
+
+  useEffect(() => {
+    let active = true;
+
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!active) {
+        return;
+      }
+
+      if (error) {
+        setHistoryNotice({
+          type: "error",
+          message: "Could not verify the signed-in user.",
+        });
+        return;
+      }
+
+      setAuthUserId(data.user?.id ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthUserId(session?.user.id ?? null);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      try {
+        setHistory(loadHistoryForChecklist(activeChecklistId, authUserId));
+      } catch {
+        setHistory([]);
+        setHistoryNotice({
+          type: "error",
+          message: "Could not load inspection history.",
+        });
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeChecklistId, authUserId]);
+
+  useEffect(() => {
+    if (!historyNotice) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setHistoryNotice(null);
+    }, 3200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [historyNotice]);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -285,54 +438,92 @@ export default function Home() {
   };
 
   const loadFromHistory = (item: SavedInspection) => {
-    setAnswers(item.answers || {});
-    setRisk(item.risk || {});
-    setCompany(item.company || "");
-    setSite(item.site || "");
-    setInspector(item.inspector || "");
-    setInspectionDate(item.inspectionDate || "");
+    try {
+      setAnswers(item.answers || {});
+      setRisk(item.risk || {});
+      setCompany(item.company || "");
+      setSite(item.site || "");
+      setInspector(item.inspector || "");
+      setInspectionDate(item.inspectionDate || "");
+      setHistoryNotice({
+        type: "success",
+        message: "Inspection loaded.",
+      });
+    } catch {
+      setHistoryNotice({
+        type: "error",
+        message: "Could not load this inspection.",
+      });
+    }
   };
 
   const openHistory = () => {
-    setHistory(readHistoryForChecklist(activeChecklistId));
+    try {
+      setHistory(loadHistoryForChecklist(activeChecklistId, authUserId));
+    } catch {
+      setHistoryNotice({
+        type: "error",
+        message: "Could not load inspection history.",
+      });
+    }
+
     setShowHistory(true);
   };
 
   const deleteInspection = (id: number) => {
-    const updated = history.filter((item) => item.id !== id);
+    try {
+      const storedHistory = loadHistoryForChecklist(
+        activeChecklistId,
+        authUserId,
+      );
+      const updated = storedHistory.filter((item) => item.id !== id);
 
-    setHistory(updated);
-
-    localStorage.setItem(
-      getHistoryStorageKey(activeChecklistId),
-      JSON.stringify(updated),
-    );
+      writeHistoryForChecklist(activeChecklistId, authUserId, updated);
+      setHistory(updated);
+      setHistoryNotice({
+        type: "success",
+        message: "Inspection deleted.",
+      });
+    } catch {
+      setHistoryNotice({
+        type: "error",
+        message: "Could not delete inspection.",
+      });
+    }
   };
 
   const saveInspection = () => {
-    const inspectionData = {
-      id: Date.now(),
-      company,
-      site,
-      inspector,
-      inspectionDate,
-      answers,
-      risk,
-      result,
-      savedAt: new Date().toISOString(),
-    };
+    try {
+      const inspectionData: SavedInspection = {
+        id: Date.now(),
+        company,
+        site,
+        inspector,
+        inspectionDate,
+        answers,
+        risk,
+        result,
+        savedAt: new Date().toISOString(),
+      };
 
-    const existing = localStorage.getItem(
-      getHistoryStorageKey(activeChecklistId),
-    );
-    const historyData = existing
-      ? (JSON.parse(existing) as SavedInspection[])
-      : [];
+      const storedHistory = loadHistoryForChecklist(
+        activeChecklistId,
+        authUserId,
+      );
+      const updated = [inspectionData, ...storedHistory];
 
-    historyData.push(inspectionData);
-
-    // Update state immediately (no refresh needed)
-    setHistory(historyData);
+      writeHistoryForChecklist(activeChecklistId, authUserId, updated);
+      setHistory(updated);
+      setHistoryNotice({
+        type: "success",
+        message: "Inspection saved.",
+      });
+    } catch {
+      setHistoryNotice({
+        type: "error",
+        message: "Could not save inspection.",
+      });
+    }
   };
 
   const handleLogout = async () => {
@@ -376,7 +567,16 @@ export default function Home() {
                     setAnswers({});
                     setRisk({});
                     setOpenSection(0);
-                    setHistory(readHistoryForChecklist(checklist.id));
+                    try {
+                      setHistory(
+                        loadHistoryForChecklist(checklist.id, authUserId),
+                      );
+                    } catch {
+                      setHistoryNotice({
+                        type: "error",
+                        message: "Could not load inspection history.",
+                      });
+                    }
                   }}
                   className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     activeChecklistId === checklist.id
@@ -431,6 +631,7 @@ export default function Home() {
   }
 `}
                       title={lang === "KA" ? "შენახვა" : "Save"}
+                      aria-label="Save inspection"
                     >
                       💾
                     </button>
@@ -446,6 +647,7 @@ export default function Home() {
   }
 `}
                       title={lang === "KA" ? "ისტორია" : "History"}
+                      aria-label="Open inspection history"
                     >
                       🕘
                     </button>
@@ -477,6 +679,23 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
+
+                {historyNotice ? (
+                  <div
+                    className={`mt-4 rounded-xl px-4 py-3 text-sm font-semibold ${
+                      historyNotice.type === "success"
+                        ? darkMode
+                          ? "border border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+                          : "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : darkMode
+                          ? "border border-rose-400/30 bg-rose-400/10 text-rose-200"
+                          : "border border-rose-200 bg-rose-50 text-rose-700"
+                    }`}
+                    role={historyNotice.type === "error" ? "alert" : "status"}
+                  >
+                    {historyNotice.message}
+                  </div>
+                ) : null}
 
                 <div
                   className={`mt-5 text-sm font-semibold ${
@@ -1056,6 +1275,19 @@ export default function Home() {
         </div>
 
         <div className="p-6 space-y-4 overflow-y-auto h-full">
+          {historyNotice ? (
+            <div
+              className={`rounded-xl border px-4 py-3 text-sm font-semibold ${
+                historyNotice.type === "success"
+                  ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+                  : "border-rose-400/30 bg-rose-400/10 text-rose-200"
+              }`}
+              role={historyNotice.type === "error" ? "alert" : "status"}
+            >
+              {historyNotice.message}
+            </div>
+          ) : null}
+
           {history.length === 0 && (
             <div className="text-sm opacity-60">
               {lang === "KA" ? "ისტორია ცარიელია" : "No saved inspections"}
