@@ -32,135 +32,235 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.laboria-login-grid {
+.laboria-auth-blueprint {
   background-image:
     linear-gradient(rgba(77, 235, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(77, 235, 255, 0.09) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: radial-gradient(circle at 50% 40%, black 0%, transparent 78%);
-  animation: laboria-login-grid-drift 22s linear infinite;
+    linear-gradient(90deg, rgba(77, 235, 255, 0.085) 1px, transparent 1px),
+    linear-gradient(135deg, transparent 0 47%, rgba(30, 144, 255, 0.1) 48% 49%, transparent 50% 100%);
+  background-position:
+    0 0,
+    0 0,
+    0 0;
+  background-size:
+    76px 76px,
+    76px 76px,
+    240px 240px;
+  opacity: 0.72;
+  mask-image: radial-gradient(circle at 50% 42%, black 0%, transparent 78%);
+  animation: laboria-auth-grid-drift 28s linear infinite;
 }
 
-.laboria-login-scan {
-  animation: laboria-login-scan 7s ease-in-out infinite;
+.laboria-auth-vignette {
+  background:
+    radial-gradient(circle at 50% 34%, rgba(77, 235, 255, 0.08), transparent 34%),
+    radial-gradient(circle at 18% 70%, rgba(30, 144, 255, 0.14), transparent 28%),
+    radial-gradient(circle at 83% 21%, rgba(77, 235, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(7, 18, 37, 0.22), #071225 84%);
 }
 
-.laboria-login-blueprint-line {
-  background: rgba(77, 235, 255, 0.24);
-  box-shadow: 0 0 20px rgba(77, 235, 255, 0.18);
-  animation: laboria-login-blueprint 10s ease-in-out infinite;
+.laboria-auth-scan {
+  animation: laboria-auth-scan 8s ease-in-out infinite;
 }
 
-.laboria-login-glow {
-  animation: laboria-login-glow 13s ease-in-out infinite;
+.laboria-auth-glow {
+  animation: laboria-auth-glow 14s ease-in-out infinite;
 }
 
-.laboria-login-particle {
-  animation: laboria-login-float 9s ease-in-out infinite;
+.laboria-auth-corner-glow {
+  animation: laboria-auth-corner-glow 14s ease-in-out infinite;
+  animation-delay: 3s;
 }
 
-.laboria-login-orbit {
-  animation: laboria-login-rotate 34s linear infinite;
+.laboria-auth-coordinate {
+  animation: laboria-auth-coordinate 6.5s ease-in-out infinite;
 }
 
-.laboria-login-halo {
-  animation: laboria-login-pulse 6s ease-in-out infinite;
+.laboria-auth-map {
+  box-shadow:
+    0 0 80px rgba(77, 235, 255, 0.08),
+    inset 0 0 80px rgba(30, 144, 255, 0.06);
+  animation: laboria-auth-rotate 46s linear infinite;
 }
 
-@keyframes laboria-login-grid-drift {
+.laboria-auth-map::before,
+.laboria-auth-map::after {
+  position: absolute;
+  content: "";
+  inset: 50% auto auto 50%;
+  width: 104%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(77, 235, 255, 0.2), transparent);
+  transform: translate(-50%, -50%);
+}
+
+.laboria-auth-map::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.laboria-auth-map-reverse {
+  animation-direction: reverse;
+  animation-duration: 58s;
+}
+
+.laboria-auth-crosshair {
+  box-shadow:
+    inset 0 0 90px rgba(77, 235, 255, 0.08),
+    0 0 100px rgba(30, 144, 255, 0.12);
+}
+
+.laboria-auth-crosshair::before,
+.laboria-auth-crosshair::after {
+  position: absolute;
+  content: "";
+  left: 50%;
+  top: -1.5rem;
+  width: 1px;
+  height: calc(100% + 3rem);
+  background: linear-gradient(transparent, rgba(77, 235, 255, 0.32), transparent);
+}
+
+.laboria-auth-crosshair::after {
+  left: -1.5rem;
+  top: 50%;
+  width: calc(100% + 3rem);
+  height: 1px;
+}
+
+.laboria-auth-ring {
+  animation: laboria-auth-rotate 34s linear infinite;
+}
+
+.laboria-auth-ring-slow {
+  animation-duration: 52s;
+  animation-direction: reverse;
+}
+
+.laboria-auth-logo-light {
+  animation: laboria-auth-logo-light 7s ease-in-out infinite;
+}
+
+.laboria-auth-readout {
+  max-width: 17rem;
+}
+
+.laboria-auth-panel-sheen {
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.08) 18%, transparent 36%),
+    radial-gradient(circle at 18% 0%, rgba(77, 235, 255, 0.14), transparent 34%);
+  transform: translateX(-46%);
+  animation: laboria-auth-panel-sheen 9s ease-in-out infinite;
+}
+
+@keyframes laboria-auth-grid-drift {
   from {
-    background-position: 0 0;
+    background-position:
+      0 0,
+      0 0,
+      0 0;
   }
   to {
-    background-position: 72px 72px;
+    background-position:
+      76px 76px,
+      76px 76px,
+      240px 240px;
   }
 }
 
-@keyframes laboria-login-scan {
+@keyframes laboria-auth-scan {
   0%,
   100% {
-    transform: translateY(-4vh);
-    opacity: 0.16;
+    opacity: 0.08;
+    transform: translateY(-8vh);
   }
-  46% {
-    transform: translateY(58vh);
-    opacity: 0.55;
+  45% {
+    opacity: 0.54;
+    transform: translateY(48vh);
   }
-  72% {
-    transform: translateY(82vh);
+  74% {
     opacity: 0.22;
+    transform: translateY(84vh);
   }
 }
 
-@keyframes laboria-login-blueprint {
+@keyframes laboria-auth-glow {
   0%,
   100% {
-    opacity: 0.16;
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    opacity: 0.5;
-    transform: translate3d(18px, -8px, 0);
-  }
-}
-
-@keyframes laboria-login-glow {
-  0%,
-  100% {
-    opacity: 0.62;
-    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.58;
+    transform: translate3d(-50%, -50%, 0) scale(1);
   }
   50% {
     opacity: 0.95;
-    transform: translate3d(28px, -18px, 0) scale(1.08);
+    transform: translate3d(calc(-50% + 26px), calc(-50% - 18px), 0) scale(1.08);
   }
 }
 
-@keyframes laboria-login-float {
+@keyframes laboria-auth-corner-glow {
   0%,
   100% {
-    transform: translate3d(0, 0, 0);
-    opacity: 0.28;
+    opacity: 0.52;
+    transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    transform: translate3d(14px, -22px, 0);
-    opacity: 0.82;
-  }
-  75% {
-    transform: translate3d(-8px, -10px, 0);
-    opacity: 0.56;
+    opacity: 0.86;
+    transform: translate3d(-24px, -18px, 0) scale(1.08);
   }
 }
 
-@keyframes laboria-login-rotate {
+@keyframes laboria-auth-coordinate {
+  0%,
+  100% {
+    opacity: 0.24;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.16);
+  }
+}
+
+@keyframes laboria-auth-rotate {
   from {
-    transform: rotate(0deg);
+    transform: translate(-50%, -50%) rotate(0deg);
   }
   to {
-    transform: rotate(360deg);
+    transform: translate(-50%, -50%) rotate(360deg);
   }
 }
 
-@keyframes laboria-login-pulse {
+@keyframes laboria-auth-logo-light {
   0%,
   100% {
     opacity: 0.55;
-    transform: scale(1);
+    transform: scale(0.96);
   }
   50% {
-    opacity: 0.9;
-    transform: scale(1.08);
+    opacity: 0.92;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes laboria-auth-panel-sheen {
+  0%,
+  100% {
+    opacity: 0.24;
+    transform: translateX(-58%);
+  }
+  52% {
+    opacity: 0.54;
+    transform: translateX(42%);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .laboria-login-grid,
-  .laboria-login-scan,
-  .laboria-login-blueprint-line,
-  .laboria-login-glow,
-  .laboria-login-particle,
-  .laboria-login-orbit,
-  .laboria-login-halo {
+  .laboria-auth-blueprint,
+  .laboria-auth-scan,
+  .laboria-auth-glow,
+  .laboria-auth-corner-glow,
+  .laboria-auth-coordinate,
+  .laboria-auth-map,
+  .laboria-auth-ring,
+  .laboria-auth-logo-light,
+  .laboria-auth-panel-sheen {
     animation: none;
   }
 }
