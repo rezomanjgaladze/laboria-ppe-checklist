@@ -11,6 +11,15 @@ import {
   Flame,
   Zap,
   Building2,
+  Menu,
+  X,
+  ClipboardCheck,
+  TriangleAlert,
+  CheckCircle2,
+  GraduationCap,
+  Microscope,
+  BarChart3,
+  Settings,
   ChevronDown,
   LogOut,
   type LucideIcon,
@@ -54,6 +63,23 @@ type WorkflowWarning = {
 };
 
 type AutosaveStatus = "dirty" | "saving" | "saved";
+
+type WorkspaceModuleId =
+  | "inspections"
+  | "risk-assessments"
+  | "corrective-actions"
+  | "trainings"
+  | "occupational-hygiene"
+  | "analytics"
+  | "settings";
+
+type WorkspaceModule = {
+  id: WorkspaceModuleId;
+  label: string;
+  description: string;
+  status: "Active" | "Coming Soon";
+  icon: LucideIcon;
+};
 
 type InspectionDraft = {
   company: string;
@@ -188,6 +214,65 @@ const ICON_MAP: Record<string, LucideIcon> = {
   electrical: Zap,
   general: Building2,
 };
+
+const WORKSPACE_MODULES: WorkspaceModule[] = [
+  {
+    id: "inspections",
+    label: "Inspections",
+    description:
+      "Create, complete, save, and export Laboria safety inspection checklists.",
+    status: "Active",
+    icon: ClipboardCheck,
+  },
+  {
+    id: "risk-assessments",
+    label: "Risk Assessments",
+    description:
+      "Structured task, process, and workplace risk assessments will live here.",
+    status: "Coming Soon",
+    icon: TriangleAlert,
+  },
+  {
+    id: "corrective-actions",
+    label: "Corrective Actions",
+    description:
+      "Track assigned corrective actions, ownership, deadlines, and closure evidence.",
+    status: "Coming Soon",
+    icon: CheckCircle2,
+  },
+  {
+    id: "trainings",
+    label: "Trainings",
+    description:
+      "Plan safety trainings, toolbox talks, attendance records, and competency logs.",
+    status: "Coming Soon",
+    icon: GraduationCap,
+  },
+  {
+    id: "occupational-hygiene",
+    label: "Occupational Hygiene",
+    description:
+      "Manage exposure monitoring, sampling records, and occupational hygiene findings.",
+    status: "Coming Soon",
+    icon: Microscope,
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    description:
+      "Review inspection trends, risk patterns, and HSE performance insights.",
+    status: "Coming Soon",
+    icon: BarChart3,
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    description:
+      "Workspace preferences, organization details, and configuration will be managed here.",
+    status: "Coming Soon",
+    icon: Settings,
+  },
+];
 
 const getLegacyHistoryStorageKey = (checklistId: string) =>
   `laboria_${checklistId}_history`;
@@ -462,6 +547,9 @@ export default function Home() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [activeChecklistId, setActiveChecklistId] = useState("ppe");
+  const [activeWorkspaceModule, setActiveWorkspaceModule] =
+    useState<WorkspaceModuleId>("inspections");
+  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
 
   const activeChecklist =
     ALL_CHECKLISTS.find((c) => c.id === activeChecklistId) ?? ALL_CHECKLISTS[0];
@@ -1127,9 +1215,183 @@ export default function Home() {
 
   const handleLogout = async () => {
     setShowProfileMenu(false);
+    setShowWorkspaceMenu(false);
     await supabase.auth.signOut();
     router.replace("/login");
     router.refresh();
+  };
+
+  const activeWorkspaceModuleConfig =
+    WORKSPACE_MODULES.find((module) => module.id === activeWorkspaceModule) ??
+    WORKSPACE_MODULES[0];
+
+  const selectWorkspaceModule = (moduleId: WorkspaceModuleId) => {
+    setActiveWorkspaceModule(moduleId);
+    setShowWorkspaceMenu(false);
+    setShowProfileMenu(false);
+
+    if (moduleId !== "inspections") {
+      setShowHistory(false);
+    }
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  };
+
+  const renderWorkspaceNavigation = (isMobile = false) => (
+    <div className="flex h-full flex-col border-r border-white/10 bg-[#071225]/95 text-[#F5F7FA] shadow-[20px_0_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl">
+      <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-5">
+        <div className="min-w-0">
+          <div className="rounded-2xl border border-white/10 bg-white px-3 py-2 shadow-[0_18px_42px_rgba(0,0,0,0.28)]">
+            <Image
+              src="/laboria-logo.png"
+              alt="Laboria"
+              width={132}
+              height={44}
+              className="h-auto w-32 object-contain"
+            />
+          </div>
+          <div className="mt-4 text-sm font-semibold text-[#4DEBFF]">
+            Laboria HSE Workspace
+          </div>
+          <div className="mt-1 text-xs leading-5 text-slate-400">
+            Industrial health, safety, and environment operations.
+          </div>
+        </div>
+
+        {isMobile ? (
+          <button
+            type="button"
+            onClick={() => setShowWorkspaceMenu(false)}
+            className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-200 transition hover:bg-white/10"
+            aria-label="Close workspace menu"
+          >
+            <X size={18} aria-hidden />
+          </button>
+        ) : null}
+      </div>
+
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        {WORKSPACE_MODULES.map((module) => {
+          const Icon = module.icon;
+          const isActive = activeWorkspaceModule === module.id;
+
+          return (
+            <button
+              key={module.id}
+              type="button"
+              onClick={() => selectWorkspaceModule(module.id)}
+              className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                isActive
+                  ? "border-[#4DEBFF]/40 bg-[#1E90FF]/15 text-white shadow-[0_12px_34px_rgba(30,144,255,0.18)]"
+                  : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                  isActive
+                    ? "bg-[#1E90FF] text-white"
+                    : "bg-white/5 text-[#4DEBFF]"
+                }`}
+              >
+                <Icon size={18} aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {module.label}
+                </span>
+                <span
+                  className={`mt-0.5 block text-[11px] font-medium ${
+                    module.status === "Active"
+                      ? "text-emerald-300"
+                      : "text-slate-500"
+                  }`}
+                >
+                  {module.status}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-white/10 p-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+          <span
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1E90FF] bg-cover bg-center text-sm font-bold text-white"
+            style={{
+              backgroundImage: authProfile?.avatarUrl
+                ? `url("${authProfile.avatarUrl.replaceAll('"', '\\"')}")`
+                : undefined,
+            }}
+          >
+            <span className={authProfile?.avatarUrl ? "sr-only" : undefined}>
+              {authProfile?.initials ?? "U"}
+            </span>
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold">
+              {authProfile?.name ?? "Signed-in user"}
+            </div>
+            <div className="truncate text-xs text-slate-400">
+              {authProfile?.email ?? "unknown"}
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white"
+        >
+          <LogOut size={16} aria-hidden />
+          Logout
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderComingSoonModule = () => {
+    const Icon = activeWorkspaceModuleConfig.icon;
+
+    return (
+      <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-6 py-24">
+        <div className="w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-[#071225]/82 text-[#F5F7FA] shadow-[0_30px_100px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
+          <div className="border-b border-white/10 bg-white/[0.035] px-6 py-5 sm:px-8">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E90FF]/15 text-[#4DEBFF] ring-1 ring-[#4DEBFF]/25">
+                <Icon size={22} aria-hidden />
+              </span>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-[0.22em] text-[#4DEBFF]">
+                  Coming Soon
+                </div>
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+                  {activeWorkspaceModuleConfig.label}
+                </h1>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-7 sm:px-8">
+            <p className="max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
+              {activeWorkspaceModuleConfig.description}
+            </p>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">
+              This module is reserved for a future Laboria HSE workflow. For now,
+              inspections remain the active workspace module.
+            </p>
+            <button
+              type="button"
+              onClick={() => selectWorkspaceModule("inspections")}
+              className="mt-7 rounded-xl bg-[#1E90FF] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(30,144,255,0.25)] transition hover:bg-[#1878d6]"
+            >
+              Open Inspections
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const reportTitle =
@@ -1164,15 +1426,62 @@ export default function Home() {
           };
 
   return (
-    <div className="min-h-screen flex justify-center relative overflow-hidden bg-[#050816]">
+    <div className="min-h-screen flex justify-center relative overflow-hidden bg-[#050816] lg:pl-72">
       {/* SPACE GLOW BACKGROUND */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(56,189,248,0.15),transparent_40%),radial-gradient(circle_at_70%_60%,rgba(99,102,241,0.15),transparent_40%)]" />
 
       {/* DEEP GRADIENT LAYER */}
       <div className="absolute inset-0 bg-gradient-to-b from-blue-900/30 via-transparent to-indigo-900/40" />
 
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 lg:block">
+        {renderWorkspaceNavigation()}
+      </aside>
+
+      <div className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-[#071225]/92 px-4 py-3 text-[#F5F7FA] shadow-[0_18px_60px_rgba(0,0,0,0.25)] backdrop-blur-xl lg:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setShowWorkspaceMenu(true)}
+            className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-100 transition hover:bg-white/10"
+            aria-label="Open workspace menu"
+          >
+            <Menu size={20} aria-hidden />
+          </button>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold text-[#4DEBFF]">
+              Laboria HSE Workspace
+            </div>
+            <div className="truncate text-xs text-slate-400">
+              {activeWorkspaceModuleConfig.label}
+            </div>
+          </div>
+          <Image
+            src="/laboria-logo.png"
+            alt="Laboria"
+            width={86}
+            height={30}
+            className="h-auto w-20 rounded-lg bg-white px-2 py-1"
+          />
+        </div>
+      </div>
+
+      {showWorkspaceMenu ? (
+        <div className="fixed inset-0 z-[70] lg:hidden">
+          <button
+            type="button"
+            aria-label="Close workspace menu"
+            onClick={() => setShowWorkspaceMenu(false)}
+            className="absolute inset-0 bg-black/65 backdrop-blur-sm"
+          />
+          <div className="relative h-full w-[min(22rem,88vw)]">
+            {renderWorkspaceNavigation(true)}
+          </div>
+        </div>
+      ) : null}
+
       {/* CONTENT WRAPPER */}
-      <div className="relative z-10 w-full max-w-[1100px]">
+      {activeWorkspaceModule === "inspections" ? (
+      <div className="relative z-10 w-full max-w-[1100px] pt-20 lg:pt-0">
         <div
           id="inspection-report"
           className="w-full max-w-[960px] px-6 md:px-12 py-10 space-y-8 transition-colors duration-300"
@@ -1930,7 +2239,12 @@ export default function Home() {
           </div>
         </div>
       </div>
+      ) : (
+        renderComingSoonModule()
+      )}
       {/* CLEAN EXPORT VERSION (PREMIUM LABORIA PDF) */}
+      {activeWorkspaceModule === "inspections" ? (
+      <>
       <div
         id="clean-export"
         style={{
@@ -2504,6 +2818,8 @@ export default function Home() {
           ))}
         </div>
       </div>
+      </>
+      ) : null}
     </div>
   );
 }
