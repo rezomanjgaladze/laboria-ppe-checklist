@@ -12,6 +12,11 @@ import {
   Zap,
   Building2,
   LogOut,
+  AlertCircle,
+  Check,
+  Clipboard,
+  Loader2,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,6 +43,34 @@ type SavedInspection = {
   risk: Record<string, string>;
   result: InspectionResult;
   savedAt: string;
+};
+
+type AiFailedInspectionItem = {
+  section: string;
+  item: string;
+  answer: string;
+  risk: string;
+  comments?: string;
+};
+
+type AiSafetyInsightPayload = {
+  checklistType: string;
+  reportType: string;
+  companyName: string;
+  siteLocation: string;
+  inspector: string;
+  inspectionDate: string;
+  complianceScore: number;
+  complianceStatus: string;
+  riskCounts: {
+    high: number;
+    medium: number;
+    low: number;
+  };
+  failedItems: AiFailedInspectionItem[];
+  comments: string[];
+  answeredItems: number;
+  totalItems: number;
 };
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -70,6 +103,18 @@ const readHistoryForChecklist = (checklistId: string): SavedInspection[] => {
   } catch {
     return [];
   }
+};
+
+const ANSWER_LABELS: Record<string, string> = {
+  yes: "Compliant",
+  no: "Non-compliant",
+  na: "Not applicable",
+};
+
+const RISK_LABELS: Record<string, string> = {
+  H: "High",
+  M: "Medium",
+  L: "Low",
 };
 
 /* =========================
@@ -169,6 +214,10 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
   const [history, setHistory] = useState<SavedInspection[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [aiInsight, setAiInsight] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiCopied, setAiCopied] = useState(false);
 
   /* =========================
      SCROLL DETECTION
@@ -225,6 +274,24 @@ export default function Home() {
   };
 
   const riskSummary = calculateRiskSummary();
+  const checklistItems = activeChecklist.sections.flatMap((section, si) =>
+    section.items.map((item, qi) => ({
+      id: `${si}-${qi}`,
+      section: section.sectionEN,
+      item: item.EN,
+    })),
+  );
+  const answeredItemCount = checklistItems.filter(({ id }) => answers[id])
+    .length;
+  const failedItems: AiFailedInspectionItem[] = checklistItems
+    .filter(({ id }) => answers[id] === "no")
+    .map(({ id, section, item }) => ({
+      section,
+      item,
+      answer: ANSWER_LABELS[answers[id]] ?? answers[id],
+      risk: RISK_LABELS[risk[id]] ?? "Not rated",
+    }));
+  const canGenerateAiInsights = answeredItemCount > 0;
 
   const calculateSectionResult = (sectionIndex: number) => {
     const section = activeChecklist.sections[sectionIndex];
@@ -243,6 +310,82 @@ export default function Home() {
     const percent = Math.round((yesCount / values.length) * 100);
 
     return { percent };
+  };
+
+  useEffect(() => {
+    setAiInsight("");
+    setAiError("");
+    setAiCopied(false);
+  }, [activeChecklistId, answers, company, inspectionDate, inspector, risk, site]);
+
+  const buildAiSafetyInsightPayload = (): AiSafetyInsightPayload => ({
+    checklistType: activeChecklist.headerTitleEN,
+    reportType: activeChecklist.headerSubtitleEN,
+    companyName: company,
+    siteLocation: site,
+    inspector,
+    inspectionDate,
+    complianceScore: result.percent,
+    complianceStatus: result.status,
+    riskCounts: riskSummary,
+    failedItems,
+    comments: [],
+    answeredItems: answeredItemCount,
+    totalItems: checklistItems.length,
+  });
+
+  const handleGenerateAiSummary = async () => {
+    if (!canGenerateAiInsights || aiLoading) {
+      return;
+    }
+
+    setAiLoading(true);
+    setAiError("");
+    setAiCopied(false);
+
+    try {
+      const response = await fetch("/api/ai-insight", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(buildAiSafetyInsightPayload()),
+      });
+      const data = (await response.json()) as {
+        result?: string;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "AI Safety Insights could not be generated right now.",
+        );
+      }
+
+      setAiInsight(data.result || "");
+    } catch (error) {
+      setAiError(
+        error instanceof Error
+          ? error.message
+          : "AI Safety Insights could not be generated right now.",
+      );
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleCopyAiInsight = async () => {
+    if (!aiInsight) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(aiInsight);
+      setAiCopied(true);
+      window.setTimeout(() => setAiCopied(false), 1800);
+    } catch {
+      setAiError("Unable to copy the AI Safety Insights text.");
+    }
   };
 
   /* =========================
@@ -674,6 +817,151 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {/* AI SAFETY INSIGHTS */}
+          <section className="mb-8">
+            <div
+              className={`relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 ${
+                darkMode
+                  ? "bg-[#0B1220] border-cyan-400/20 text-slate-100 shadow-[0_18px_55px_rgba(0,0,0,0.35)]"
+                  : "bg-white border-blue-100 text-gray-900 shadow-[0_18px_45px_rgba(15,23,42,0.08)]"
+              }`}
+            >
+              <div
+                aria-hidden
+                className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent"
+              />
+              <div
+                aria-hidden
+                className="absolute -right-16 -top-20 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl"
+              />
+
+              <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                <div className="flex gap-4">
+                  <div
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${
+                      darkMode
+                        ? "border-cyan-300/20 bg-cyan-300/10 text-cyan-200"
+                        : "border-blue-100 bg-blue-50 text-[#1E90FF]"
+                    }`}
+                  >
+                    <Sparkles size={22} aria-hidden />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold">
+                      AI Safety Insights
+                    </h3>
+                    <p
+                      className={`mt-2 max-w-2xl text-sm leading-6 ${
+                        darkMode ? "text-slate-300" : "text-gray-600"
+                      }`}
+                    >
+                      Generate a professional inspection summary, risk
+                      interpretation, corrective actions, priorities, and a
+                      management conclusion from the current checklist data.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGenerateAiSummary}
+                  disabled={!canGenerateAiInsights || aiLoading}
+                  className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+                    canGenerateAiInsights && !aiLoading
+                      ? "bg-[#1E90FF] text-white shadow-[0_12px_30px_rgba(30,144,255,0.28)] hover:-translate-y-0.5 hover:bg-[#1677d2]"
+                      : darkMode
+                        ? "cursor-not-allowed bg-slate-800 text-slate-500"
+                        : "cursor-not-allowed bg-gray-100 text-gray-400"
+                  }`}
+                >
+                  {aiLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  Generate AI Summary
+                </button>
+              </div>
+
+              <div className="relative z-10 mt-5">
+                {!canGenerateAiInsights && (
+                  <div
+                    className={`rounded-xl border px-4 py-3 text-sm ${
+                      darkMode
+                        ? "border-slate-700 bg-slate-900/60 text-slate-300"
+                        : "border-blue-100 bg-blue-50 text-gray-600"
+                    }`}
+                  >
+                    Start completing checklist items to generate AI Safety
+                    Insights.
+                  </div>
+                )}
+
+                {aiError && (
+                  <div
+                    role="alert"
+                    className={`mt-4 flex gap-3 rounded-xl border px-4 py-3 text-sm ${
+                      darkMode
+                        ? "border-amber-300/25 bg-amber-300/10 text-amber-100"
+                        : "border-amber-200 bg-amber-50 text-amber-800"
+                    }`}
+                  >
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{aiError}</span>
+                  </div>
+                )}
+
+                {aiInsight && (
+                  <article
+                    className={`mt-5 rounded-2xl border p-5 ${
+                      darkMode
+                        ? "border-slate-700 bg-slate-950/45"
+                        : "border-gray-200 bg-[#F8FAFC]"
+                    }`}
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <div className="text-sm font-semibold">
+                          Generated safety summary
+                        </div>
+                        <div
+                          className={`mt-1 text-xs ${
+                            darkMode ? "text-slate-400" : "text-gray-500"
+                          }`}
+                        >
+                          Based only on the current Laboria checklist data.
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyAiInsight}
+                        className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                          darkMode
+                            ? "border-cyan-300/20 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/15"
+                            : "border-blue-100 bg-white text-[#1E90FF] hover:bg-blue-50"
+                        }`}
+                      >
+                        {aiCopied ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Clipboard className="h-4 w-4" />
+                        )}
+                        {aiCopied ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                    <div
+                      className={`mt-5 whitespace-pre-wrap text-sm leading-7 ${
+                        darkMode ? "text-slate-200" : "text-gray-700"
+                      }`}
+                    >
+                      {aiInsight}
+                    </div>
+                  </article>
+                )}
+              </div>
+            </div>
+          </section>
 
           {/* SIMPLE CHECKLIST RENDER */}
           <div className="space-y-10">
