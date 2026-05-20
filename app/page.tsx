@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import jsPDF from "jspdf";
@@ -380,6 +380,8 @@ export default function Home() {
   const [historyNotice, setHistoryNotice] = useState<HistoryNotice | null>(
     null,
   );
+  const sectionRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const sectionScrollFrameRef = useRef<number | null>(null);
 
   /* =========================
      SCROLL DETECTION
@@ -465,6 +467,52 @@ export default function Home() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (sectionScrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(sectionScrollFrameRef.current);
+      }
+    };
+  }, []);
+
+  const scrollToSectionHeader = (sectionIndex: number) => {
+    if (sectionScrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(sectionScrollFrameRef.current);
+    }
+
+    sectionScrollFrameRef.current = window.requestAnimationFrame(() => {
+      sectionScrollFrameRef.current = window.requestAnimationFrame(() => {
+        const section = sectionRefs.current[sectionIndex];
+
+        if (!section) {
+          sectionScrollFrameRef.current = null;
+          return;
+        }
+
+        const topPadding = 16;
+        const sectionTop =
+          section.getBoundingClientRect().top + window.scrollY - topPadding;
+
+        window.scrollTo({
+          top: Math.max(sectionTop, 0),
+          behavior: "smooth",
+        });
+
+        sectionScrollFrameRef.current = null;
+      });
+    });
+  };
+
+  const handleSectionToggle = (sectionIndex: number) => {
+    const nextSection = openSection === sectionIndex ? null : sectionIndex;
+
+    setOpenSection(nextSection);
+
+    if (nextSection !== null) {
+      scrollToSectionHeader(sectionIndex);
+    }
+  };
 
   /* =========================
      CALCULATIONS
@@ -1219,12 +1267,15 @@ export default function Home() {
             {activeChecklist.sections.map((sec, si) => (
               <div
                 key={si}
-                className={`border rounded ${
+                ref={(element) => {
+                  sectionRefs.current[si] = element;
+                }}
+                className={`scroll-mt-4 border rounded [overflow-anchor:none] ${
                   darkMode ? "bg-gray-800 border-gray-600" : "bg-white"
                 }`}
               >
                 <div
-                  onClick={() => setOpenSection(openSection === si ? null : si)}
+                  onClick={() => handleSectionToggle(si)}
                   className={`px-6 py-5 rounded-2xl cursor-pointer transition-all duration-500 backdrop-blur-xl border ${
                     darkMode
                       ? "bg-white/5 border-white/10 hover:bg-white/10"
