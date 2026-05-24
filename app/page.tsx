@@ -30,6 +30,7 @@ import { useRouter } from "next/navigation";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { ALL_CHECKLISTS } from "./data/checklists";
+import RiskAssessmentsModule from "./components/RiskAssessmentsModule";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -227,8 +228,8 @@ const WORKSPACE_MODULES: WorkspaceModule[] = [
     id: "risk-assessments",
     label: "Risk Assessments",
     description:
-      "Structured task, process, and workplace risk assessments will live here.",
-    status: "Coming Soon",
+      "Create manual 5x5 workplace risk assessments with controls and PDF export.",
+    status: "Active",
     icon: TriangleAlert,
   },
   {
@@ -2160,7 +2161,11 @@ export default function Home() {
         </div>
       </div>
       ) : (
-        renderComingSoonModule()
+        activeWorkspaceModule === "risk-assessments" ? (
+          <RiskAssessmentsModule userId={authUserId} />
+        ) : (
+          renderComingSoonModule()
+        )
       )}
       {/* CLEAN EXPORT VERSION (PREMIUM LABORIA PDF) */}
       {activeWorkspaceModule === "inspections" ? (
