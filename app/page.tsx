@@ -20,7 +20,6 @@ import {
   Microscope,
   BarChart3,
   Settings,
-  ChevronDown,
   LogOut,
   type LucideIcon,
 } from "lucide-react";
@@ -573,7 +572,6 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [authProfile, setAuthProfile] = useState<AuthProfile | null>(null);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [history, setHistory] = useState<SavedInspection[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [historyNotice, setHistoryNotice] = useState<HistoryNotice | null>(
@@ -619,7 +617,6 @@ export default function Home() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthUserId(session?.user.id ?? null);
       setAuthProfile(buildAuthProfile(session?.user ?? null));
-      setShowProfileMenu(false);
     });
 
     return () => {
@@ -1214,7 +1211,6 @@ export default function Home() {
   };
 
   const handleLogout = async () => {
-    setShowProfileMenu(false);
     setShowWorkspaceMenu(false);
     await supabase.auth.signOut();
     router.replace("/login");
@@ -1228,7 +1224,6 @@ export default function Home() {
   const selectWorkspaceModule = (moduleId: WorkspaceModuleId) => {
     setActiveWorkspaceModule(moduleId);
     setShowWorkspaceMenu(false);
-    setShowProfileMenu(false);
 
     if (moduleId !== "inspections") {
       setShowHistory(false);
@@ -1240,8 +1235,8 @@ export default function Home() {
   };
 
   const renderWorkspaceNavigation = (isMobile = false) => (
-    <div className="flex h-full flex-col border-r border-white/10 bg-[#071225]/95 text-[#F5F7FA] shadow-[20px_0_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl">
-      <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-5">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden border-r border-white/10 bg-[#071225]/95 text-[#F5F7FA] shadow-[20px_0_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl">
+      <div className="shrink-0 flex items-start justify-between gap-3 border-b border-white/10 px-5 py-5">
         <div className="min-w-0">
           <div className="rounded-2xl border border-white/10 bg-white px-3 py-2 shadow-[0_18px_42px_rgba(0,0,0,0.28)]">
             <Image
@@ -1272,7 +1267,7 @@ export default function Home() {
         ) : null}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {WORKSPACE_MODULES.map((module) => {
           const Icon = module.icon;
           const isActive = activeWorkspaceModule === module.id;
@@ -1282,10 +1277,10 @@ export default function Home() {
               key={module.id}
               type="button"
               onClick={() => selectWorkspaceModule(module.id)}
-              className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+              className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-all duration-200 ease-out ${
                 isActive
                   ? "border-[#4DEBFF]/40 bg-[#1E90FF]/15 text-white shadow-[0_12px_34px_rgba(30,144,255,0.18)]"
-                  : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/5 hover:text-white"
+                  : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/5 hover:text-white hover:translate-x-0.5"
               }`}
             >
               <span
@@ -1316,7 +1311,7 @@ export default function Home() {
         })}
       </nav>
 
-      <div className="border-t border-white/10 p-4">
+      <div className="shrink-0 border-t border-white/10 p-4">
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
           <span
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1E90FF] bg-cover bg-center text-sm font-bold text-white"
@@ -1426,7 +1421,7 @@ export default function Home() {
           };
 
   return (
-    <div className="min-h-screen flex justify-center relative overflow-hidden bg-[#050816] lg:pl-72">
+    <div className="min-h-screen flex justify-center relative overflow-x-hidden bg-[#050816] lg:pl-72">
       {/* SPACE GLOW BACKGROUND */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(56,189,248,0.15),transparent_40%),radial-gradient(circle_at_70%_60%,rgba(99,102,241,0.15),transparent_40%)]" />
 
@@ -1465,23 +1460,31 @@ export default function Home() {
         </div>
       </div>
 
-      {showWorkspaceMenu ? (
-        <div className="fixed inset-0 z-[70] lg:hidden">
+      <div
+        className={`fixed inset-0 z-[70] transition-opacity duration-300 ease-out lg:hidden ${
+          showWorkspaceMenu
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
+        }`}
+      >
           <button
             type="button"
             aria-label="Close workspace menu"
             onClick={() => setShowWorkspaceMenu(false)}
             className="absolute inset-0 bg-black/65 backdrop-blur-sm"
           />
-          <div className="relative h-full w-[min(22rem,88vw)]">
+          <div
+            className={`relative h-full w-[min(22rem,88vw)] transform transition-transform duration-300 ease-out ${
+              showWorkspaceMenu ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
             {renderWorkspaceNavigation(true)}
           </div>
-        </div>
-      ) : null}
+      </div>
 
       {/* CONTENT WRAPPER */}
       {activeWorkspaceModule === "inspections" ? (
-      <div className="relative z-10 w-full max-w-[1100px] pt-20 lg:pt-0">
+      <div className="relative z-10 w-full min-w-0 max-w-[1100px] pt-20 lg:pt-0">
         <div
           id="inspection-report"
           className="w-full max-w-[960px] px-6 md:px-12 py-10 space-y-8 transition-colors duration-300"
@@ -1603,105 +1606,22 @@ export default function Home() {
                     >
                       {darkMode ? "☀" : "🌙"}
                     </button>
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setShowProfileMenu((open) => !open)}
-                        className={`flex h-10 items-center gap-2 rounded-xl pl-1.5 pr-2.5 shadow-md transition-all duration-200 ${
-                          darkMode
-                            ? "bg-slate-800 text-white hover:bg-slate-700"
-                            : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-100"
-                        }`}
-                        aria-label="Open user menu"
-                        aria-haspopup="menu"
-                        aria-expanded={showProfileMenu}
-                      >
-                        <span
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#1E90FF] bg-cover bg-center text-xs font-bold text-white ring-1 ring-white/20"
-                          style={{
-                            backgroundImage: authProfile?.avatarUrl
-                              ? `url("${authProfile.avatarUrl.replaceAll('"', '\\"')}")`
-                              : undefined,
-                          }}
-                        >
-                          <span
-                            className={
-                              authProfile?.avatarUrl ? "sr-only" : undefined
-                            }
-                          >
-                            {authProfile?.initials ?? "U"}
-                          </span>
-                        </span>
-                        <span className="hidden max-w-28 truncate text-xs font-semibold sm:block">
-                          {authProfile?.name ?? "User"}
-                        </span>
-                        <ChevronDown
-                          size={14}
-                          className={`transition-transform ${
-                            showProfileMenu ? "rotate-180" : ""
-                          }`}
-                          aria-hidden
-                        />
-                      </button>
-
-                      {showProfileMenu ? (
-                        <div
-                          className={`absolute right-0 top-12 z-50 w-72 rounded-2xl border p-3 shadow-2xl ${
-                            darkMode
-                              ? "border-white/10 bg-[#0F172A] text-white"
-                              : "border-gray-200 bg-white text-gray-900"
-                          }`}
-                          role="menu"
-                        >
-                          <div className="flex items-center gap-3 rounded-xl p-2">
-                            <span
-                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1E90FF] bg-cover bg-center text-sm font-bold text-white ring-1 ring-white/20"
-                              style={{
-                                backgroundImage: authProfile?.avatarUrl
-                                  ? `url("${authProfile.avatarUrl.replaceAll('"', '\\"')}")`
-                                  : undefined,
-                              }}
-                            >
-                              <span
-                                className={
-                                  authProfile?.avatarUrl
-                                    ? "sr-only"
-                                    : undefined
-                                }
-                              >
-                                {authProfile?.initials ?? "U"}
-                              </span>
-                            </span>
-                            <div className="min-w-0">
-                              <div className="truncate text-sm font-semibold">
-                                {authProfile?.name ?? "Signed-in user"}
-                              </div>
-                              <div
-                                className={`truncate text-xs ${
-                                  darkMode ? "text-slate-400" : "text-gray-500"
-                                }`}
-                              >
-                                Signed in as {authProfile?.email ?? "unknown"}
-                              </div>
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={handleLogout}
-                            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                              darkMode
-                                ? "bg-white/10 text-white hover:bg-white/15"
-                                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                            }`}
-                            role="menuitem"
-                          >
-                            <LogOut size={16} aria-hidden />
-                            Logout
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleExportPDF}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold
+  transition-all duration-200 shadow-md
+  ${
+    darkMode
+      ? "bg-slate-800 hover:bg-slate-700 text-white"
+      : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
+  }
+`}
+                      title={t.export}
+                      aria-label={t.export}
+                    >
+                      PDF
+                    </button>
                   </div>
                 </div>
 
