@@ -44,7 +44,7 @@ type HazardRow = {
   initialProbability: RiskValue;
   initialSeverity: RiskValue;
   additionalMeasures: string;
-  controlHierarchy: ControlHierarchy;
+  controlHierarchy: ControlHierarchy[];
   residualProbability: RiskValue;
   residualSeverity: RiskValue;
   responsiblePerson: string;
@@ -72,6 +72,12 @@ const controlHierarchyOptions: ControlHierarchy[] = [
   "PPE",
 ];
 
+const sectorOptions = ["Construction"];
+const activitiesBySector: Record<string, string[]> = {
+  Construction: ["Working at Height"],
+};
+const customLibraryOption = "__custom__";
+
 const actionStatusOptions: ActionStatus[] = ["Open", "In Progress", "Closed"];
 const riskValues: RiskValue[] = [1, 2, 3, 4, 5];
 
@@ -98,7 +104,7 @@ const createEmptyHazard = (): HazardRow => ({
   initialProbability: 1,
   initialSeverity: 1,
   additionalMeasures: "",
-  controlHierarchy: "Administrative Controls",
+  controlHierarchy: ["Administrative Controls"],
   residualProbability: 1,
   residualSeverity: 1,
   responsiblePerson: "",
@@ -106,6 +112,161 @@ const createEmptyHazard = (): HazardRow => ({
   status: "Open",
   comments: "",
 });
+
+const normalizeControlHierarchy = (value: unknown): ControlHierarchy[] => {
+  const values = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(",").map((item) => item.trim())
+      : [];
+  const normalized = values.filter((item): item is ControlHierarchy =>
+    controlHierarchyOptions.includes(item as ControlHierarchy),
+  );
+
+  return normalized.length > 0 ? normalized : ["Administrative Controls"];
+};
+
+const normalizeHazard = (hazard: Partial<HazardRow>): HazardRow => ({
+  ...createEmptyHazard(),
+  ...hazard,
+  id: hazard.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  controlHierarchy: normalizeControlHierarchy(hazard.controlHierarchy),
+});
+
+const normalizeSavedRiskAssessment = (
+  assessment: SavedRiskAssessment,
+): SavedRiskAssessment => ({
+  ...assessment,
+  header: {
+    ...createEmptyHeader(),
+    ...assessment.header,
+  },
+  hazards: assessment.hazards.map((hazard) => normalizeHazard(hazard)),
+});
+
+const createLibraryHazard = (hazard: Partial<HazardRow>): HazardRow =>
+  normalizeHazard({
+    ...hazard,
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    responsiblePerson: hazard.responsiblePerson ?? "",
+    completionDeadline: hazard.completionDeadline ?? "",
+    status: hazard.status ?? "Open",
+    comments: hazard.comments ?? "",
+  });
+
+const createWorkingAtHeightHazards = (): HazardRow[] => [
+  createLibraryHazard({
+    workplaceActivity:
+      "Working at height on platforms, ladders, scaffolds, or roof areas",
+    hazardDescription:
+      "Fall from height due to unprotected edges, unsafe access, unstable working platforms, or incorrect use of fall protection equipment",
+    whoMayBeHarmed:
+      "Workers, contractors, maintenance personnel, visitors below",
+    possibleConsequence:
+      "Serious injury, fractures, spinal injury, fatality",
+    existingMeasures:
+      "Guardrails or edge protection installed where possible; safe access routes provided; workers trained in working at height; fall protection equipment available; work area inspected before use",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Verify all edge protection before work starts; inspect harnesses, lanyards, ladders, and anchor points; use permit-to-work for high-risk tasks; ensure rescue plan is available; increase supervision during high-risk activities",
+    controlHierarchy: [
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 2,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Working at height with tools and materials",
+    hazardDescription: "Falling objects from elevated work areas",
+    whoMayBeHarmed: "Workers below, contractors, visitors, pedestrians",
+    possibleConsequence: "Head injury, cuts, fractures, fatality",
+    existingMeasures:
+      "Exclusion zones established; toe boards or debris nets used where needed; hard hats required; tools and materials controlled at height",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Secure tools with lanyards; improve housekeeping on platforms; restrict access below work area; install warning signs and barriers; brief workers before task starts",
+    controlHierarchy: [
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 2,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Use of ladders for access or short-duration work",
+    hazardDescription:
+      "Ladder slipping, incorrect angle, overreaching, damaged ladder, or unsafe ladder use",
+    whoMayBeHarmed: "Workers, contractors",
+    possibleConsequence: "Fall injury, fractures, sprains, head injury",
+    existingMeasures:
+      "Ladders inspected before use; ladders placed on stable surface; three points of contact maintained; workers instructed on safe ladder use",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Use scaffold/platform instead of ladder where work duration is long; secure ladder; ensure correct angle; prohibit overreaching; remove damaged ladders from service",
+    controlHierarchy: ["Substitution", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Roof work or work near fragile surfaces",
+    hazardDescription:
+      "Collapse or failure of fragile roof materials, skylights, or weak surfaces",
+    whoMayBeHarmed: "Workers, contractors",
+    possibleConsequence: "Fall through roof, serious injury, fatality",
+    existingMeasures:
+      "Fragile surfaces identified; access restricted; warning signs used; safe working platforms or crawling boards provided where needed",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Conduct pre-work roof survey; mark fragile areas clearly; use fall arrest systems; install temporary edge protection; ensure rescue plan and emergency arrangements are available",
+    controlHierarchy: [
+      "Elimination",
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 2,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Outdoor work at height",
+    hazardDescription:
+      "Adverse weather conditions such as wind, rain, poor visibility, or slippery surfaces affecting safe work at height",
+    whoMayBeHarmed: "Workers, contractors",
+    possibleConsequence: "Slip, fall from height, serious injury, fatality",
+    existingMeasures:
+      "Weather conditions checked before work; work stopped during unsafe weather; surfaces inspected for water, ice, or contamination",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Define weather stop-work criteria; monitor wind speed; postpone work during heavy rain or strong wind; improve anti-slip access; communicate weather-related restrictions during toolbox talk",
+    controlHierarchy: ["Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Emergency response after fall arrest activation",
+    hazardDescription:
+      "Suspension trauma or delayed rescue after fall arrest system activation",
+    whoMayBeHarmed: "Workers using fall arrest systems",
+    possibleConsequence: "Suspension trauma, serious injury, fatality",
+    existingMeasures:
+      "Fall arrest equipment available; emergency contacts known; supervisors aware of work at height activity",
+    initialProbability: 2,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Prepare and communicate rescue plan before work starts; ensure rescue equipment is available; train workers and supervisors in rescue procedures; do not rely only on emergency services",
+    controlHierarchy: ["Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+];
 
 const toRiskValue = (value: string): RiskValue => Number(value) as RiskValue;
 
@@ -231,7 +392,7 @@ const readRiskAssessments = (userId: string | null) => {
     keys.flatMap((key) =>
       parseSavedRiskAssessments(window.localStorage.getItem(key)),
     ),
-  );
+  ).map((assessment) => normalizeSavedRiskAssessment(assessment));
 };
 
 const writeRiskAssessments = (
@@ -303,6 +464,41 @@ const TextAreaField = ({
       rows={rows}
       className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.055] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-[#4DEBFF]/45 focus:bg-white/[0.075]"
     />
+  </label>
+);
+
+const SelectField = ({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  placeholder: string;
+  disabled?: boolean;
+}) => (
+  <label className="block">
+    <span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+      {label}
+    </span>
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      disabled={disabled}
+      className="w-full rounded-xl border border-white/10 bg-[#071225] px-4 py-3 text-sm text-white outline-none transition focus:border-[#4DEBFF]/45 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <option value="">{placeholder}</option>
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
   </label>
 );
 
@@ -389,6 +585,8 @@ export default function RiskAssessmentsModule({
     null,
   );
   const [notice, setNotice] = useState<string | null>(null);
+  const [customSectorMode, setCustomSectorMode] = useState(false);
+  const [customActivityMode, setCustomActivityMode] = useState(false);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -440,12 +638,100 @@ export default function RiskAssessmentsModule({
       openActions,
     };
   }, [hazards]);
+  const isLibrarySector = sectorOptions.includes(header.sector);
+  const sectorSelectValue =
+    customSectorMode || (header.sector && !isLibrarySector)
+      ? customLibraryOption
+      : header.sector;
+  const activityOptions = activitiesBySector[header.sector] ?? [];
+  const isLibraryActivity = activityOptions.includes(header.activity);
+  const activitySelectValue =
+    customActivityMode || (header.activity && !isLibraryActivity)
+      ? customLibraryOption
+      : header.activity;
+  const sectorSelectOptions = [
+    ...sectorOptions.map((sector) => ({ value: sector, label: sector })),
+    { value: customLibraryOption, label: "Other / Manual" },
+  ];
+  const activitySelectOptions = [
+    ...activityOptions.map((activity) => ({
+      value: activity,
+      label: activity,
+    })),
+    { value: customLibraryOption, label: "Other / Manual" },
+  ];
+  const canGenerateWorkingAtHeight =
+    header.sector === "Construction" && header.activity === "Working at Height";
+  const hasEnteredHazardData = hazards.some((hazard) => {
+    const emptyHazard = createEmptyHazard();
+
+    return (
+      hazard.workplaceActivity.trim().length > 0 ||
+      hazard.hazardDescription.trim().length > 0 ||
+      hazard.whoMayBeHarmed.trim().length > 0 ||
+      hazard.possibleConsequence.trim().length > 0 ||
+      hazard.existingMeasures.trim().length > 0 ||
+      hazard.additionalMeasures.trim().length > 0 ||
+      hazard.responsiblePerson.trim().length > 0 ||
+      hazard.completionDeadline.trim().length > 0 ||
+      hazard.comments.trim().length > 0 ||
+      hazard.initialProbability !== emptyHazard.initialProbability ||
+      hazard.initialSeverity !== emptyHazard.initialSeverity ||
+      hazard.residualProbability !== emptyHazard.residualProbability ||
+      hazard.residualSeverity !== emptyHazard.residualSeverity ||
+      hazard.status !== emptyHazard.status ||
+      hazard.controlHierarchy.join("|") !== emptyHazard.controlHierarchy.join("|")
+    );
+  });
 
   const updateHeader = (
     field: keyof RiskAssessmentHeader,
     value: string,
   ) => {
     setHeader((current) => ({ ...current, [field]: value }));
+  };
+
+  const updateSector = (sector: string) => {
+    if (sector === customLibraryOption) {
+      setCustomSectorMode(true);
+      setCustomActivityMode(false);
+      setHeader((current) => ({
+        ...current,
+        sector: sectorOptions.includes(current.sector) ? "" : current.sector,
+        activity: "",
+      }));
+      return;
+    }
+
+    setCustomSectorMode(false);
+    setCustomActivityMode(false);
+    setHeader((current) => {
+      const nextActivities = activitiesBySector[sector] ?? [];
+
+      return {
+        ...current,
+        sector,
+        activity: nextActivities.includes(current.activity)
+          ? current.activity
+          : "",
+      };
+    });
+  };
+
+  const updateActivity = (activity: string) => {
+    if (activity === customLibraryOption) {
+      setCustomActivityMode(true);
+      setHeader((current) => ({
+        ...current,
+        activity: activityOptions.includes(current.activity)
+          ? ""
+          : current.activity,
+      }));
+      return;
+    }
+
+    setCustomActivityMode(false);
+    updateHeader("activity", activity);
   };
 
   const updateHazard = <Key extends keyof HazardRow>(
@@ -478,10 +764,57 @@ export default function RiskAssessmentsModule({
     setHazards((current) => current.filter((hazard) => hazard.id !== id));
   };
 
+  const toggleControlHierarchy = (id: string, option: ControlHierarchy) => {
+    setHazards((current) =>
+      current.map((hazard) => {
+        if (hazard.id !== id) {
+          return hazard;
+        }
+
+        const hasOption = hazard.controlHierarchy.includes(option);
+        return {
+          ...hazard,
+          controlHierarchy: hasOption
+            ? hazard.controlHierarchy.filter((item) => item !== option)
+            : [...hazard.controlHierarchy, option],
+        };
+      }),
+    );
+  };
+
+  const generateWorkingAtHeightAssessment = () => {
+    if (hazards.length > 0 && hasEnteredHazardData) {
+      const shouldReplace = window.confirm(
+        "This will replace current hazard rows. Continue?",
+      );
+
+      if (!shouldReplace) {
+        return;
+      }
+    }
+
+    setHeader((current) => ({
+      ...current,
+      sector: "Construction",
+      activity: "Working at Height",
+      title:
+        current.title.trim().length > 0
+          ? current.title
+          : "Construction - Working at Height Risk Assessment",
+    }));
+    setCustomSectorMode(false);
+    setCustomActivityMode(false);
+    setHazards(createWorkingAtHeightHazards());
+    setCurrentAssessmentId(null);
+    setNotice("Risk assessment generated from Laboria HSE Library.");
+  };
+
   const newAssessment = () => {
     setHeader(createEmptyHeader());
     setHazards([createEmptyHazard()]);
     setCurrentAssessmentId(null);
+    setCustomSectorMode(false);
+    setCustomActivityMode(false);
     setNotice("New risk assessment started.");
     window.requestAnimationFrame(() =>
       window.scrollTo({ top: 0, behavior: "smooth" }),
@@ -511,14 +844,28 @@ export default function RiskAssessmentsModule({
   };
 
   const loadAssessment = (assessment: SavedRiskAssessment) => {
+    const normalizedAssessment = normalizeSavedRiskAssessment(assessment);
+    const nextActivities =
+      activitiesBySector[normalizedAssessment.header.sector] ?? [];
+
     setHeader({
       ...createEmptyHeader(),
-      ...assessment.header,
+      ...normalizedAssessment.header,
     });
     setHazards(
-      assessment.hazards.length > 0 ? assessment.hazards : [createEmptyHazard()],
+      normalizedAssessment.hazards.length > 0
+        ? normalizedAssessment.hazards
+        : [createEmptyHazard()],
     );
-    setCurrentAssessmentId(assessment.id);
+    setCustomSectorMode(
+      Boolean(normalizedAssessment.header.sector) &&
+        !sectorOptions.includes(normalizedAssessment.header.sector),
+    );
+    setCustomActivityMode(
+      Boolean(normalizedAssessment.header.activity) &&
+        !nextActivities.includes(normalizedAssessment.header.activity),
+    );
+    setCurrentAssessmentId(normalizedAssessment.id);
     setNotice("Risk assessment loaded.");
     window.requestAnimationFrame(() =>
       window.scrollTo({ top: 0, behavior: "smooth" }),
@@ -744,17 +1091,71 @@ export default function RiskAssessmentsModule({
                   onChange={(value) => updateHeader("assessmentDate", value)}
                   type="date"
                 />
-                <Field
+                <SelectField
                   label="Sector / Category"
-                  value={header.sector}
-                  onChange={(value) => updateHeader("sector", value)}
+                  value={sectorSelectValue}
+                  onChange={updateSector}
+                  options={sectorSelectOptions}
+                  placeholder="Select sector"
                 />
-                <Field
-                  label="Activity / Task"
-                  value={header.activity}
-                  onChange={(value) => updateHeader("activity", value)}
-                />
+                {customSectorMode ? (
+                  <Field
+                    label="Custom sector / category"
+                    value={header.sector}
+                    onChange={(value) => updateHeader("sector", value)}
+                  />
+                ) : null}
+                {!customSectorMode ? (
+                  <SelectField
+                    label="Activity / Task"
+                    value={activitySelectValue}
+                    onChange={updateActivity}
+                    options={activitySelectOptions}
+                    placeholder={
+                      header.sector
+                        ? "Select activity"
+                        : "Select sector first"
+                    }
+                    disabled={!header.sector}
+                  />
+                ) : (
+                  <Field
+                    label="Activity / Task"
+                    value={header.activity}
+                    onChange={(value) => updateHeader("activity", value)}
+                  />
+                )}
+                {!customSectorMode && customActivityMode ? (
+                  <Field
+                    label="Custom activity / task"
+                    value={header.activity}
+                    onChange={(value) => updateHeader("activity", value)}
+                  />
+                ) : null}
               </div>
+
+              {canGenerateWorkingAtHeight ? (
+                <div className="mt-5 rounded-2xl border border-[#4DEBFF]/25 bg-[#4DEBFF]/10 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="text-sm font-semibold text-[#DDFBFF]">
+                        Laboria HSE Library prototype available
+                      </div>
+                      <p className="mt-1 text-sm text-slate-300">
+                        Generate a complete editable 6-hazard assessment for
+                        Construction - Working at Height.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={generateWorkingAtHeightAssessment}
+                      className="rounded-xl bg-[#1E90FF] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(30,144,255,0.24)] transition hover:bg-[#1878d6]"
+                    >
+                      Generate Risk Assessment
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </section>
 
             <section className="rounded-3xl border border-white/10 bg-[#071225]/72 p-5 shadow-[0_20px_70px_rgba(0,0,0,0.22)] backdrop-blur-2xl sm:p-7">
@@ -1035,28 +1436,35 @@ export default function RiskAssessmentsModule({
                       </div>
 
                       <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        <label>
+                        <div>
                           <span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
                             Control hierarchy used
                           </span>
-                          <select
-                            value={hazard.controlHierarchy}
-                            onChange={(event) =>
-                              updateHazard(
-                                hazard.id,
-                                "controlHierarchy",
-                                event.target.value as ControlHierarchy,
-                              )
-                            }
-                            className="w-full rounded-xl border border-white/10 bg-[#071225] px-4 py-3 text-sm text-white outline-none focus:border-[#4DEBFF]/45"
-                          >
+                          <div className="grid gap-2">
                             {controlHierarchyOptions.map((option) => (
-                              <option key={option} value={option}>
+                              <label
+                                key={option}
+                                className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                                  hazard.controlHierarchy.includes(option)
+                                    ? "border-[#4DEBFF]/40 bg-[#4DEBFF]/10 text-[#DDFBFF]"
+                                    : "border-white/10 bg-white/[0.035] text-slate-300 hover:bg-white/[0.06]"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={hazard.controlHierarchy.includes(
+                                    option,
+                                  )}
+                                  onChange={() =>
+                                    toggleControlHierarchy(hazard.id, option)
+                                  }
+                                  className="h-4 w-4 accent-[#1E90FF]"
+                                />
                                 {option}
-                              </option>
+                              </label>
                             ))}
-                          </select>
-                        </label>
+                          </div>
+                        </div>
                         <Field
                           label="Responsible person"
                           value={hazard.responsiblePerson}
@@ -1444,7 +1852,7 @@ export default function RiskAssessmentsModule({
                       hazard.existingMeasures,
                       `${hazard.initialProbability} x ${hazard.initialSeverity} = ${initialScore} (${initialLevel})`,
                       hazard.additionalMeasures,
-                      hazard.controlHierarchy,
+                      hazard.controlHierarchy.join(", "),
                       `${hazard.residualProbability} x ${hazard.residualSeverity} = ${residualScore} (${residualLevel})`,
                       `${hazard.responsiblePerson || "Not assigned"} / ${
                         hazard.completionDeadline || "No date"
