@@ -64,6 +64,21 @@ type RiskAssessmentsModuleProps = {
   userId: string | null;
 };
 
+type SelectOption = {
+  value: string;
+  label: string;
+};
+
+type SelectOptionGroup = {
+  label: string;
+  options: SelectOption[];
+};
+
+type ActivityGroup = {
+  label: string;
+  activities: string[];
+};
+
 const controlHierarchyOptions: ControlHierarchy[] = [
   "Elimination",
   "Substitution",
@@ -72,48 +87,81 @@ const controlHierarchyOptions: ControlHierarchy[] = [
   "PPE",
 ];
 
-const constructionActivityOptions = [
-  "Working at Height",
-  "Excavation and trenching",
-  "Scaffolding erection",
-  "Electrical installation",
-  "Welding",
-  "Confined space entry",
-  "Crane lifting operations",
-  "Forklift operation",
-  "Demolition",
-  "Manual handling of materials",
-  "Site mobilization and demobilization",
-  "Temporary fencing and access control",
-  "Temporary power distribution",
-  "Site traffic route setup",
-  "Pedestrian walkway setup",
-  "Material laydown area setup",
-  "Housekeeping and waste segregation",
-  "Shoring and trench support",
-  "Dewatering works",
-  "Backfilling and compaction",
-  "Ground leveling and grading",
-  "Pile driving",
-  "Bored piling",
-  "Foundation preparation",
-  "Underground utility locating",
-  "Work near buried services",
-  "Rebar cutting and bending",
-  "Rebar fixing",
-  "Formwork installation",
-  "Formwork removal",
-  "Concrete pouring",
-  "Concrete pumping",
-  "Concrete curing",
-  "Masonry block laying",
-  "Steel fixing",
-  "Structural steel erection",
-  "Bolting and torqueing",
-  "Precast concrete installation",
-  "Ladder work",
-  "Roof work",
+const constructionActivityGroups: ActivityGroup[] = [
+  {
+    label: "Site Setup & Temporary Works",
+    activities: [
+      "Site mobilization and demobilization",
+      "Temporary fencing and access control",
+      "Temporary power distribution",
+      "Site traffic route setup",
+      "Pedestrian walkway setup",
+      "Material laydown area setup",
+      "Housekeeping and waste segregation",
+    ],
+  },
+  {
+    label: "Earthworks, Excavation & Groundworks",
+    activities: [
+      "Excavation and trenching",
+      "Shoring and trench support",
+      "Dewatering works",
+      "Backfilling and compaction",
+      "Ground leveling and grading",
+      "Pile driving",
+      "Bored piling",
+      "Foundation preparation",
+      "Underground utility locating",
+      "Work near buried services",
+    ],
+  },
+  {
+    label: "Concrete, Masonry & Structural Works",
+    activities: [
+      "Rebar cutting and bending",
+      "Rebar fixing",
+      "Formwork installation",
+      "Formwork removal",
+      "Concrete pouring",
+      "Concrete pumping",
+      "Concrete curing",
+      "Masonry block laying",
+      "Steel fixing",
+      "Structural steel erection",
+      "Bolting and torqueing",
+      "Precast concrete installation",
+    ],
+  },
+  {
+    label: "Work at Height & Access",
+    activities: [
+      "Working at Height",
+      "Scaffolding erection",
+      "Ladder work",
+      "Roof work",
+    ],
+  },
+  {
+    label: "Mechanical, Electrical & Hot Work",
+    activities: ["Electrical installation", "Welding"],
+  },
+  {
+    label: "Lifting, Plant & Equipment",
+    activities: ["Crane lifting operations", "Forklift operation"],
+  },
+  {
+    label: "High-Risk / Specialist Operations",
+    activities: [
+      "Confined space entry",
+      "Demolition",
+      "Manual handling of materials",
+    ],
+  },
 ];
+
+const constructionActivityOptions = constructionActivityGroups.flatMap(
+  (group) => group.activities,
+);
 
 const sectorOptions = ["Construction"];
 const activitiesBySector: Record<string, string[]> = {
@@ -4222,13 +4270,15 @@ const SelectField = ({
   value,
   onChange,
   options,
+  optionGroups = [],
   placeholder,
   disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
+  options: SelectOption[];
+  optionGroups?: SelectOptionGroup[];
   placeholder: string;
   disabled?: boolean;
 }) => (
@@ -4243,6 +4293,15 @@ const SelectField = ({
       className="w-full rounded-xl border border-white/10 bg-[#071225] px-4 py-3 text-sm text-white outline-none transition focus:border-[#4DEBFF]/45 disabled:cursor-not-allowed disabled:opacity-50"
     >
       <option value="">{placeholder}</option>
+      {optionGroups.map((group) => (
+        <optgroup key={group.label} label={group.label}>
+          {group.options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </optgroup>
+      ))}
       {options.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}
@@ -4403,11 +4462,23 @@ export default function RiskAssessmentsModule({
     ...sectorOptions.map((sector) => ({ value: sector, label: sector })),
     { value: customLibraryOption, label: "Other / Manual" },
   ];
+  const activitySelectGroups =
+    header.sector === "Construction" && !customSectorMode
+      ? constructionActivityGroups.map((group) => ({
+          label: group.label,
+          options: group.activities.map((activity) => ({
+            value: activity,
+            label: activity,
+          })),
+        }))
+      : [];
   const activitySelectOptions = [
-    ...activityOptions.map((activity) => ({
-      value: activity,
-      label: activity,
-    })),
+    ...(activitySelectGroups.length > 0
+      ? []
+      : activityOptions.map((activity) => ({
+          value: activity,
+          label: activity,
+        }))),
     { value: customLibraryOption, label: "Other / Manual" },
   ];
   const selectedLibraryAssessment =
@@ -4868,6 +4939,7 @@ export default function RiskAssessmentsModule({
                     value={activitySelectValue}
                     onChange={updateActivity}
                     options={activitySelectOptions}
+                    optionGroups={activitySelectGroups}
                     placeholder={
                       header.sector
                         ? "Select activity"
