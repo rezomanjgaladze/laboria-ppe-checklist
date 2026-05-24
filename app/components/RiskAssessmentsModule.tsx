@@ -72,9 +72,22 @@ const controlHierarchyOptions: ControlHierarchy[] = [
   "PPE",
 ];
 
+const constructionActivityOptions = [
+  "Working at Height",
+  "Excavation and trenching",
+  "Scaffolding erection",
+  "Electrical installation",
+  "Welding",
+  "Confined space entry",
+  "Crane lifting operations",
+  "Forklift operation",
+  "Demolition",
+  "Manual handling of materials",
+];
+
 const sectorOptions = ["Construction"];
 const activitiesBySector: Record<string, string[]> = {
-  Construction: ["Working at Height"],
+  Construction: constructionActivityOptions,
 };
 const customLibraryOption = "__custom__";
 
@@ -267,6 +280,1079 @@ const createWorkingAtHeightHazards = (): HazardRow[] => [
     residualSeverity: 5,
   }),
 ];
+
+const createExcavationAndTrenchingHazards = (): HazardRow[] => [
+  createLibraryHazard({
+    workplaceActivity: "Excavation and trenching works",
+    hazardDescription:
+      "Collapse of trench or excavation side walls due to unsupported ground, vibration, surcharge loading, or changing soil conditions",
+    whoMayBeHarmed: "Workers inside excavation, supervisors, contractors",
+    possibleConsequence:
+      "Crushing injury, asphyxiation, serious injury, fatality",
+    existingMeasures:
+      "Excavation inspected before work; access restricted; spoil kept away from edges; workers briefed on excavation hazards",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Use engineered shoring, trench boxes, battering, or benching; competent person to inspect after weather changes; keep plant and materials away from excavation edges; stop work if ground movement is observed",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Access around open excavations",
+    hazardDescription:
+      "Falls of persons into open excavations due to unprotected edges, poor lighting, or unclear walkways",
+    whoMayBeHarmed: "Workers, contractors, visitors, delivery drivers",
+    possibleConsequence: "Fractures, head injury, sprains, serious injury",
+    existingMeasures:
+      "Excavation areas identified; basic barricades or warning tape used; site access routes communicated",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Install rigid edge protection and warning signs; provide safe crossing points; maintain lighting for low visibility work; keep pedestrian routes clear and separated from excavation edges",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Excavation near buried services",
+    hazardDescription:
+      "Contact with buried electrical cables, gas lines, water mains, or communication services during digging",
+    whoMayBeHarmed: "Excavator operators, ground workers, nearby workers",
+    possibleConsequence:
+      "Electric shock, explosion, burns, flooding, service outage, fatality",
+    existingMeasures:
+      "Available service drawings reviewed; excavation permit used; visual checks completed before digging",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Scan and mark services before work; hand dig near known services; isolate services where possible; use permit-to-dig controls; brief operators and spotters on service locations",
+    controlHierarchy: [
+      "Elimination",
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Excavations exposed to rain, groundwater, or flooding",
+    hazardDescription:
+      "Water ingress causing ground instability, slippery access, or rapid flooding of excavation",
+    whoMayBeHarmed: "Workers inside excavation, plant operators",
+    possibleConsequence: "Drowning, slips, collapse injury, equipment damage",
+    existingMeasures:
+      "Weather conditions checked; excavation visually inspected; pumps available where required",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Install dewatering controls; define stop-work criteria for water ingress; inspect after rain; provide safe drainage; remove workers immediately if water affects excavation stability",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 2,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Movement of plant and vehicles near excavations",
+    hazardDescription:
+      "Collision between mobile plant and pedestrians, or plant operating too close to excavation edges",
+    whoMayBeHarmed: "Ground workers, plant operators, banksmen, visitors",
+    possibleConsequence:
+      "Crushing injury, struck-by injury, excavation collapse, fatality",
+    existingMeasures:
+      "Plant operators trained; reversing alarms used; basic pedestrian routes established",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Create plant exclusion zones; use banksmen for reversing and tight areas; define minimum approach distances from excavation edges; separate pedestrian and plant routes with barriers",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Deep excavations or excavations with poor ventilation",
+    hazardDescription:
+      "Hazardous atmosphere, oxygen deficiency, or accumulation of gases in excavation",
+    whoMayBeHarmed: "Workers entering excavation, rescue personnel",
+    possibleConsequence:
+      "Asphyxiation, poisoning, loss of consciousness, fatality",
+    existingMeasures:
+      "Supervisors aware of excavation depth; workers instructed not to enter if unusual odor or symptoms are present",
+    initialProbability: 2,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Test atmosphere before entry where risk exists; ventilate excavation; classify as confined space if required; prepare emergency rescue arrangements; restrict unauthorized entry",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Storage of spoil and materials near excavation edges",
+    hazardDescription:
+      "Spoil, materials, or loose ground falling into excavation or increasing pressure on excavation walls",
+    whoMayBeHarmed: "Workers in excavation, ground workers nearby",
+    possibleConsequence: "Struck-by injury, burial, fractures, fatality",
+    existingMeasures:
+      "Spoil piles positioned away from immediate work area where possible; housekeeping checks completed",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Set minimum spoil setback distance; secure loose materials; remove excess spoil from site; inspect edge condition frequently; prohibit storage on unsupported excavation edges",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+];
+
+const createScaffoldingErectionHazards = (): HazardRow[] => [
+  createLibraryHazard({
+    workplaceActivity: "Scaffold erection, alteration, and dismantling",
+    hazardDescription:
+      "Fall from height during scaffold erection before full guardrails, decks, or access systems are in place",
+    whoMayBeHarmed: "Scaffolders, contractors, supervisors",
+    possibleConsequence:
+      "Serious injury, fractures, spinal injury, fatality",
+    existingMeasures:
+      "Scaffolders trained; fall protection equipment available; erection sequence planned before work starts",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Use advanced guardrail or collective protection systems where possible; follow approved erection method statement; maintain 100 percent tie-off where required; supervise high-risk stages",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Handling scaffold components at height",
+    hazardDescription:
+      "Falling tubes, boards, couplers, or tools during lifting and assembly",
+    whoMayBeHarmed: "Workers below, scaffolders, pedestrians, visitors",
+    possibleConsequence: "Head injury, cuts, fractures, fatality",
+    existingMeasures:
+      "Hard hats required; work area controlled; scaffold components stacked in designated areas",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Establish exclusion zone below scaffold work; use tool lanyards and controlled lifting methods; secure loose components immediately; install warning signs and barriers",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Use of incomplete or unauthorized scaffold",
+    hazardDescription:
+      "Workers accessing unstable, incomplete, or uninspected scaffold before handover",
+    whoMayBeHarmed: "All site workers, contractors, visitors",
+    possibleConsequence: "Fall injury, scaffold failure, serious injury",
+    existingMeasures:
+      "Scaffold tags used; supervisors instructed to restrict access to incomplete scaffold",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Use clear scaffold status tagging; physically prevent access to incomplete lifts; complete formal inspection and handover before use; communicate restrictions during toolbox talks",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Manual handling of scaffold tubes, boards, and fittings",
+    hazardDescription:
+      "Musculoskeletal injury from lifting heavy or awkward scaffold components repeatedly",
+    whoMayBeHarmed: "Scaffolders, laborers",
+    possibleConsequence: "Back injury, strains, sprains, hand injury",
+    existingMeasures:
+      "Workers briefed on lifting technique; gloves available; components stored near work area",
+    initialProbability: 4,
+    initialSeverity: 3,
+    additionalMeasures:
+      "Use mechanical aids or gin wheels where practical; team lift long or heavy components; plan material laydown close to erection point; rotate tasks to reduce repetition",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Scaffold foundation and base preparation",
+    hazardDescription:
+      "Poor ground conditions, inadequate sole boards, or uneven bases causing scaffold instability",
+    whoMayBeHarmed: "Scaffold users, scaffolders, workers nearby",
+    possibleConsequence: "Scaffold movement, collapse, serious injury, fatality",
+    existingMeasures:
+      "Ground visually checked; base plates and sole boards available; scaffold design considered for height and loading",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Assess ground bearing capacity; use suitable sole boards and base plates; level scaffold before loading; inspect after rain, settlement, or impact; follow design for loading and ties",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Scaffolding near overhead electrical services",
+    hazardDescription:
+      "Contact with overhead power lines or energized services during scaffold erection",
+    whoMayBeHarmed: "Scaffolders, plant operators, nearby workers",
+    possibleConsequence: "Electric shock, burns, arc flash, fatality",
+    existingMeasures:
+      "Overhead services visually identified; workers advised to maintain clearance",
+    initialProbability: 2,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Isolate or reroute services where possible; establish exclusion distances; use non-conductive controls if needed; include overhead service controls in method statement and permit",
+    controlHierarchy: [
+      "Elimination",
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+];
+
+const createElectricalInstallationHazards = (): HazardRow[] => [
+  createLibraryHazard({
+    workplaceActivity: "Electrical installation and connection work",
+    hazardDescription:
+      "Electric shock from contact with live conductors, exposed terminals, or improperly isolated circuits",
+    whoMayBeHarmed: "Electricians, assistants, contractors, nearby workers",
+    possibleConsequence: "Electric shock, burns, cardiac arrest, fatality",
+    existingMeasures:
+      "Qualified electricians assigned; insulated tools available; basic isolation procedures used",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Verify isolation and test before touch; apply lockout/tagout; use permit-to-work for energized risk; maintain barriers around open panels; supervise non-routine work",
+    controlHierarchy: [
+      "Elimination",
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Switchgear, panels, and distribution boards",
+    hazardDescription:
+      "Arc flash or electrical burns during testing, fault finding, or switching operations",
+    whoMayBeHarmed: "Electricians, commissioning team, nearby workers",
+    possibleConsequence: "Severe burns, eye injury, blast injury, fatality",
+    existingMeasures:
+      "Access restricted to competent persons; panel covers kept closed where possible; PPE available",
+    initialProbability: 2,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Complete arc flash risk assessment; use remote switching where possible; wear arc-rated PPE where required; keep non-essential workers outside arc flash boundary",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Temporary power and extension leads on site",
+    hazardDescription:
+      "Damaged temporary wiring, overloaded circuits, poor cable routing, or wet electrical connections",
+    whoMayBeHarmed: "All site workers, contractors, visitors",
+    possibleConsequence: "Electric shock, fire, burns, trips",
+    existingMeasures:
+      "Temporary distribution boards used; visual checks completed; damaged leads removed when identified",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Inspect and tag temporary electrical equipment; protect cables from damage; use RCD/GFCI protection; keep connections raised and dry; remove unauthorized adapters",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Electrical work near live or adjacent circuits",
+    hazardDescription:
+      "Accidental contact with adjacent energized circuits while installing or modifying electrical systems",
+    whoMayBeHarmed: "Electricians, contractors, maintenance personnel",
+    possibleConsequence: "Electric shock, burns, arc flash, fatality",
+    existingMeasures:
+      "Work areas identified; workers instructed to avoid exposed live parts; competent supervision available",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "De-energize adjacent circuits where possible; install insulated barriers and covers; mark live equipment clearly; use controlled access and detailed switching plan",
+    controlHierarchy: [
+      "Elimination",
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Isolation and lockout before electrical work",
+    hazardDescription:
+      "Incorrect isolation, unexpected energization, or failure to verify zero energy",
+    whoMayBeHarmed: "Electricians, commissioning team, other trades",
+    possibleConsequence: "Electric shock, burns, fatality, equipment damage",
+    existingMeasures:
+      "Isolation points identified; supervisors authorize electrical work; workers trained in basic lockout controls",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Use formal lockout/tagout register; apply personal locks; test for dead using approved tester; control stored energy; record handover between shifts",
+    controlHierarchy: ["Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Cable installation and work area housekeeping",
+    hazardDescription:
+      "Trips, slips, and damaged cables caused by poor routing, cluttered work areas, or trailing leads",
+    whoMayBeHarmed: "Electricians, other trades, visitors",
+    possibleConsequence: "Sprains, falls, cable damage, electric shock",
+    existingMeasures:
+      "Housekeeping checks carried out; cable routes reviewed during installation",
+    initialProbability: 4,
+    initialSeverity: 3,
+    additionalMeasures:
+      "Route cables overhead or through protected cable ramps; remove unused leads; maintain tidy work zones; inspect cable protection daily in active areas",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+];
+
+const createWeldingHazards = (): HazardRow[] => [
+  createLibraryHazard({
+    workplaceActivity: "Welding and hot work",
+    hazardDescription:
+      "Contact with hot metal, sparks, slag, or welding equipment causing burns",
+    whoMayBeHarmed: "Welders, helpers, nearby workers",
+    possibleConsequence: "Skin burns, eye injury, fire ignition, serious injury",
+    existingMeasures:
+      "Welders trained; welding gloves, helmet, and protective clothing available; hot work area identified",
+    initialProbability: 4,
+    initialSeverity: 3,
+    additionalMeasures:
+      "Use fire-resistant clothing and screens; keep hot materials marked and isolated; allow cooling time before handling; brief helpers on hot surfaces and spark direction",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Hot work near combustible materials",
+    hazardDescription:
+      "Fire caused by sparks, molten metal, or heat transfer to combustible materials",
+    whoMayBeHarmed: "Welders, nearby workers, emergency responders",
+    possibleConsequence: "Fire, smoke inhalation, burns, property damage, fatality",
+    existingMeasures:
+      "Hot work permit used; fire extinguisher available; obvious combustible materials removed where possible",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Clear or protect combustibles within the hot work zone; assign fire watch; inspect hidden voids; continue fire watch after work; verify extinguishers and emergency access",
+    controlHierarchy: [
+      "Elimination",
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Welding fumes and airborne contaminants",
+    hazardDescription:
+      "Exposure to welding fumes, gases, or metal particulates in poorly ventilated areas",
+    whoMayBeHarmed: "Welders, assistants, nearby workers",
+    possibleConsequence: "Respiratory irritation, metal fume fever, chronic health effects",
+    existingMeasures:
+      "General ventilation available; workers instructed to avoid breathing welding plume; respirators available for some tasks",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Use local exhaust ventilation; position workers out of fume plume; select lower-fume consumables where practical; wear suitable respiratory protection after exposure assessment",
+    controlHierarchy: ["Substitution", "Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Arc welding and cutting operations",
+    hazardDescription:
+      "Eye injury or arc flash exposure from welding arc, reflected radiation, or inadequate screening",
+    whoMayBeHarmed: "Welders, helpers, nearby workers, visitors",
+    possibleConsequence: "Arc eye, burns, temporary vision loss, eye injury",
+    existingMeasures:
+      "Welding helmets used; basic welding screens available; workers informed before welding starts",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Install welding screens around hot work; enforce correct shade eye protection; restrict access to welding area; inspect helmets and lenses before use",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Storage and movement of gas cylinders",
+    hazardDescription:
+      "Gas cylinder impact, valve damage, leakage, fire, or cylinder instability during handling",
+    whoMayBeHarmed: "Welders, material handlers, nearby workers",
+    possibleConsequence: "Explosion, fire, crushing injury, asphyxiation",
+    existingMeasures:
+      "Cylinders stored upright; caps used during transport; gas hoses visually checked",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Secure cylinders to trolleys or racks; separate oxygen and fuel gases; check regulators and flashback arrestors; keep cylinders away from heat and impact zones",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Electric welding equipment",
+    hazardDescription:
+      "Electric shock from damaged leads, poor grounding, wet conditions, or faulty welding equipment",
+    whoMayBeHarmed: "Welders, helpers, electrical maintenance workers",
+    possibleConsequence: "Electric shock, burns, fatality",
+    existingMeasures:
+      "Equipment visually inspected; damaged leads removed when identified; trained welders use equipment",
+    initialProbability: 2,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Inspect welding machines and leads before use; keep electrical connections dry; ensure correct grounding; use RCD/GFCI protection where appropriate; isolate faulty equipment",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+];
+
+const createConfinedSpaceEntryHazards = (): HazardRow[] => [
+  createLibraryHazard({
+    workplaceActivity: "Entry into tanks, pits, shafts, ducts, or confined areas",
+    hazardDescription:
+      "Oxygen deficiency or oxygen enrichment due to poor ventilation, displacement, or process residue",
+    whoMayBeHarmed: "Entrants, attendants, supervisors, rescue team",
+    possibleConsequence:
+      "Loss of consciousness, asphyxiation, fire risk, fatality",
+    existingMeasures:
+      "Confined space entry permit used; entry supervised; workers briefed on confined space hazards",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Test atmosphere before and during entry; ventilate space; prohibit entry if oxygen levels are outside safe range; use competent attendant and rescue-ready arrangements",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Confined space with possible process residues",
+    hazardDescription:
+      "Toxic or flammable atmosphere from gases, vapors, sludge, or chemical residue",
+    whoMayBeHarmed: "Entrants, attendants, rescue personnel",
+    possibleConsequence:
+      "Poisoning, explosion, fire, respiratory injury, fatality",
+    existingMeasures:
+      "Known contents reviewed; space isolated where possible; gas detector available",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Clean and purge space before entry; isolate connected lines; use calibrated multi-gas monitoring; control ignition sources; provide suitable respiratory protection if required",
+    controlHierarchy: [
+      "Elimination",
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Work in silos, pits, or areas containing loose material",
+    hazardDescription:
+      "Engulfment or entrapment by loose material, liquid, sludge, or unstable stored product",
+    whoMayBeHarmed: "Entrants, cleaners, maintenance workers",
+    possibleConsequence: "Crushing, drowning, asphyxiation, fatality",
+    existingMeasures:
+      "Material levels checked; workers instructed not to stand on unstable material; entry authorized by supervisor",
+    initialProbability: 2,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Empty and isolate materials before entry; lock out filling and discharge equipment; use fall prevention and retrieval systems; prohibit entry onto bridging material",
+    controlHierarchy: [
+      "Elimination",
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Emergency rescue from confined space",
+    hazardDescription:
+      "Delayed rescue or unsafe rescue attempt due to restricted access, poor retrieval systems, or lack of rescue plan",
+    whoMayBeHarmed: "Entrants, attendants, rescue personnel",
+    possibleConsequence: "Serious injury, multiple casualties, fatality",
+    existingMeasures:
+      "Emergency contacts known; attendant assigned; basic first aid arrangements available",
+    initialProbability: 2,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Prepare task-specific rescue plan; provide tripod, winch, harness, or retrieval equipment; train rescue team; do not rely only on external emergency services",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Confined space work in hot or humid conditions",
+    hazardDescription:
+      "Heat stress or fatigue caused by restricted ventilation, PPE, physical effort, or high ambient temperature",
+    whoMayBeHarmed: "Entrants, attendants",
+    possibleConsequence:
+      "Heat exhaustion, dehydration, reduced alertness, collapse",
+    existingMeasures:
+      "Workers allowed breaks; drinking water available; supervisors monitor worker condition",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Set work/rest cycles; monitor temperature and worker symptoms; use ventilation or cooling; rotate workers; stop work when heat stress indicators are present",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Communication during confined space entry",
+    hazardDescription:
+      "Poor communication between entrant, attendant, and supervisor leading to delayed response or unsafe work continuation",
+    whoMayBeHarmed: "Entrants, attendants, supervisors",
+    possibleConsequence: "Delayed rescue, injury escalation, fatality",
+    existingMeasures:
+      "Attendant positioned at entry point; workers briefed before entry; radios or verbal communication used",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Define communication method and check-in frequency; test radios before entry; use backup signal method; stop work if communication is lost",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 1,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Access control around confined spaces",
+    hazardDescription:
+      "Unauthorized entry into confined space or entry without permit controls in place",
+    whoMayBeHarmed: "Untrained workers, contractors, visitors",
+    possibleConsequence: "Exposure to hazardous atmosphere, entrapment, fatality",
+    existingMeasures:
+      "Confined space entry points known to supervisors; permit required for planned entry",
+    initialProbability: 2,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Lock or barricade entry points; post confined space warning signs; control permits at entry; brief all site personnel that unauthorized entry is prohibited",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+];
+
+const createCraneLiftingOperationsHazards = (): HazardRow[] => [
+  createLibraryHazard({
+    workplaceActivity: "Crane lifting and load movement",
+    hazardDescription:
+      "Dropped load due to lifting equipment failure, incorrect rigging, overload, or load instability",
+    whoMayBeHarmed: "Riggers, signalers, crane operator, workers nearby",
+    possibleConsequence: "Crushing injury, struck-by injury, fatality",
+    existingMeasures:
+      "Lifting equipment inspected; trained riggers assigned; lift area reviewed before lifting",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Prepare approved lift plan; verify load weight and center of gravity; inspect slings, shackles, hooks, and safety latches; keep workers out of suspended load zone",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Mobile crane setup and operation",
+    hazardDescription:
+      "Crane overturning due to poor ground conditions, overload, incorrect outrigger setup, or excessive radius",
+    whoMayBeHarmed: "Crane operator, riggers, nearby workers, public",
+    possibleConsequence: "Multiple serious injuries, fatality, property damage",
+    existingMeasures:
+      "Crane operator licensed; outriggers used; lifting capacity chart available",
+    initialProbability: 2,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Assess ground bearing capacity; use mats under outriggers; verify radius and load chart; monitor crane level; stop lifting if setup conditions change",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Rigging, slinging, and load attachment",
+    hazardDescription:
+      "Poor slinging angle, damaged lifting accessories, incorrect attachment points, or unbalanced load",
+    whoMayBeHarmed: "Riggers, signalers, workers nearby",
+    possibleConsequence: "Dropped load, struck-by injury, crushing, fatality",
+    existingMeasures:
+      "Riggers trained; lifting accessories visually checked; tag lines available",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Use competent rigger to select lifting gear; confirm sling angles and working load limits; protect slings from sharp edges; conduct test lift before full movement",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Lifting operations near people or active work areas",
+    hazardDescription:
+      "Workers entering lifting exclusion zone or standing beneath suspended loads",
+    whoMayBeHarmed: "Site workers, contractors, visitors, public",
+    possibleConsequence: "Struck-by injury, crushing injury, fatality",
+    existingMeasures:
+      "Banksman or signaler used; workers warned before lift; basic barriers installed where possible",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Create controlled lifting zone with barriers; stop adjacent work during lift; use dedicated spotters; never route suspended loads over people",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Crane operations near overhead power lines",
+    hazardDescription:
+      "Crane boom, load, or rigging contacting overhead electrical lines",
+    whoMayBeHarmed: "Crane operator, riggers, signalers, nearby workers",
+    possibleConsequence: "Electric shock, burns, fire, fatality",
+    existingMeasures:
+      "Overhead lines visually identified; operators informed of power line locations",
+    initialProbability: 2,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Isolate power lines where possible; establish no-go zones and physical markers; use dedicated spotter; include power line controls in lift plan",
+    controlHierarchy: [
+      "Elimination",
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Communication during lifting operations",
+    hazardDescription:
+      "Poor signaling, unclear radio communication, or multiple signalers causing unintended crane movement",
+    whoMayBeHarmed: "Riggers, crane operator, workers nearby",
+    possibleConsequence: "Struck-by injury, dropped load, collision",
+    existingMeasures:
+      "Signal person assigned; standard hand signals used; radios available for complex lifts",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Agree single signaler before lift; test radios; stop lift if visual or radio contact is lost; conduct pre-lift briefing with all involved workers",
+    controlHierarchy: ["Administrative Controls"],
+    residualProbability: 1,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Outdoor lifting in wind or poor weather",
+    hazardDescription:
+      "Adverse weather causing load swing, reduced visibility, loss of control, or crane instability",
+    whoMayBeHarmed: "Crane operator, riggers, workers nearby",
+    possibleConsequence: "Dropped load, collision, overturning, fatality",
+    existingMeasures:
+      "Weather checked before lifting; lifting stopped during obvious unsafe weather",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Set wind speed limits for lift type and load shape; monitor wind speed during lift; postpone lifts in gusty conditions; use tag lines only where safe and effective",
+    controlHierarchy: ["Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+];
+
+const createForkliftOperationHazards = (): HazardRow[] => [
+  createLibraryHazard({
+    workplaceActivity: "Forklift movement in shared work areas",
+    hazardDescription:
+      "Collision between forklift and pedestrians due to shared routes, blind corners, or poor segregation",
+    whoMayBeHarmed: "Pedestrians, forklift operators, contractors, visitors",
+    possibleConsequence: "Crushing injury, fractures, fatality",
+    existingMeasures:
+      "Forklift operators trained; horns and reversing alarms used; some pedestrian routes marked",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Separate pedestrian and forklift routes with barriers; use mirrors at blind corners; enforce speed limits; create controlled crossing points; brief visitors on traffic routes",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Forklift travel and turning",
+    hazardDescription:
+      "Forklift overturning due to excessive speed, sharp turns, uneven ground, slopes, or elevated load",
+    whoMayBeHarmed: "Forklift operator, pedestrians nearby",
+    possibleConsequence: "Crushing injury, serious injury, fatality",
+    existingMeasures:
+      "Operators trained; seatbelts fitted; forklift inspection completed before use",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Enforce seatbelt use; lower loads during travel; avoid sharp turns and slopes; inspect route surfaces; remove forklifts from uneven or unsuitable ground",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Transporting palletized or loose materials",
+    hazardDescription:
+      "Falling loads caused by unstable stacking, damaged pallets, poor load securing, or incorrect fork positioning",
+    whoMayBeHarmed: "Forklift operator, warehouse workers, nearby contractors",
+    possibleConsequence: "Struck-by injury, crushing, fractures",
+    existingMeasures:
+      "Loads checked visually; damaged pallets rejected when identified; operators trained in load handling",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Secure unstable loads before movement; keep forks fully inserted and level; do not move loads above rated capacity; use attachments only when approved",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Reversing and maneuvering forklifts",
+    hazardDescription:
+      "Poor visibility while reversing, turning, or moving around stacked materials and vehicles",
+    whoMayBeHarmed: "Pedestrians, banksmen, delivery drivers, operators",
+    possibleConsequence: "Collision, crushing injury, serious injury",
+    existingMeasures:
+      "Forklifts fitted with mirrors or alarms; operators instructed to look in direction of travel",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Use spotter for restricted visibility; keep travel routes clear; improve lighting; install cameras or proximity aids where needed; reverse slowly and sound horn at blind points",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Loading and unloading vehicles",
+    hazardDescription:
+      "Unsafe loading, trailer movement, dock edge falls, or forklift entering unstable trailers",
+    whoMayBeHarmed: "Forklift operators, drivers, loaders",
+    possibleConsequence: "Falls, crushing injury, vehicle impact, fatality",
+    existingMeasures:
+      "Drivers instructed to wait in safe area; loading areas designated; forklift operators trained",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Chock wheels or use vehicle restraint; confirm trailer floor condition; control dock edges; agree loading sequence; prevent vehicle departure until loading is complete",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Forklift battery charging or refueling",
+    hazardDescription:
+      "Fire, explosion, acid exposure, or fuel spill during battery charging or refueling",
+    whoMayBeHarmed: "Forklift operators, maintenance workers, nearby workers",
+    possibleConsequence: "Burns, chemical injury, fire, explosion",
+    existingMeasures:
+      "Charging or refueling area identified; basic spill kit available; operators trained",
+    initialProbability: 2,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Provide ventilation in charging areas; prohibit ignition sources; wear chemical PPE for battery work; inspect chargers and hoses; keep emergency eyewash and spill response available",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Forklift travel on uneven or temporary construction routes",
+    hazardDescription:
+      "Loss of stability or load control due to potholes, debris, ramps, temporary surfaces, or poor housekeeping",
+    whoMayBeHarmed: "Forklift operator, pedestrians, nearby workers",
+    possibleConsequence: "Overturning, falling load, collision, injury",
+    existingMeasures:
+      "Routes visually checked; operators report unsafe surfaces; housekeeping completed periodically",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Inspect and maintain forklift routes; repair potholes and remove debris; restrict forklift use on unsuitable gradients; use alternative equipment for rough terrain",
+    controlHierarchy: ["Substitution", "Engineering Controls", "Administrative Controls"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+];
+
+const createDemolitionHazards = (): HazardRow[] => [
+  createLibraryHazard({
+    workplaceActivity: "Structural demolition and dismantling",
+    hazardDescription:
+      "Uncontrolled structural collapse due to unknown structural condition, incorrect sequence, or removal of load-bearing elements",
+    whoMayBeHarmed: "Demolition workers, plant operators, nearby trades, public",
+    possibleConsequence: "Crushing, entrapment, multiple fatalities",
+    existingMeasures:
+      "Demolition sequence planned; access restricted; experienced supervisors assigned",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Complete structural survey and engineered demolition plan; verify temporary support needs; follow approved sequence; stop work if unexpected movement or cracking is observed",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Demolition work below or beside elevated materials",
+    hazardDescription:
+      "Falling debris, tools, or materials from demolition areas",
+    whoMayBeHarmed: "Demolition workers, adjacent trades, visitors, public",
+    possibleConsequence: "Head injury, fractures, lacerations, fatality",
+    existingMeasures:
+      "Hard hats required; work zone identified; debris removed periodically",
+    initialProbability: 4,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Install exclusion zones and debris netting where required; use controlled drop zones; remove loose materials progressively; prevent access below active demolition work",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 4,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Cutting, breaking, and removal of masonry or concrete",
+    hazardDescription:
+      "Exposure to dust including respirable crystalline silica during demolition and breaking works",
+    whoMayBeHarmed: "Demolition workers, nearby workers, cleaners",
+    possibleConsequence:
+      "Respiratory irritation, silicosis risk, chronic lung disease",
+    existingMeasures:
+      "Dust masks available; workers instructed to avoid visible dust clouds; some wetting down used",
+    initialProbability: 4,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Use water suppression or on-tool extraction; select lower-dust methods; establish exclusion zones; wear suitable respiratory protection based on exposure assessment",
+    controlHierarchy: ["Substitution", "Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Use of breakers, saws, and demolition plant",
+    hazardDescription:
+      "Noise and vibration exposure from demolition equipment and powered tools",
+    whoMayBeHarmed: "Operators, nearby workers, supervisors",
+    possibleConsequence:
+      "Hearing damage, hand-arm vibration injury, fatigue, reduced communication",
+    existingMeasures:
+      "Hearing protection available; equipment maintained; workers rotate tasks informally",
+    initialProbability: 4,
+    initialSeverity: 3,
+    additionalMeasures:
+      "Use lower-noise and lower-vibration equipment where practical; set exposure limits and task rotation; maintain tools; enforce hearing protection zones",
+    controlHierarchy: ["Substitution", "Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Demolition near hidden or live services",
+    hazardDescription:
+      "Contact with hidden electrical, gas, water, or mechanical services during demolition",
+    whoMayBeHarmed: "Demolition workers, plant operators, nearby trades",
+    possibleConsequence: "Electric shock, explosion, flooding, burns, fatality",
+    existingMeasures:
+      "Available drawings reviewed; visual checks made; supervisors coordinate with client or facility team",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Survey, isolate, and clearly mark all services before demolition; use permit controls; hand expose uncertain services; verify isolation before cutting or breaking",
+    controlHierarchy: [
+      "Elimination",
+      "Engineering Controls",
+      "Administrative Controls",
+      "PPE",
+    ],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Demolition of older or unknown materials",
+    hazardDescription:
+      "Exposure to asbestos, lead paint, contaminated dust, or unidentified hazardous materials",
+    whoMayBeHarmed: "Demolition workers, cleaners, other trades, public",
+    possibleConsequence:
+      "Occupational illness, respiratory disease, contamination, regulatory breach",
+    existingMeasures:
+      "Workers told to stop if suspect materials are found; waste areas designated",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Complete hazardous materials survey before demolition; isolate and label suspect materials; use licensed removal where required; control waste handling and decontamination",
+    controlHierarchy: ["Elimination", "Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 1,
+    residualSeverity: 5,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Demolition plant and pedestrian interface",
+    hazardDescription:
+      "Collision or struck-by incident involving excavators, loaders, dumpers, or workers on foot",
+    whoMayBeHarmed: "Ground workers, plant operators, signalers, visitors",
+    possibleConsequence: "Crushing injury, fractures, fatality",
+    existingMeasures:
+      "Plant operators trained; banksmen used for some movements; reversing alarms fitted",
+    initialProbability: 3,
+    initialSeverity: 5,
+    additionalMeasures:
+      "Create plant exclusion zones; use traffic management plan; appoint dedicated banksmen; separate pedestrian routes; maintain visibility aids and communication",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 4,
+  }),
+];
+
+const createManualHandlingHazards = (): HazardRow[] => [
+  createLibraryHazard({
+    workplaceActivity: "Manual lifting and carrying of construction materials",
+    hazardDescription:
+      "Back injury from lifting heavy bags, blocks, equipment, or materials without suitable aids",
+    whoMayBeHarmed: "Workers, laborers, installers, delivery personnel",
+    possibleConsequence: "Back strain, disc injury, lost time injury",
+    existingMeasures:
+      "Workers briefed on safe lifting; team lifting used for some heavy items; gloves available",
+    initialProbability: 4,
+    initialSeverity: 3,
+    additionalMeasures:
+      "Use mechanical aids, trolleys, hoists, or pallet trucks; reduce load weight where possible; plan deliveries close to point of use; avoid unnecessary manual carrying",
+    controlHierarchy: ["Substitution", "Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Repeated lifting, pushing, pulling, or carrying",
+    hazardDescription:
+      "Strains and sprains from repetitive manual handling or sustained physical effort",
+    whoMayBeHarmed: "Workers, warehouse staff, installers",
+    possibleConsequence: "Shoulder injury, sprains, muscle strain, fatigue",
+    existingMeasures:
+      "Workers take informal breaks; supervisors assign additional help for larger moves",
+    initialProbability: 4,
+    initialSeverity: 3,
+    additionalMeasures:
+      "Rotate tasks; set maximum manual handling limits; schedule rest breaks; use handling aids; review work sequence to reduce repeated movement",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Handling materials in confined or awkward positions",
+    hazardDescription:
+      "Awkward posture, twisting, reaching, or lifting from floor level causing musculoskeletal injury",
+    whoMayBeHarmed: "Installers, fitters, laborers, maintenance personnel",
+    possibleConsequence: "Back injury, neck strain, shoulder injury",
+    existingMeasures:
+      "Work areas reviewed by supervisor; workers instructed to ask for assistance with difficult lifts",
+    initialProbability: 4,
+    initialSeverity: 3,
+    additionalMeasures:
+      "Raise materials to waist height where practical; redesign storage layout; use adjustable stands or lifting aids; break tasks into smaller controlled movements",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Manual movement of heavy, long, or unstable loads",
+    hazardDescription:
+      "Loss of control of heavy or unstable materials such as boards, pipes, glass, doors, or rebar",
+    whoMayBeHarmed: "Workers carrying load, nearby workers, visitors",
+    possibleConsequence: "Crushing injury, cuts, struck-by injury, fractures",
+    existingMeasures:
+      "Team lifting used when obvious; materials checked before movement; gloves and safety footwear available",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Use lifting frames, trolleys, stillages, or cranes where practical; secure unstable loads before movement; clear route before lift; assign one person to coordinate team lifts",
+    controlHierarchy: ["Substitution", "Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Carrying materials through active work areas",
+    hazardDescription:
+      "Slips, trips, or falls while carrying materials due to uneven ground, debris, stairs, or poor visibility",
+    whoMayBeHarmed: "Workers carrying materials, nearby workers",
+    possibleConsequence: "Sprains, fractures, dropped load injuries",
+    existingMeasures:
+      "Housekeeping checks completed; workers instructed to keep routes clear; safety footwear required",
+    initialProbability: 4,
+    initialSeverity: 3,
+    additionalMeasures:
+      "Clear and inspect carrying routes before movement; improve lighting; avoid carrying loads on stairs where aids are available; use spotter for bulky loads",
+    controlHierarchy: ["Engineering Controls", "Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+  createLibraryHazard({
+    workplaceActivity: "Team lifting and coordinated handling",
+    hazardDescription:
+      "Poor communication or mismatched lifting technique during team lifts causing sudden load shift",
+    whoMayBeHarmed: "Workers involved in team lift, nearby workers",
+    possibleConsequence: "Crush injury, strains, dropped load, hand injury",
+    existingMeasures:
+      "Team lifting used for larger items; workers communicate verbally during movement",
+    initialProbability: 3,
+    initialSeverity: 4,
+    additionalMeasures:
+      "Nominate lift leader; agree commands and route before lifting; match team size to load; stop lift if grip, balance, or route becomes unsafe",
+    controlHierarchy: ["Administrative Controls", "PPE"],
+    residualProbability: 2,
+    residualSeverity: 3,
+  }),
+];
+
+const constructionRiskAssessmentLibrary: Record<
+  string,
+  { title: string; createHazards: () => HazardRow[] }
+> = {
+  "Working at Height": {
+    title: "Construction - Working at Height Risk Assessment",
+    createHazards: createWorkingAtHeightHazards,
+  },
+  "Excavation and trenching": {
+    title: "Construction - Excavation and Trenching Risk Assessment",
+    createHazards: createExcavationAndTrenchingHazards,
+  },
+  "Scaffolding erection": {
+    title: "Construction - Scaffolding Erection Risk Assessment",
+    createHazards: createScaffoldingErectionHazards,
+  },
+  "Electrical installation": {
+    title: "Construction - Electrical Installation Risk Assessment",
+    createHazards: createElectricalInstallationHazards,
+  },
+  Welding: {
+    title: "Construction - Welding Risk Assessment",
+    createHazards: createWeldingHazards,
+  },
+  "Confined space entry": {
+    title: "Construction - Confined Space Entry Risk Assessment",
+    createHazards: createConfinedSpaceEntryHazards,
+  },
+  "Crane lifting operations": {
+    title: "Construction - Crane Lifting Operations Risk Assessment",
+    createHazards: createCraneLiftingOperationsHazards,
+  },
+  "Forklift operation": {
+    title: "Construction - Forklift Operation Risk Assessment",
+    createHazards: createForkliftOperationHazards,
+  },
+  Demolition: {
+    title: "Construction - Demolition Risk Assessment",
+    createHazards: createDemolitionHazards,
+  },
+  "Manual handling of materials": {
+    title: "Construction - Manual Handling of Materials Risk Assessment",
+    createHazards: createManualHandlingHazards,
+  },
+};
 
 const toRiskValue = (value: string): RiskValue => Number(value) as RiskValue;
 
@@ -660,8 +1746,11 @@ export default function RiskAssessmentsModule({
     })),
     { value: customLibraryOption, label: "Other / Manual" },
   ];
-  const canGenerateWorkingAtHeight =
-    header.sector === "Construction" && header.activity === "Working at Height";
+  const selectedLibraryAssessment =
+    header.sector === "Construction" && !customSectorMode
+      ? constructionRiskAssessmentLibrary[header.activity]
+      : undefined;
+  const canGenerateLibraryAssessment = Boolean(selectedLibraryAssessment);
   const hasEnteredHazardData = hazards.some((hazard) => {
     const emptyHazard = createEmptyHazard();
 
@@ -782,7 +1871,11 @@ export default function RiskAssessmentsModule({
     );
   };
 
-  const generateWorkingAtHeightAssessment = () => {
+  const generateLibraryAssessment = () => {
+    if (!selectedLibraryAssessment) {
+      return;
+    }
+
     if (hazards.length > 0 && hasEnteredHazardData) {
       const shouldReplace = window.confirm(
         "This will replace current hazard rows. Continue?",
@@ -796,15 +1889,15 @@ export default function RiskAssessmentsModule({
     setHeader((current) => ({
       ...current,
       sector: "Construction",
-      activity: "Working at Height",
+      activity: header.activity,
       title:
         current.title.trim().length > 0
           ? current.title
-          : "Construction - Working at Height Risk Assessment",
+          : selectedLibraryAssessment.title,
     }));
     setCustomSectorMode(false);
     setCustomActivityMode(false);
-    setHazards(createWorkingAtHeightHazards());
+    setHazards(selectedLibraryAssessment.createHazards());
     setCurrentAssessmentId(null);
     setNotice("Risk assessment generated from Laboria HSE Library.");
   };
@@ -1134,7 +2227,7 @@ export default function RiskAssessmentsModule({
                 ) : null}
               </div>
 
-              {canGenerateWorkingAtHeight ? (
+              {canGenerateLibraryAssessment ? (
                 <div className="mt-5 rounded-2xl border border-[#4DEBFF]/25 bg-[#4DEBFF]/10 p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -1142,13 +2235,13 @@ export default function RiskAssessmentsModule({
                         Laboria HSE Library prototype available
                       </div>
                       <p className="mt-1 text-sm text-slate-300">
-                        Generate a complete editable 6-hazard assessment for
-                        Construction - Working at Height.
+                        Generate a complete editable assessment for Construction
+                        - {header.activity}.
                       </p>
                     </div>
                     <button
                       type="button"
-                      onClick={generateWorkingAtHeightAssessment}
+                      onClick={generateLibraryAssessment}
                       className="rounded-xl bg-[#1E90FF] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(30,144,255,0.24)] transition hover:bg-[#1878d6]"
                     >
                       Generate Risk Assessment
