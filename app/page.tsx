@@ -33,6 +33,7 @@ import { ALL_CHECKLISTS } from "./data/checklists";
 import ActionTrackerModule from "./components/ActionTrackerModule";
 import RiskAssessmentsModule from "./components/RiskAssessmentsModule";
 import TrainingManagementModule from "./components/TrainingManagementModule";
+import IncidentManagementModule from "./components/IncidentManagementModule";
 import { createClient } from "@/lib/supabase/client";
 import {
   appendActionTrackerAction,
@@ -261,8 +262,8 @@ const WORKSPACE_MODULES: WorkspaceModule[] = [
     id: "incident-management",
     label: "Incident Management",
     description:
-      "Record incidents, near misses, investigations, corrective actions, and lessons learned.",
-    status: "Coming Soon",
+      "Record events, classify root causes, generate follow-up actions, and track investigation workflows.",
+    status: "Active",
     icon: HeartPulse,
   },
   {
@@ -2330,6 +2331,13 @@ export default function Home() {
           />
         ) : activeWorkspaceModule === "training-management" ? (
           <TrainingManagementModule
+            userId={authUserId}
+            darkMode={darkMode}
+            onToggleTheme={() => setDarkMode((current) => !current)}
+            createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
+          />
+        ) : activeWorkspaceModule === "incident-management" ? (
+          <IncidentManagementModule
             userId={authUserId}
             darkMode={darkMode}
             onToggleTheme={() => setDarkMode((current) => !current)}
