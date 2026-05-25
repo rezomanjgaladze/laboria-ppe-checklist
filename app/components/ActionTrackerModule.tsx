@@ -58,6 +58,7 @@ type HseAction = {
   linkedInspectionId?: string;
   linkedRiskAssessmentId?: string;
   linkedIncidentId?: string;
+  linkedTrainingGapKey?: string;
 };
 
 type ActionFilters = {
@@ -234,6 +235,10 @@ const normalizeAction = (action: Partial<HseAction>): HseAction => {
     linkedIncidentId:
       typeof action.linkedIncidentId === "string"
         ? action.linkedIncidentId
+        : undefined,
+    linkedTrainingGapKey:
+      typeof action.linkedTrainingGapKey === "string"
+        ? action.linkedTrainingGapKey
         : undefined,
   };
 };

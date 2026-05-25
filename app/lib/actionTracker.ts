@@ -39,6 +39,7 @@ export type HseAction = {
   linkedInspectionId?: string;
   linkedRiskAssessmentId?: string;
   linkedIncidentId?: string;
+  linkedTrainingGapKey?: string;
 };
 
 export type ActionDraftInput = {
@@ -55,6 +56,7 @@ export type ActionDraftInput = {
   linkedInspectionId?: string;
   linkedRiskAssessmentId?: string;
   linkedIncidentId?: string;
+  linkedTrainingGapKey?: string;
 };
 
 const legacyStorageKey = "laboria_action_tracker_actions";
@@ -144,6 +146,10 @@ export const normalizeAction = (action: Partial<HseAction>): HseAction => {
     linkedIncidentId:
       typeof action.linkedIncidentId === "string"
         ? action.linkedIncidentId
+        : undefined,
+    linkedTrainingGapKey:
+      typeof action.linkedTrainingGapKey === "string"
+        ? action.linkedTrainingGapKey
         : undefined,
   };
 };
@@ -248,6 +254,7 @@ export const createActionFromInput = (input: ActionDraftInput): HseAction => {
     linkedInspectionId: input.linkedInspectionId,
     linkedRiskAssessmentId: input.linkedRiskAssessmentId,
     linkedIncidentId: input.linkedIncidentId,
+    linkedTrainingGapKey: input.linkedTrainingGapKey,
   });
 };
 
@@ -265,11 +272,13 @@ export const findActionByLinkedSource = ({
   linkedInspectionId,
   linkedRiskAssessmentId,
   linkedIncidentId,
+  linkedTrainingGapKey,
 }: {
   userId: string | null;
   linkedInspectionId?: string;
   linkedRiskAssessmentId?: string;
   linkedIncidentId?: string;
+  linkedTrainingGapKey?: string;
 }) =>
   readActionTrackerActions(userId).find((action) => {
     if (
@@ -287,6 +296,13 @@ export const findActionByLinkedSource = ({
     }
 
     if (linkedIncidentId && action.linkedIncidentId === linkedIncidentId) {
+      return true;
+    }
+
+    if (
+      linkedTrainingGapKey &&
+      action.linkedTrainingGapKey === linkedTrainingGapKey
+    ) {
       return true;
     }
 

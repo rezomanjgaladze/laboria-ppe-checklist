@@ -21,7 +21,10 @@ import {
   appendActionTrackerAction,
   createActionFromInput,
   getDateInputDaysFromNow,
+  readActionTrackerActions,
+  writeActionTrackerActions,
   type ActionPriority,
+  type HseAction,
 } from "@/app/lib/actionTracker";
 
 const employeeStatusOptions = ["Active", "Inactive"] as const;
@@ -534,6 +537,70 @@ const getLatestRecord = (
       return bTime - aTime;
     })[0] ?? null;
 
+const getTrainingGapKey = (employeeId: string, trainingTypeId: string) =>
+  `training-gap:${employeeId}:${trainingTypeId}`;
+
+const isActiveTrainingActionStatus = (status: HseAction["status"]) =>
+  status === "Open" ||
+  status === "In Progress" ||
+  status === "Pending Verification";
+
+const actionMatchesTrainingGap = (
+  action: HseAction,
+  employee: Employee,
+  trainingType: TrainingType,
+) => {
+  if (action.sourceModule !== "Training") {
+    return false;
+  }
+
+  const gapKey = getTrainingGapKey(employee.id, trainingType.id);
+
+  if (action.linkedTrainingGapKey === gapKey) {
+    return true;
+  }
+
+  const actionText = `${action.title}\n${action.description}`.toLowerCase();
+  const title = `Provide ${trainingType.name} refresher training`.toLowerCase();
+  const employeeIdNeedle = `Employee ID: ${employee.employeeId}`.toLowerCase();
+  const employeeNeedle = `Employee: ${employee.name}`.toLowerCase();
+  const trainingNeedle =
+    `Missing/expired training: ${trainingType.name}`.toLowerCase();
+
+  return (
+    action.title.trim().toLowerCase() === title &&
+    actionText.includes(trainingNeedle) &&
+    (actionText.includes(employeeIdNeedle) || actionText.includes(employeeNeedle))
+  );
+};
+
+const inferTrainingGapKeyFromAction = (
+  action: HseAction,
+  employees: Employee[],
+  trainingTypes: TrainingType[],
+) => {
+  if (action.sourceModule !== "Training") {
+    return null;
+  }
+
+  if (action.linkedTrainingGapKey) {
+    return action.linkedTrainingGapKey;
+  }
+
+  for (const employee of employees) {
+    for (const trainingType of trainingTypes) {
+      if (actionMatchesTrainingGap(action, employee, trainingType)) {
+        return getTrainingGapKey(employee.id, trainingType.id);
+      }
+    }
+  }
+
+  return null;
+};
+
+const autoCompletedTrainingNote =
+  "Automatically completed after valid training record was added.";
+
 const statusTone = (
   status: TrainingComplianceStatus,
   darkMode: boolean,
@@ -777,13 +844,42 @@ export default function TrainingManagementModule({
   const [matrixSearch, setMatrixSearch] = useState("");
   const [matrixFilters, setMatrixFilters] =
     useState<MatrixFilters>(emptyMatrixFilters);
-  const [createdTrainingActionKeys, setCreatedTrainingActionKeys] = useState<
+  const [activeTrainingActionKeys, setActiveTrainingActionKeys] = useState<
     string[]
   >([]);
 
   const persistData = (nextData: TrainingData) => {
     writeTrainingData(userId, nextData);
   };
+
+  const refreshTrainingActionKeys = useCallback(() => {
+    try {
+      const keys = new Set<string>();
+
+      readActionTrackerActions(userId).forEach((action) => {
+        if (
+          action.sourceModule !== "Training" ||
+          !isActiveTrainingActionStatus(action.status)
+        ) {
+          return;
+        }
+
+        const gapKey = inferTrainingGapKeyFromAction(
+          action,
+          employees,
+          trainingTypes,
+        );
+
+        if (gapKey) {
+          keys.add(gapKey);
+        }
+      });
+
+      setActiveTrainingActionKeys(Array.from(keys));
+    } catch {
+      setActiveTrainingActionKeys([]);
+    }
+  }, [employees, trainingTypes, userId]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -812,6 +908,11 @@ export default function TrainingManagementModule({
     const timeoutId = window.setTimeout(() => setNotice(null), 3200);
     return () => window.clearTimeout(timeoutId);
   }, [notice]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(refreshTrainingActionKeys, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [refreshTrainingActionKeys]);
 
   const employeeById = useMemo(
     () => new Map(employees.map((employee) => [employee.id, employee])),
@@ -1123,6 +1224,56 @@ export default function TrainingManagementModule({
     });
   };
 
+  const completeRelatedTrainingActions = (record: TrainingRecord) => {
+    if (getRecordStatus(record) !== "Valid") {
+      return 0;
+    }
+
+    const employee = employees.find((item) => item.id === record.employeeId);
+    const trainingType = trainingTypes.find(
+      (item) => item.id === record.trainingTypeId,
+    );
+
+    if (!employee || !trainingType) {
+      return 0;
+    }
+
+    const gapKey = getTrainingGapKey(employee.id, trainingType.id);
+    const now = new Date().toISOString();
+    const actions = readActionTrackerActions(userId);
+    let completedCount = 0;
+    const updatedActions = actions.map((action) => {
+      if (
+        !actionMatchesTrainingGap(action, employee, trainingType) ||
+        !isActiveTrainingActionStatus(action.status)
+      ) {
+        return action;
+      }
+
+      completedCount += 1;
+
+      return {
+        ...action,
+        status: "Completed" as const,
+        progress: 100,
+        lastUpdated: now,
+        linkedTrainingGapKey: gapKey,
+        notes: action.notes.includes(autoCompletedTrainingNote)
+          ? action.notes
+          : [action.notes, autoCompletedTrainingNote]
+              .filter((value) => value.trim().length > 0)
+              .join("\n"),
+      };
+    });
+
+    if (completedCount > 0) {
+      writeActionTrackerActions(userId, updatedActions);
+      refreshTrainingActionKeys();
+    }
+
+    return completedCount;
+  };
+
   const saveModal = () => {
     if (!modal) {
       return;
@@ -1210,8 +1361,13 @@ export default function TrainingManagementModule({
       return updated;
     });
 
+    const completedActionCount = completeRelatedTrainingActions(record);
     setNotice(
-      modal.mode === "edit" ? "Training record updated." : "Training record added.",
+      completedActionCount > 0
+        ? "Training record saved. Related Action Tracker item completed."
+        : modal.mode === "edit"
+          ? "Training record updated."
+          : "Training record added.",
     );
     closeModal();
   };
@@ -1272,8 +1428,7 @@ export default function TrainingManagementModule({
   const getTrainingActionKey = (
     employee: Employee,
     trainingType: TrainingType,
-    status: TrainingComplianceStatus,
-  ) => `training:${employee.id}:${trainingType.id}:${status}`;
+  ) => getTrainingGapKey(employee.id, trainingType.id);
 
   const createTrainingAction = (
     employee: Employee,
@@ -1281,16 +1436,31 @@ export default function TrainingManagementModule({
     status: TrainingComplianceStatus,
     record?: TrainingRecord | null,
   ) => {
-    const actionKey = getTrainingActionKey(employee, trainingType, status);
+    const actionKey = getTrainingActionKey(employee, trainingType);
+    const existingActions = readActionTrackerActions(userId);
+    const existingActiveAction = existingActions.find(
+      (action) =>
+        actionMatchesTrainingGap(action, employee, trainingType) &&
+        isActiveTrainingActionStatus(action.status),
+    );
 
-    if (createdTrainingActionKeys.includes(actionKey)) {
-      const shouldCreateAnother = window.confirm(
-        "A training action may already exist for this item. Create another?",
-      );
-
-      if (!shouldCreateAnother) {
-        return;
+    if (existingActiveAction) {
+      if (!existingActiveAction.linkedTrainingGapKey) {
+        writeActionTrackerActions(
+          userId,
+          existingActions.map((action) =>
+            action.id === existingActiveAction.id
+              ? { ...action, linkedTrainingGapKey: actionKey }
+              : action,
+          ),
+        );
       }
+
+      setActiveTrainingActionKeys((current) =>
+        current.includes(actionKey) ? current : [...current, actionKey],
+      );
+      setNotice("Action already exists for this training gap.");
+      return;
     }
 
     const priority: ActionPriority =
@@ -1323,10 +1493,11 @@ export default function TrainingManagementModule({
       dueDate: getDateInputDaysFromNow(7),
       notes: "Created from Training Management compliance matrix.",
       createdBy,
+      linkedTrainingGapKey: actionKey,
     });
 
     appendActionTrackerAction(userId, action);
-    setCreatedTrainingActionKeys((current) =>
+    setActiveTrainingActionKeys((current) =>
       current.includes(actionKey) ? current : [...current, actionKey],
     );
     setNotice("Action created from training compliance gap.");
@@ -1930,8 +2101,9 @@ export default function TrainingManagementModule({
                           const actionKey = getTrainingActionKey(
                             employee,
                             trainingType,
-                            status,
                           );
+                          const hasActiveAction =
+                            activeTrainingActionKeys.includes(actionKey);
 
                           return (
                             <td key={trainingType.id} className="border-b px-4 py-4">
@@ -1961,24 +2133,27 @@ export default function TrainingManagementModule({
                                 {actionAllowed ? (
                                   <button
                                     type="button"
+                                    disabled={hasActiveAction}
                                     onClick={() =>
-                                      createTrainingAction(
-                                        employee,
-                                        trainingType,
-                                        status,
-                                        record,
-                                      )
+                                      hasActiveAction
+                                        ? undefined
+                                        : createTrainingAction(
+                                            employee,
+                                            trainingType,
+                                            status,
+                                            record,
+                                          )
                                     }
                                     className={joinClasses(
                                       "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition",
-                                      createdTrainingActionKeys.includes(actionKey)
-                                        ? theme.notice
+                                      hasActiveAction
+                                        ? `${theme.notice} cursor-not-allowed opacity-85`
                                         : theme.exportButton,
                                     )}
                                   >
                                     <Plus size={13} aria-hidden />
-                                    {createdTrainingActionKeys.includes(actionKey)
-                                      ? "Action created"
+                                    {hasActiveAction
+                                      ? "Action Created"
                                       : "Create Action"}
                                   </button>
                                 ) : null}
@@ -2178,7 +2353,17 @@ export default function TrainingManagementModule({
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRecords.map(({ record, employee, trainingType, status }) => (
+                    {filteredRecords.map(({ record, employee, trainingType, status }) => {
+                      const actionKey =
+                        employee && trainingType
+                          ? getTrainingActionKey(employee, trainingType)
+                          : "";
+                      const hasActiveAction = Boolean(
+                        actionKey &&
+                          activeTrainingActionKeys.includes(actionKey),
+                      );
+
+                      return (
                       <tr key={record.id} className={theme.row}>
                         <td className="border-b px-4 py-4">
                           <div className="font-semibold">
@@ -2215,20 +2400,25 @@ export default function TrainingManagementModule({
                             status === "Expired" ? (
                               <button
                                 type="button"
+                                disabled={hasActiveAction}
                                 onClick={() =>
-                                  createTrainingAction(
-                                    employee,
-                                    trainingType,
-                                    status,
-                                    record,
-                                  )
+                                  hasActiveAction
+                                    ? undefined
+                                    : createTrainingAction(
+                                        employee,
+                                        trainingType,
+                                        status,
+                                        record,
+                                      )
                                 }
                                 className={joinClasses(
                                   "rounded-xl border px-3 py-2 text-xs font-semibold transition",
-                                  theme.exportButton,
+                                  hasActiveAction
+                                    ? `${theme.notice} cursor-not-allowed opacity-85`
+                                    : theme.exportButton,
                                 )}
                               >
-                                Create Action
+                                {hasActiveAction ? "Action Created" : "Create Action"}
                               </button>
                             ) : null}
                             <button
@@ -2262,13 +2452,23 @@ export default function TrainingManagementModule({
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
               <div className="space-y-3 lg:hidden">
-                {filteredRecords.map(({ record, employee, trainingType, status }) => (
+                {filteredRecords.map(({ record, employee, trainingType, status }) => {
+                  const actionKey =
+                    employee && trainingType
+                      ? getTrainingActionKey(employee, trainingType)
+                      : "";
+                  const hasActiveAction = Boolean(
+                    actionKey && activeTrainingActionKeys.includes(actionKey),
+                  );
+
+                  return (
                   <div
                     key={record.id}
                     className={joinClasses("rounded-2xl border p-4", theme.card)}
@@ -2303,20 +2503,25 @@ export default function TrainingManagementModule({
                       {employee && trainingType && status === "Expired" ? (
                         <button
                           type="button"
+                          disabled={hasActiveAction}
                           onClick={() =>
-                            createTrainingAction(
-                              employee,
-                              trainingType,
-                              status,
-                              record,
-                            )
+                            hasActiveAction
+                              ? undefined
+                              : createTrainingAction(
+                                  employee,
+                                  trainingType,
+                                  status,
+                                  record,
+                                )
                           }
                           className={joinClasses(
                             "flex-1 rounded-xl border px-3 py-2 text-sm font-semibold transition",
-                            theme.exportButton,
+                            hasActiveAction
+                              ? `${theme.notice} cursor-not-allowed opacity-85`
+                              : theme.exportButton,
                           )}
                         >
-                          Create Action
+                          {hasActiveAction ? "Action Created" : "Create Action"}
                         </button>
                       ) : null}
                       <button
@@ -2347,7 +2552,8 @@ export default function TrainingManagementModule({
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               {filteredRecords.length === 0 ? (
