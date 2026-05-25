@@ -98,6 +98,9 @@ const constructionActivityGroups: ActivityGroup[] = [
       "Pedestrian walkway setup",
       "Material laydown area setup",
       "Housekeeping and waste segregation",
+      "Welfare facility setup",
+      "Temporary lighting installation",
+      "Signage and barricade installation",
     ],
   },
   {
@@ -139,15 +142,46 @@ const constructionActivityGroups: ActivityGroup[] = [
       "Scaffolding erection",
       "Ladder work",
       "Roof work",
+      "Scaffolding inspection",
+      "MEWP operation",
+      "Edge protection installation",
+      "Fall arrest system use",
+      "Facade work",
+      "Window installation",
+      "Painting at height",
+      "Cladding installation",
     ],
   },
   {
-    label: "Mechanical, Electrical & Hot Work",
-    activities: ["Electrical installation", "Welding"],
+    label: "Electrical, MEP & Commissioning",
+    activities: [
+      "Electrical installation",
+      "Welding",
+      "Temporary electrical testing",
+      "Cable pulling",
+      "HVAC installation",
+      "Plumbing installation",
+      "Oxy-fuel cutting",
+      "Grinding and cutting",
+      "Hot work in occupied areas",
+      "Commissioning and testing",
+    ],
   },
   {
     label: "Lifting, Plant & Equipment",
-    activities: ["Crane lifting operations", "Forklift operation"],
+    activities: [
+      "Crane lifting operations",
+      "Forklift operation",
+      "Mobile crane setup",
+      "Tower crane operation",
+      "Rigging and slinging",
+      "Telehandler operation",
+      "Excavator operation",
+      "Loader operation",
+      "Dumper operation",
+      "Plant refueling",
+      "Plant maintenance on site",
+    ],
   },
   {
     label: "High-Risk / Specialist Operations",
@@ -155,6 +189,13 @@ const constructionActivityGroups: ActivityGroup[] = [
       "Confined space entry",
       "Demolition",
       "Manual handling of materials",
+      "Work near live traffic",
+      "Work near overhead power lines",
+      "Work over water",
+      "Asbestos disturbance",
+      "Silica dust generating work",
+      "Night work",
+      "Emergency response drill",
     ],
   },
 ];
@@ -248,6 +289,51 @@ const createLibraryHazard = (hazard: Partial<HazardRow>): HazardRow =>
 const createLibraryHazards = (
   hazards: Array<Partial<HazardRow>>,
 ): HazardRow[] => hazards.map((hazard) => createLibraryHazard(hazard));
+
+const libraryHazardTemplate = (
+  workplaceActivity: string,
+  hazardDescription: string,
+  whoMayBeHarmed: string,
+  possibleConsequence: string,
+  existingMeasures: string,
+  initialProbability: RiskValue,
+  initialSeverity: RiskValue,
+  additionalMeasures: string,
+  controlHierarchy: ControlHierarchy[],
+  residualProbability: RiskValue,
+  residualSeverity: RiskValue,
+): Partial<HazardRow> => ({
+  workplaceActivity,
+  hazardDescription,
+  whoMayBeHarmed,
+  possibleConsequence,
+  existingMeasures,
+  initialProbability,
+  initialSeverity,
+  additionalMeasures,
+  controlHierarchy,
+  residualProbability,
+  residualSeverity,
+});
+
+const libraryControls = {
+  eliminationEngAdminPpe: [
+    "Elimination",
+    "Engineering Controls",
+    "Administrative Controls",
+    "PPE",
+  ],
+  substitutionEngAdminPpe: [
+    "Substitution",
+    "Engineering Controls",
+    "Administrative Controls",
+    "PPE",
+  ],
+  engAdminPpe: ["Engineering Controls", "Administrative Controls", "PPE"],
+  engAdmin: ["Engineering Controls", "Administrative Controls"],
+  adminPpe: ["Administrative Controls", "PPE"],
+  admin: ["Administrative Controls"],
+} satisfies Record<string, ControlHierarchy[]>;
 
 const createWorkingAtHeightHazards = (): HazardRow[] => [
   createLibraryHazard({
@@ -3900,6 +3986,933 @@ const createRoofWorkHazards = (): HazardRow[] =>
     },
   ]);
 
+const additionalConstructionActivityHazardSets: Record<
+  string,
+  { title: string; hazards: Array<Partial<HazardRow>> }
+> = {
+  "Welfare facility setup": {
+    title: "Construction - Welfare Facility Setup Risk Assessment",
+    hazards: [
+      libraryHazardTemplate(
+        "Delivery and positioning of welfare cabins",
+        "Cabins or welfare units moving, swinging, or settling during delivery and placement",
+        "Delivery drivers, installers, workers nearby",
+        "Crushing injury, struck-by injury, property damage",
+        "Delivery area identified; competent plant operators used; workers instructed to stand clear",
+        3,
+        4,
+        "Use a planned lifting or unloading method; verify ground bearing capacity; establish exclusion zone; level and secure welfare units before occupation",
+        libraryControls.engAdminPpe,
+        1,
+        3,
+      ),
+      libraryHazardTemplate(
+        "Connection of welfare utilities",
+        "Electric, water, drainage, or gas connections installed incorrectly or damaged during setup",
+        "Workers, electricians, plumbers, welfare users",
+        "Electric shock, flooding, fire, hygiene issues",
+        "Utility connections assigned to competent workers; supervisors coordinate setup sequence",
+        3,
+        4,
+        "Inspect and test all utility connections before use; protect cables and hoses; isolate defective services; label emergency shutoffs clearly",
+        libraryControls.engAdminPpe,
+        1,
+        3,
+      ),
+      libraryHazardTemplate(
+        "Access to welfare facilities",
+        "Slips, trips, or falls on temporary steps, ramps, wet surfaces, or poorly lit routes",
+        "Workers, visitors, cleaners",
+        "Sprains, fractures, falls, lost time injury",
+        "Temporary access provided; housekeeping checks completed; lighting available in main routes",
+        4,
+        3,
+        "Install stable steps or ramps with handrails; keep routes clean and drained; provide lighting; grit or clean access in adverse weather",
+        libraryControls.engAdmin,
+        2,
+        3,
+      ),
+      libraryHazardTemplate(
+        "Welfare hygiene and sanitation",
+        "Poor sanitation, water supply failure, or inadequate cleaning causing illness or contamination",
+        "Workers, visitors, cleaners",
+        "Illness, infection, poor welfare conditions",
+        "Welfare cleaning arranged; toilets and washing facilities provided; drinking water available",
+        3,
+        3,
+        "Define cleaning frequency; inspect welfare daily; maintain soap, water, and waste disposal; repair blocked drains or water issues promptly",
+        libraryControls.admin,
+        1,
+        3,
+      ),
+      libraryHazardTemplate(
+        "Fire safety in welfare areas",
+        "Combustible storage, heaters, chargers, or cooking equipment creating fire risk in welfare cabins",
+        "Workers, visitors, emergency responders",
+        "Burns, smoke inhalation, fire spread, property damage",
+        "Fire extinguishers available; smoking controlled; workers briefed on emergency arrangements",
+        3,
+        5,
+        "Keep exits clear; inspect heaters and electrical equipment; prohibit unauthorized cooking equipment; provide fire detection and evacuation signage",
+        libraryControls.engAdminPpe,
+        1,
+        4,
+      ),
+    ],
+  },
+  "Temporary lighting installation": {
+    title: "Construction - Temporary Lighting Installation Risk Assessment",
+    hazards: [
+      libraryHazardTemplate(
+        "Installation of temporary lighting towers and fittings",
+        "Falls, dropped fittings, or unstable lighting equipment during installation at height or on uneven ground",
+        "Electricians, installers, workers nearby",
+        "Falls, struck-by injury, fractures",
+        "Installers trained; access equipment available; lighting equipment visually checked",
+        3,
+        4,
+        "Use stable access platforms; secure lighting stands against movement; establish exclusion zone below elevated work; inspect fixings before energizing",
+        libraryControls.engAdminPpe,
+        1,
+        3,
+      ),
+      libraryHazardTemplate(
+        "Electrical connection of temporary lighting",
+        "Electric shock from damaged cables, wet connections, incorrect wiring, or poor protection",
+        "Electricians, workers, visitors",
+        "Electric shock, burns, fire, fatality",
+        "Competent electricians connect lighting; basic visual inspections completed; RCD/GFCI protection used where available",
+        3,
+        5,
+        "Use weather-rated fittings and protected circuits; keep connections dry; test before use; isolate and tag defective lighting immediately",
+        libraryControls.engAdminPpe,
+        1,
+        5,
+      ),
+      libraryHazardTemplate(
+        "Lighting cable routes across site",
+        "Trips or cable damage from trailing temporary lighting cables across walkways and vehicle routes",
+        "Workers, visitors, plant operators",
+        "Trips, falls, electric shock, cable failure",
+        "Cables routed away from main access where possible; damaged cables reported",
+        4,
+        3,
+        "Route cables overhead or through cable ramps; protect from vehicles; remove unused cable loops; inspect cable routes daily",
+        libraryControls.engAdmin,
+        2,
+        3,
+      ),
+      libraryHazardTemplate(
+        "Poor illumination or glare from temporary lighting",
+        "Inadequate lighting or glare causing trips, poor task visibility, or traffic conflict",
+        "Workers, drivers, visitors, security staff",
+        "Falls, collisions, poor-quality work, injury",
+        "Lighting installed in main work areas; supervisors review obvious dark spots",
+        3,
+        4,
+        "Assess lighting levels for tasks and access routes; adjust angle to reduce glare; provide backup lighting for critical routes; inspect before night work",
+        libraryControls.engAdmin,
+        1,
+        3,
+      ),
+      libraryHazardTemplate(
+        "Maintenance and relocation of temporary lighting",
+        "Unexpected energization, dropped lights, or manual handling injury during relocation or maintenance",
+        "Electricians, laborers, maintenance workers",
+        "Electric shock, strains, struck-by injury",
+        "Maintenance coordinated by supervisor; workers instructed not to move live equipment",
+        3,
+        4,
+        "Isolate power before relocation; use team lifts for towers; inspect stands and lamps after movement; update lighting layout after relocation",
+        libraryControls.adminPpe,
+        1,
+        3,
+      ),
+    ],
+  },
+  "Signage and barricade installation": {
+    title: "Construction - Signage and Barricade Installation Risk Assessment",
+    hazards: [
+      libraryHazardTemplate(
+        "Installing barricades around active work zones",
+        "Installers exposed to moving plant, vehicles, or work activities while placing barriers",
+        "Workers, traffic marshals, installers, drivers",
+        "Struck-by injury, crushing injury, fractures",
+        "High-visibility clothing required; supervisors identify barrier locations; workers briefed on traffic routes",
+        3,
+        5,
+        "Install barricades before high-risk work starts; use spotters near traffic; work from protected positions; coordinate installation with plant shutdown where needed",
+        libraryControls.engAdminPpe,
+        1,
+        4,
+      ),
+      libraryHazardTemplate(
+        "Handling barriers, cones, signs, and bases",
+        "Manual handling injuries from carrying heavy barrier bases, signs, or awkward fencing components",
+        "Installers, laborers, traffic marshals",
+        "Back strain, hand injury, foot injury",
+        "Team lifting used for heavy items; gloves and safety footwear worn",
+        4,
+        3,
+        "Use trolleys or mechanical aids for heavy bases; limit carrying distance; stack signs safely; rotate tasks during large setup works",
+        libraryControls.engAdminPpe,
+        2,
+        3,
+      ),
+      libraryHazardTemplate(
+        "Incorrect or unclear safety signage",
+        "Workers or visitors entering hazards due to missing, wrong, or poorly positioned signs",
+        "Workers, visitors, subcontractors, public",
+        "Exposure to excavation, plant, electrical, or falling-object hazards",
+        "Standard signs available; supervisors review key access points",
+        3,
+        4,
+        "Use clear task-specific signs; position signs at decision points; remove outdated signs; include signage checks in daily inspections",
+        libraryControls.admin,
+        1,
+        3,
+      ),
+      libraryHazardTemplate(
+        "Barricade stability and visibility",
+        "Barricades or signs displaced by wind, impact, poor ground, or low visibility",
+        "Workers, drivers, visitors, public",
+        "Wrong-route access, collision, struck-by injury",
+        "Barriers placed in designated areas; reflective materials used where available",
+        3,
+        4,
+        "Use weighted bases and reflective panels; inspect after wind or vehicle movement; provide lighting for night visibility; repair damaged barriers promptly",
+        libraryControls.engAdmin,
+        1,
+        3,
+      ),
+      libraryHazardTemplate(
+        "Barricade removal or route changes",
+        "Controls removed too early or routes changed without communication",
+        "Workers, visitors, drivers, supervisors",
+        "Unauthorized access, collision, falls, serious injury",
+        "Supervisors approve major route changes; workers briefed during toolbox talks",
+        3,
+        4,
+        "Remove barriers only after hazard is eliminated or controlled; update route signs immediately; communicate changes during shift briefings; block obsolete routes",
+        libraryControls.admin,
+        1,
+        3,
+      ),
+    ],
+  },
+  "Scaffolding inspection": {
+    title: "Construction - Scaffolding Inspection Risk Assessment",
+    hazards: [
+      libraryHazardTemplate(
+        "Accessing scaffold for inspection",
+        "Falls while climbing scaffold access, inspecting platforms, or checking edge protection",
+        "Scaffold inspectors, supervisors, scaffold users",
+        "Fall injury, fractures, fatality",
+        "Inspectors competent; scaffold access provided; fall protection available where required",
+        3,
+        5,
+        "Use safe access routes only; do not climb frames or guardrails; stop inspection if scaffold is unstable; use fall protection where access is incomplete",
+        libraryControls.engAdminPpe,
+        1,
+        5,
+      ),
+      libraryHazardTemplate(
+        "Inspection of incomplete or damaged scaffold",
+        "Collapse, movement, or missing components exposing inspector to unstable scaffold conditions",
+        "Scaffold inspectors, scaffolders, nearby workers",
+        "Collapse injury, struck-by injury, fatality",
+        "Scaffold tags used; damaged scaffold reported; access restricted to authorized persons",
+        3,
+        5,
+        "Prevent use of unsafe scaffold; install physical barriers; inspect ties, braces, boards, guardrails, and foundations before permitting access; record defects clearly",
+        libraryControls.engAdmin,
+        1,
+        5,
+      ),
+      libraryHazardTemplate(
+        "Objects falling during scaffold inspection",
+        "Loose boards, couplers, debris, or tools falling from scaffold levels during inspection",
+        "Inspectors, workers below, visitors",
+        "Head injury, cuts, fractures",
+        "Hard hats required; tools carried by inspector; scaffold housekeeping checked",
+        3,
+        4,
+        "Create exclusion zone below inspection where loose items exist; use tool lanyards; remove debris; stop work below until defects are controlled",
+        libraryControls.engAdminPpe,
+        1,
+        4,
+      ),
+      libraryHazardTemplate(
+        "Scaffold inspection near overhead services or public areas",
+        "Inspector exposure to overhead electrical lines, traffic, or public interface while inspecting perimeter scaffold",
+        "Inspectors, public, nearby workers",
+        "Electric shock, struck-by injury, fatality",
+        "Known overhead services identified; public interfaces controlled by barriers",
+        2,
+        5,
+        "Maintain electrical exclusion distances; use spotter near roads; isolate or shield public interface; stop inspection in unsafe wind or weather",
+        libraryControls.eliminationEngAdminPpe,
+        1,
+        5,
+      ),
+      libraryHazardTemplate(
+        "Scaffold inspection documentation and handover",
+        "Missed defects or unclear handover leading to unsafe scaffold use after inspection",
+        "Scaffold users, contractors, supervisors",
+        "Falls, collapse, serious injury",
+        "Inspection register used; scaffold status tag updated after inspection",
+        3,
+        5,
+        "Use checklist-based inspection; record load class and restrictions; communicate defects to scaffold users; keep scaffold out of service until critical defects are closed",
+        libraryControls.admin,
+        1,
+        5,
+      ),
+    ],
+  },
+};
+
+type CompactConstructionActivityProfile = {
+  title: string;
+  people: string;
+  planningHazard: string;
+  equipmentHazard: string;
+  accessHazard: string;
+  exposureHazard: string;
+  emergencyHazard: string;
+  specificControls: string;
+  consequence: string;
+};
+
+const createCompactConstructionHazards = (
+  activity: string,
+  profile: CompactConstructionActivityProfile,
+): HazardRow[] =>
+  createLibraryHazards([
+    libraryHazardTemplate(
+      `${activity} planning and exclusion controls`,
+      profile.planningHazard,
+      profile.people,
+      profile.consequence,
+      "Task planned by supervisor; work area identified; workers briefed on main hazards and required controls",
+      3,
+      5,
+      `${profile.specificControls}; confirm permits, exclusion zones, competent supervision, and stop-work criteria before the activity starts`,
+      libraryControls.engAdminPpe,
+      1,
+      4,
+    ),
+    libraryHazardTemplate(
+      `${activity} equipment, tools, and materials`,
+      profile.equipmentHazard,
+      profile.people,
+      "Crush injury, cuts, burns, equipment damage, serious injury",
+      "Tools and equipment visually checked; trained workers assigned; PPE available for the task",
+      3,
+      4,
+      `${profile.specificControls}; inspect equipment before use, remove defective items, and keep workers clear of pinch, strike, and release zones`,
+      libraryControls.engAdminPpe,
+      1,
+      3,
+    ),
+    libraryHazardTemplate(
+      `${activity} access and work area interface`,
+      profile.accessHazard,
+      "Workers, subcontractors, visitors, adjacent work crews",
+      "Falls, struck-by injury, collision, fractures, lost time injury",
+      "Access route identified; housekeeping maintained; work area communicated to affected trades",
+      3,
+      4,
+      `${profile.specificControls}; segregate pedestrians and plant, maintain safe access, install barriers or signs, and coordinate simultaneous work`,
+      libraryControls.engAdmin,
+      1,
+      3,
+    ),
+    libraryHazardTemplate(
+      `${activity} exposure and environmental conditions`,
+      profile.exposureHazard,
+      profile.people,
+      "Respiratory irritation, burns, fatigue, environmental harm, reduced visibility",
+      "Workers briefed on exposure hazards; basic PPE and welfare arrangements available",
+      3,
+      4,
+      `${profile.specificControls}; monitor exposure conditions, improve ventilation or suppression, provide suitable PPE, and pause work if conditions become unsafe`,
+      libraryControls.substitutionEngAdminPpe,
+      1,
+      3,
+    ),
+    libraryHazardTemplate(
+      `${activity} inspection, emergency, and handover controls`,
+      profile.emergencyHazard,
+      "Workers, supervisors, emergency responders, client personnel",
+      "Delayed rescue, uncontrolled hazard, serious injury, fatality",
+      "Emergency contacts known; supervisors monitor work progress; basic first aid arrangements available",
+      2,
+      5,
+      `${profile.specificControls}; verify emergency arrangements, inspect completed work, record restrictions, and communicate residual hazards before handover`,
+      libraryControls.adminPpe,
+      1,
+      4,
+    ),
+  ]);
+
+const compactAdditionalConstructionActivityProfiles: Record<
+  string,
+  CompactConstructionActivityProfile
+> = {
+  "MEWP operation": {
+    title: "Construction - MEWP Operation Risk Assessment",
+    people: "MEWP operators, occupants, ground workers, pedestrians",
+    planningHazard:
+      "MEWP overturn, entrapment, or unsafe positioning caused by poor ground conditions, overhead obstructions, or inadequate task planning",
+    equipmentHazard:
+      "Mechanical failure, damaged guardrails, emergency lowering failure, or incorrect use of controls",
+    accessHazard:
+      "People or plant entering the MEWP operating radius, creating collision, crushing, or falling-object exposure",
+    exposureHazard:
+      "Wind, rain, poor visibility, or uneven surfaces affecting platform stability and operator control",
+    emergencyHazard:
+      "Delayed rescue after entrapment, breakdown, fall restraint activation, or platform malfunction",
+    specificControls:
+      "use trained operators, pre-use inspection, ground assessment, harness or restraint where required, and rescue plan",
+    consequence: "Fall from height, crushing injury, overturn, serious injury, fatality",
+  },
+  "Edge protection installation": {
+    title: "Construction - Edge Protection Installation Risk Assessment",
+    people: "Installers, workers at height, workers below, supervisors",
+    planningHazard:
+      "Workers exposed to open edges while installing guardrails, barriers, or covers before collective protection is complete",
+    equipmentHazard:
+      "Dropped guardrail components, posts, fixings, or tools during installation and adjustment",
+    accessHazard:
+      "Incomplete edge protection allowing unauthorized access to exposed slab edges, roofs, or openings",
+    exposureHazard:
+      "Wind, poor lighting, slippery surfaces, or awkward fixing positions affecting safe installation",
+    emergencyHazard:
+      "Delayed response if a worker falls, drops materials, or discovers unsecured edge protection",
+    specificControls:
+      "install from a protected position where possible, use temporary fall protection, set exclusion zones below, and inspect before handover",
+    consequence: "Fall from height, struck-by injury, fractures, fatality",
+  },
+  "Fall arrest system use": {
+    title: "Construction - Fall Arrest System Use Risk Assessment",
+    people: "Workers using harnesses, supervisors, rescue personnel",
+    planningHazard:
+      "Incorrect fall arrest selection, anchor point, lanyard length, or clearance creating ineffective protection",
+    equipmentHazard:
+      "Damaged harnesses, lanyards, connectors, inertia reels, or anchor devices used without proper inspection",
+    accessHazard:
+      "Workers relying on fall arrest while moving across unprotected edges, roofs, or incomplete structures",
+    exposureHazard:
+      "Weather, sharp edges, pendulum fall risk, or poor visibility reducing fall arrest effectiveness",
+    emergencyHazard:
+      "Suspension trauma or delayed rescue after fall arrest activation",
+    specificControls:
+      "verify anchor capacity, inspect equipment, control fall clearance and pendulum risk, train users, and prepare rescue equipment",
+    consequence: "Fall from height, suspension trauma, serious injury, fatality",
+  },
+  "Facade work": {
+    title: "Construction - Facade Work Risk Assessment",
+    people: "Facade installers, scaffold or MEWP users, workers below, public",
+    planningHazard:
+      "Falls, dropped facade panels, or unstable work fronts caused by poor sequencing and incomplete access controls",
+    equipmentHazard:
+      "Panel lifting devices, suction lifters, fixings, or hand tools failing during facade installation",
+    accessHazard:
+      "Workers exposed to open edges, scaffold gaps, MEWP movements, or public interfaces during facade work",
+    exposureHazard:
+      "Wind loading on panels, rain, glare, or dust affecting handling and installation quality",
+    emergencyHazard:
+      "Delayed rescue or uncontrolled panel release during facade installation at height",
+    specificControls:
+      "use engineered lifting methods, weather limits, exclusion zones below, approved access platforms, and inspected fixings",
+    consequence: "Fall from height, struck-by injury, panel collapse, fatality",
+  },
+  "Window installation": {
+    title: "Construction - Window Installation Risk Assessment",
+    people: "Installers, glaziers, workers below, visitors",
+    planningHazard:
+      "Window units or glass panels dropped or released during lifting, positioning, and fixing",
+    equipmentHazard:
+      "Suction lifters, glazing tools, fixings, or sealant equipment failing or being used incorrectly",
+    accessHazard:
+      "Installers working near openings, facade edges, or incomplete platforms while handling fragile panels",
+    exposureHazard:
+      "Glass breakage, sharp edges, wind gusts, or manual handling strain during installation",
+    emergencyHazard:
+      "Delayed response to glass breakage, dropped panel, fall risk, or severe cut injury",
+    specificControls:
+      "use glass handling aids, cut-resistant PPE, edge protection, exclusion zones, and controlled lifting or passing methods",
+    consequence: "Cuts, fall from height, struck-by injury, serious injury",
+  },
+  "Painting at height": {
+    title: "Construction - Painting at Height Risk Assessment",
+    people: "Painters, scaffold users, MEWP operators, workers below",
+    planningHazard:
+      "Falls while painting from ladders, scaffolds, MEWPs, roofs, or exposed edges",
+    equipmentHazard:
+      "Paint containers, rollers, spray equipment, or tools dropped from height or used from unstable positions",
+    accessHazard:
+      "Workers overreaching, moving between platforms, or working above active areas without segregation",
+    exposureHazard:
+      "Solvent vapors, overspray, skin contact, poor ventilation, or weather affecting safe painting",
+    emergencyHazard:
+      "Delayed response to fall, chemical exposure, overspray incident, or fire involving flammable paints",
+    specificControls:
+      "use suitable access equipment, secure tools and materials, ventilate work areas, control ignition sources, and maintain exclusion zones below",
+    consequence: "Fall from height, chemical exposure, fire, serious injury",
+  },
+  "Cladding installation": {
+    title: "Construction - Cladding Installation Risk Assessment",
+    people: "Cladding installers, riggers, workers below, public",
+    planningHazard:
+      "Large cladding sheets or panels becoming unstable during lifting, alignment, and fixing",
+    equipmentHazard:
+      "Fixing tools, lifting accessories, suction devices, or fasteners failing during installation",
+    accessHazard:
+      "Installers working near edges, facade openings, scaffolds, or MEWPs with incomplete protection",
+    exposureHazard:
+      "Wind catching cladding panels, sharp sheet edges, noise, dust, or weather affecting control",
+    emergencyHazard:
+      "Delayed rescue or uncontrolled panel release during high-level cladding work",
+    specificControls:
+      "set wind limits, use engineered lifting aids, wear cut-resistant PPE, maintain exclusion zones, and inspect fixings progressively",
+    consequence: "Fall from height, cuts, struck-by injury, panel collapse, fatality",
+  },
+  "Mobile crane setup": {
+    title: "Construction - Mobile Crane Setup Risk Assessment",
+    people: "Crane operators, riggers, lift supervisors, ground workers",
+    planningHazard:
+      "Crane setup on unsuitable ground, near excavations, or without correct lift planning",
+    equipmentHazard:
+      "Outrigger, mat, hook block, safety device, or crane component failure during setup",
+    accessHazard:
+      "Workers entering crane setup area or being struck during outrigger deployment and counterweight installation",
+    exposureHazard:
+      "Wind, poor visibility, soft ground, or nearby overhead services affecting crane setup safety",
+    emergencyHazard:
+      "Delayed response to crane instability, power line contact, dropped counterweight, or mechanical failure",
+    specificControls:
+      "verify ground bearing, use outrigger mats, check crane certificates, control setup exclusion zones, and appoint lift supervisor",
+    consequence: "Crane overturn, crushing injury, electric shock, fatality",
+  },
+  "Tower crane operation": {
+    title: "Construction - Tower Crane Operation Risk Assessment",
+    people: "Tower crane operators, riggers, signalers, workers below, public",
+    planningHazard:
+      "Uncontrolled lifting, load collision, or overloading due to poor planning and communication",
+    equipmentHazard:
+      "Hoist, trolley, limit switch, hook, radio, or lifting accessory failure during tower crane operation",
+    accessHazard:
+      "Loads passing over people, public areas, incomplete structures, or congested work zones",
+    exposureHazard:
+      "Wind, lightning, poor visibility, or radio interference affecting load control",
+    emergencyHazard:
+      "Delayed response to dropped load, power failure, rescue from crane cab, or communication loss",
+    specificControls:
+      "use lift plans, anti-collision controls, competent signalers, weather limits, exclusion zones, and clear radio protocol",
+    consequence: "Dropped load, collision, structural damage, fatality",
+  },
+  "Rigging and slinging": {
+    title: "Construction - Rigging and Slinging Risk Assessment",
+    people: "Riggers, slingers, crane operators, workers nearby",
+    planningHazard:
+      "Load instability or dropped load caused by incorrect sling selection, angles, attachment points, or center of gravity",
+    equipmentHazard:
+      "Damaged slings, shackles, hooks, lifting beams, or edge protection used during lifting",
+    accessHazard:
+      "Riggers working close to suspended loads, pinch points, and active crane or plant movements",
+    exposureHazard:
+      "Sharp edges, wind, poor visibility, awkward load shape, or contaminated lifting gear affecting rigging safety",
+    emergencyHazard:
+      "Delayed response to dropped load, trapped worker, failed lifting accessory, or uncontrolled swing",
+    specificControls:
+      "use competent riggers, inspect lifting gear, confirm load weight and center of gravity, test lift, and keep people out from under suspended loads",
+    consequence: "Crushing injury, struck-by injury, dropped load, fatality",
+  },
+  "Telehandler operation": {
+    title: "Construction - Telehandler Operation Risk Assessment",
+    people: "Telehandler operators, pedestrians, banksmen, delivery drivers",
+    planningHazard:
+      "Telehandler overturn, collision, or load instability caused by poor route planning and unsuitable ground",
+    equipmentHazard:
+      "Forks, attachments, load charts, brakes, steering, or visibility aids damaged or used incorrectly",
+    accessHazard:
+      "Pedestrians entering telehandler operating areas or blind spots during lifting and travel",
+    exposureHazard:
+      "Uneven ground, slopes, mud, poor visibility, and weather affecting stability and braking",
+    emergencyHazard:
+      "Delayed response to overturn, collision, dropped load, or mechanical failure",
+    specificControls:
+      "use trained operators, pre-use checks, correct attachments, seatbelts, load charts, traffic routes, and banksmen where visibility is restricted",
+    consequence: "Overturn, struck-by injury, crushing injury, fatality",
+  },
+  "Excavator operation": {
+    title: "Construction - Excavator Operation Risk Assessment",
+    people: "Excavator operators, ground workers, banksmen, nearby trades",
+    planningHazard:
+      "Excavator striking workers, structures, services, or excavation edges due to poor work planning",
+    equipmentHazard:
+      "Bucket, quick hitch, hydraulic system, or swing radius hazards causing dropped attachments or impact",
+    accessHazard:
+      "Ground workers entering swing radius or working too close to excavation plant",
+    exposureHazard:
+      "Soft ground, slopes, dust, noise, vibration, or poor visibility affecting safe operation",
+    emergencyHazard:
+      "Delayed response to service strike, overturn, dropped bucket, or worker struck by excavator",
+    specificControls:
+      "inspect quick hitch and attachments, maintain exclusion zones, use banksmen, verify services, and operate within ground and slope limits",
+    consequence: "Crushing injury, service strike, overturn, fatality",
+  },
+  "Loader operation": {
+    title: "Construction - Loader Operation Risk Assessment",
+    people: "Loader operators, pedestrians, ground workers, drivers",
+    planningHazard:
+      "Loader collision, rollover, or struck-by event during material loading and stockpile operations",
+    equipmentHazard:
+      "Bucket, brakes, steering, reversing alarm, or visibility aids failing during operation",
+    accessHazard:
+      "Pedestrians or vehicles entering loader routes, loading zones, or blind spots",
+    exposureHazard:
+      "Dust, uneven ground, stockpile instability, noise, and restricted visibility affecting loader control",
+    emergencyHazard:
+      "Delayed response to collision, rollover, material collapse, or mechanical failure",
+    specificControls:
+      "use traffic segregation, seatbelts, pre-use checks, stockpile controls, speed limits, and reversing aids",
+    consequence: "Collision, rollover, crushing injury, fatality",
+  },
+  "Dumper operation": {
+    title: "Construction - Dumper Operation Risk Assessment",
+    people: "Dumper operators, ground workers, banksmen, pedestrians",
+    planningHazard:
+      "Dumper overturn, collision, or unsafe tipping caused by poor route selection and unstable ground",
+    equipmentHazard:
+      "Brakes, steering, skip, seatbelt, or visibility aids damaged or not used correctly",
+    accessHazard:
+      "Workers or pedestrians entering dumper routes, tipping zones, or reversing areas",
+    exposureHazard:
+      "Mud, gradients, uneven ground, dust, weather, and poor visibility affecting dumper stability",
+    emergencyHazard:
+      "Delayed response to overturn, collision, trapped operator, or unsafe tipping incident",
+    specificControls:
+      "use trained operators, seatbelts, designated routes, tipping exclusion zones, ground inspections, and banksmen where required",
+    consequence: "Overturn, crushing injury, collision, fatality",
+  },
+  "Plant refueling": {
+    title: "Construction - Plant Refueling Risk Assessment",
+    people: "Plant operators, fuel handlers, maintenance workers, nearby trades",
+    planningHazard:
+      "Fire, spill, or unauthorized refueling caused by poor refueling area controls",
+    equipmentHazard:
+      "Damaged fuel hoses, nozzles, tanks, pumps, or containers causing leaks or ignition",
+    accessHazard:
+      "Vehicles, pedestrians, and ignition sources entering refueling area during fuel transfer",
+    exposureHazard:
+      "Fuel vapor, skin contact, contaminated ground, poor ventilation, or adverse weather affecting refueling safety",
+    emergencyHazard:
+      "Delayed response to fuel spill, fire, overfill, or environmental release",
+    specificControls:
+      "use designated refueling areas, spill kits, no-smoking controls, bonding where needed, fire extinguishers, and trained fuel handlers",
+    consequence: "Fire, burns, explosion, environmental contamination",
+  },
+  "Plant maintenance on site": {
+    title: "Construction - Plant Maintenance On Site Risk Assessment",
+    people: "Mechanics, plant operators, maintenance workers, nearby trades",
+    planningHazard:
+      "Unexpected movement, stored energy, or uncontrolled maintenance on plant in active site areas",
+    equipmentHazard:
+      "Hydraulic pressure, hot parts, rotating components, raised attachments, or defective tools causing injury",
+    accessHazard:
+      "Maintenance workers exposed to traffic, plant movement, or poor access around parked equipment",
+    exposureHazard:
+      "Oil, grease, fumes, noise, manual handling, and weather affecting maintenance safety",
+    emergencyHazard:
+      "Delayed response to crush injury, hydraulic injection, fire, or spill during maintenance",
+    specificControls:
+      "isolate and lock out plant, lower attachments, chock wheels, use stands, control traffic, and provide spill/fire response equipment",
+    consequence: "Crushing injury, burns, injection injury, fire, serious injury",
+  },
+  "Temporary electrical testing": {
+    title: "Construction - Temporary Electrical Testing Risk Assessment",
+    people: "Electricians, commissioning workers, supervisors, nearby trades",
+    planningHazard:
+      "Exposure to live temporary circuits during testing without adequate isolation, barriers, or authorization",
+    equipmentHazard:
+      "Faulty meters, damaged probes, incorrect test equipment, or overloaded temporary circuits",
+    accessHazard:
+      "Unauthorized workers entering test area or interacting with energized temporary electrical equipment",
+    exposureHazard:
+      "Wet conditions, poor lighting, cramped panels, or damaged insulation increasing electric shock risk",
+    emergencyHazard:
+      "Delayed response to electric shock, arc flash, fire, or failed test condition",
+    specificControls:
+      "use competent electricians, test-before-touch, calibrated meters, insulated probes, barriers, permits, and lockout/tagout",
+    consequence: "Electric shock, arc flash burns, fire, fatality",
+  },
+  "Cable pulling": {
+    title: "Construction - Cable Pulling Risk Assessment",
+    people: "Electricians, cable pullers, helpers, nearby workers",
+    planningHazard:
+      "Cable pulling strain, snapback, or uncontrolled movement due to poor route planning and communication",
+    equipmentHazard:
+      "Winches, rollers, ropes, pulling socks, or cable drums failing or being used incorrectly",
+    accessHazard:
+      "Workers pulling cables through congested routes, risers, trenches, ceilings, or public access zones",
+    exposureHazard:
+      "Manual handling, awkward posture, sharp trays, dust, and poor ventilation during cable installation",
+    emergencyHazard:
+      "Delayed response to trapped hands, cable snapback, fall, or electrical interface incident",
+    specificControls:
+      "plan pull route, use cable rollers, control tension, communicate commands, secure drums, and rotate manual tasks",
+    consequence: "Strains, crush injury, falls, lacerations, serious injury",
+  },
+  "HVAC installation": {
+    title: "Construction - HVAC Installation Risk Assessment",
+    people: "HVAC installers, duct workers, electricians, workers below",
+    planningHazard:
+      "Uncontrolled lifting, positioning, or installation of HVAC units, ducts, and supports",
+    equipmentHazard:
+      "Sharp duct edges, lifting accessories, drills, grinders, or suspended equipment causing injury",
+    accessHazard:
+      "Work above ceiling voids, ladders, MEWPs, or congested plant rooms creating fall and interface hazards",
+    exposureHazard:
+      "Dust, insulation fibers, noise, awkward posture, and poor ventilation during HVAC installation",
+    emergencyHazard:
+      "Delayed response to dropped duct, fall, electrical interface, or trapped worker in ceiling void",
+    specificControls:
+      "use mechanical lifting aids, edge protection on sharp ducts, approved access platforms, exclusion zones below, and coordinated MEP sequencing",
+    consequence: "Falls, cuts, dropped materials, strains, serious injury",
+  },
+  "Plumbing installation": {
+    title: "Construction - Plumbing Installation Risk Assessment",
+    people: "Plumbers, helpers, other trades, building users",
+    planningHazard:
+      "Leaks, pressure release, or service clashes caused by poor isolation and installation planning",
+    equipmentHazard:
+      "Pipe cutters, threading tools, soldering equipment, pressure testing tools, or heavy pipe sections causing injury",
+    accessHazard:
+      "Work in risers, ceiling voids, trenches, or plant rooms with poor access and multiple trades",
+    exposureHazard:
+      "Hot work fumes, flux, contaminated water, sharp pipe edges, and manual handling exposure",
+    emergencyHazard:
+      "Delayed response to leak, pressure failure, burn, or flooding during plumbing installation",
+    specificControls:
+      "isolate services, pressure test safely, use pipe supports, ventilate hot work, control access, and provide spill response",
+    consequence: "Burns, flooding, cuts, slips, serious injury",
+  },
+  "Oxy-fuel cutting": {
+    title: "Construction - Oxy-Fuel Cutting Risk Assessment",
+    people: "Cutters, welders, fire watch, workers nearby",
+    planningHazard:
+      "Fire, explosion, or burns caused by hot work near combustibles or poorly controlled cutting areas",
+    equipmentHazard:
+      "Gas cylinders, regulators, hoses, torches, or flashback arrestors damaged or used incorrectly",
+    accessHazard:
+      "Workers or public entering cutting zone and being exposed to sparks, hot metal, or cylinders",
+    exposureHazard:
+      "Fumes, heat, glare, oxygen enrichment, or poor ventilation during oxy-fuel cutting",
+    emergencyHazard:
+      "Delayed response to flashback, cylinder fire, burn injury, or combustible ignition",
+    specificControls:
+      "use hot work permits, fire watch, flashback arrestors, cylinder restraints, gas leak checks, ventilation, and fire extinguishers",
+    consequence: "Burns, fire, explosion, eye injury, fatality",
+  },
+  "Grinding and cutting": {
+    title: "Construction - Grinding and Cutting Risk Assessment",
+    people: "Workers using grinders or saws, nearby workers, visitors",
+    planningHazard:
+      "Uncontrolled sparks, flying fragments, or cutting into unknown materials due to poor task planning",
+    equipmentHazard:
+      "Disc burst, missing guard, incorrect blade, kickback, or damaged power tool during grinding and cutting",
+    accessHazard:
+      "Bystanders entering spark or fragment zone, or workers cutting in cramped and unstable positions",
+    exposureHazard:
+      "Noise, dust, vibration, sparks, fumes, and hot surfaces from grinding and cutting",
+    emergencyHazard:
+      "Delayed response to eye injury, severe cut, fire, or tool failure",
+    specificControls:
+      "inspect guards and discs, use correct wheel, secure workpiece, wear face and hearing protection, control sparks, and use dust suppression",
+    consequence: "Eye injury, lacerations, burns, hearing damage, serious injury",
+  },
+  "Hot work in occupied areas": {
+    title: "Construction - Hot Work In Occupied Areas Risk Assessment",
+    people: "Hot work crew, occupants, facility staff, visitors, fire watch",
+    planningHazard:
+      "Fire, smoke, fumes, or occupant exposure caused by hot work near occupied or operational areas",
+    equipmentHazard:
+      "Welding, cutting, grinding, gas equipment, or temporary screens failing to contain sparks and heat",
+    accessHazard:
+      "Occupants, visitors, or unauthorized workers entering hot work area during the task",
+    exposureHazard:
+      "Smoke, fumes, odors, heat, and fire alarm activation affecting occupied spaces",
+    emergencyHazard:
+      "Delayed evacuation, fire response, or communication with occupants after hot work incident",
+    specificControls:
+      "use hot work permits, fire watch, occupant communication, isolation of detectors where approved, ventilation, fire stopping checks, and post-work monitoring",
+    consequence: "Fire, smoke inhalation, burns, disruption, fatality",
+  },
+  "Commissioning and testing": {
+    title: "Construction - Commissioning and Testing Risk Assessment",
+    people: "Commissioning engineers, electricians, operators, nearby workers",
+    planningHazard:
+      "Unexpected energization, movement, pressure release, or system startup during commissioning",
+    equipmentHazard:
+      "Test equipment, temporary bypasses, valves, panels, motors, or interlocks failing or being used incorrectly",
+    accessHazard:
+      "Unauthorized workers entering commissioning areas or interacting with equipment under test",
+    exposureHazard:
+      "Noise, heat, pressure, electrical energy, chemicals, or moving parts during live testing",
+    emergencyHazard:
+      "Delayed response to failed test, alarm, leak, electric shock, or mechanical movement",
+    specificControls:
+      "use commissioning permits, lockout/tagout, barriers, test scripts, competent supervision, emergency stop verification, and clear handover records",
+    consequence: "Electric shock, pressure injury, mechanical injury, fire, fatality",
+  },
+  "Work near live traffic": {
+    title: "Construction - Work Near Live Traffic Risk Assessment",
+    people: "Road workers, traffic marshals, drivers, pedestrians, public",
+    planningHazard:
+      "Workers struck by live traffic due to inadequate traffic management, poor visibility, or unsafe work zone layout",
+    equipmentHazard:
+      "Traffic barriers, cones, signs, attenuators, or temporary signals damaged or incorrectly installed",
+    accessHazard:
+      "Workers crossing traffic routes or vehicles entering work zones without control",
+    exposureHazard:
+      "Night glare, weather, noise, exhaust fumes, and high-speed traffic affecting worker safety",
+    emergencyHazard:
+      "Delayed response to road traffic collision, vehicle incursion, or injured worker in live carriageway",
+    specificControls:
+      "use approved traffic management plans, physical barriers, lane closures, high-visibility PPE, spotters, and emergency escape routes",
+    consequence: "Vehicle strike, crushing injury, multiple serious injuries, fatality",
+  },
+  "Work near overhead power lines": {
+    title: "Construction - Work Near Overhead Power Lines Risk Assessment",
+    people: "Plant operators, riggers, scaffolders, roof workers, ground workers",
+    planningHazard:
+      "Contact or arcing from overhead power lines during plant, lifting, scaffold, or access work",
+    equipmentHazard:
+      "Crane booms, MEWPs, scaffold tubes, ladders, or long materials entering electrical exclusion zones",
+    accessHazard:
+      "Workers or plant routes positioned too close to live overhead electrical services",
+    exposureHazard:
+      "Poor visibility, wind, long loads, or changing site levels reducing safe clearance",
+    emergencyHazard:
+      "Delayed response to electric shock, arc flash, fire, or energized plant after contact",
+    specificControls:
+      "isolate or divert power where possible, establish no-go zones, use goalposts and spotters, brief operators, and maintain utility owner clearance requirements",
+    consequence: "Electric shock, arc flash burns, fire, fatality",
+  },
+  "Work over water": {
+    title: "Construction - Work Over Water Risk Assessment",
+    people: "Workers over water, rescue team, plant operators, inspectors",
+    planningHazard:
+      "Fall into water from platforms, edges, pontoons, bridges, or temporary works",
+    equipmentHazard:
+      "Life jackets, rescue equipment, access platforms, or edge protection missing, damaged, or unsuitable",
+    accessHazard:
+      "Workers moving across wet, unstable, or narrow access routes above water",
+    exposureHazard:
+      "Cold water, currents, poor weather, low visibility, contamination, or slippery surfaces",
+    emergencyHazard:
+      "Delayed water rescue, hypothermia response, or recovery of worker after fall into water",
+    specificControls:
+      "install edge protection, wear suitable life jackets, provide rescue boat or rescue kit, brief rescue plan, and monitor weather and water conditions",
+    consequence: "Drowning, hypothermia, fall injury, fatality",
+  },
+  "Asbestos disturbance": {
+    title: "Construction - Asbestos Disturbance Risk Assessment",
+    people: "Workers, demolition crew, occupants, cleaners, public",
+    planningHazard:
+      "Unplanned disturbance of asbestos-containing materials during drilling, cutting, demolition, or refurbishment",
+    equipmentHazard:
+      "Inadequate enclosures, extraction, tools, waste bags, or decontamination equipment for asbestos controls",
+    accessHazard:
+      "Unauthorized workers entering asbestos-controlled areas or spreading contamination outside the work zone",
+    exposureHazard:
+      "Airborne asbestos fibers contaminating workers, clothing, tools, adjacent areas, and waste streams",
+    emergencyHazard:
+      "Delayed response to accidental asbestos disturbance, contamination spread, or failed air control",
+    specificControls:
+      "complete asbestos survey, stop work if suspect material is found, use licensed removal where required, isolate area, and follow decontamination and waste rules",
+    consequence: "Serious occupational illness, contamination, regulatory breach",
+  },
+  "Silica dust generating work": {
+    title: "Construction - Silica Dust Generating Work Risk Assessment",
+    people: "Cutters, breakers, drillers, nearby workers, cleaners",
+    planningHazard:
+      "Respirable crystalline silica exposure from cutting, grinding, drilling, breaking, or sweeping concrete and masonry",
+    equipmentHazard:
+      "Dry cutting tools, ineffective extraction, missing water suppression, or poor respirator selection",
+    accessHazard:
+      "Other workers entering dusty exclusion zones or contaminated areas without controls",
+    exposureHazard:
+      "Airborne silica dust, poor ventilation, settled dust, and dry sweeping increasing inhalation risk",
+    emergencyHazard:
+      "Delayed response to uncontrolled dust release, failed extraction, or worker respiratory symptoms",
+    specificControls:
+      "use wet methods or on-tool extraction, restrict dusty zones, wear fit-tested RPE, clean with vacuum or wet methods, and monitor dust controls",
+    consequence: "Respiratory disease, silicosis risk, eye irritation, chronic health effects",
+  },
+  "Night work": {
+    title: "Construction - Night Work Risk Assessment",
+    people: "Night shift workers, supervisors, security, drivers, nearby public",
+    planningHazard:
+      "Reduced visibility, fatigue, and reduced supervision increasing error, collision, and injury risk",
+    equipmentHazard:
+      "Temporary lighting, plant lights, alarms, radios, or backup systems inadequate or failing during night work",
+    accessHazard:
+      "Workers moving through poorly lit routes, changed traffic layouts, or isolated work areas",
+    exposureHazard:
+      "Fatigue, cold, glare, noise restrictions, reduced visibility, and lone working during night operations",
+    emergencyHazard:
+      "Delayed emergency response, poor communication, or difficulty locating injured workers at night",
+    specificControls:
+      "provide lighting plans, fatigue management, supervisor coverage, communication checks, emergency access, reflective PPE, and noise controls",
+    consequence: "Collision, falls, fatigue-related error, serious injury, fatality",
+  },
+  "Emergency response drill": {
+    title: "Construction - Emergency Response Drill Risk Assessment",
+    people: "Workers, emergency wardens, visitors, supervisors, responders",
+    planningHazard:
+      "Drill creating confusion, panic, or exposure to active construction hazards during simulated emergency movement",
+    equipmentHazard:
+      "Alarms, radios, muster systems, emergency lighting, or rescue equipment failing during drill",
+    accessHazard:
+      "Participants moving through temporary routes, stairs, gates, traffic routes, or congested muster areas",
+    exposureHazard:
+      "Weather, noise, poor visibility, fatigue, or site congestion affecting drill participation and communication",
+    emergencyHazard:
+      "Real emergency or injury occurring during drill without clear escalation and cancellation process",
+    specificControls:
+      "brief wardens, control traffic, keep evacuation routes clear, test communications, account for personnel, and debrief lessons learned",
+    consequence: "Trips, crowding, delayed evacuation, confusion, injury",
+  },
+};
+
+const additionalConstructionRiskAssessmentLibrary = Object.fromEntries(
+  Object.entries(additionalConstructionActivityHazardSets).map(
+    ([activity, assessment]) => [
+      activity,
+      {
+        title: assessment.title,
+        createHazards: () => createLibraryHazards(assessment.hazards),
+      },
+    ],
+  ),
+) as Record<string, { title: string; createHazards: () => HazardRow[] }>;
+
+const compactAdditionalConstructionRiskAssessmentLibrary = Object.fromEntries(
+  Object.entries(compactAdditionalConstructionActivityProfiles).map(
+    ([activity, profile]) => [
+      activity,
+      {
+        title: profile.title,
+        createHazards: () => createCompactConstructionHazards(activity, profile),
+      },
+    ],
+  ),
+) as Record<string, { title: string; createHazards: () => HazardRow[] }>;
+
 const constructionRiskAssessmentLibrary: Record<
   string,
   { title: string; createHazards: () => HazardRow[] }
@@ -4064,6 +5077,8 @@ const constructionRiskAssessmentLibrary: Record<
     title: "Construction - Roof Work Risk Assessment",
     createHazards: createRoofWorkHazards,
   },
+  ...additionalConstructionRiskAssessmentLibrary,
+  ...compactAdditionalConstructionRiskAssessmentLibrary,
 };
 
 const toRiskValue = (value: string): RiskValue => Number(value) as RiskValue;
