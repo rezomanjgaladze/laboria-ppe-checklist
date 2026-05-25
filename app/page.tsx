@@ -32,6 +32,7 @@ import html2canvas from "html2canvas";
 import { ALL_CHECKLISTS } from "./data/checklists";
 import ActionTrackerModule from "./components/ActionTrackerModule";
 import RiskAssessmentsModule from "./components/RiskAssessmentsModule";
+import TrainingManagementModule from "./components/TrainingManagementModule";
 import { createClient } from "@/lib/supabase/client";
 import {
   appendActionTrackerAction,
@@ -252,8 +253,8 @@ const WORKSPACE_MODULES: WorkspaceModule[] = [
     id: "training-management",
     label: "Training Management",
     description:
-      "Plan safety trainings, toolbox talks, attendance records, and competency logs.",
-    status: "Coming Soon",
+      "Manage HSE training requirements, employee competency records, expirations, and compliance gaps.",
+    status: "Active",
     icon: GraduationCap,
   },
   {
@@ -2322,6 +2323,13 @@ export default function Home() {
           />
         ) : activeWorkspaceModule === "risk-assessments" ? (
           <RiskAssessmentsModule
+            userId={authUserId}
+            darkMode={darkMode}
+            onToggleTheme={() => setDarkMode((current) => !current)}
+            createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
+          />
+        ) : activeWorkspaceModule === "training-management" ? (
+          <TrainingManagementModule
             userId={authUserId}
             darkMode={darkMode}
             onToggleTheme={() => setDarkMode((current) => !current)}
