@@ -257,9 +257,236 @@ const warehouseActivityGroups: ActivityGroup[] = [
   },
 ];
 
+const manufacturingActivityGroups: ActivityGroup[] = [
+  {
+    label: "Production Operations",
+    activities: [
+      "Machine operation",
+      "Assembly line work",
+      "Packaging line operation",
+      "Material feeding into machines",
+      "Product inspection",
+      "Quality control sampling",
+      "Line changeover",
+      "Batch production",
+      "Manual sorting",
+      "Finished goods handling",
+    ],
+  },
+  {
+    label: "Machinery & Equipment",
+    activities: [
+      "Machine guarding inspection",
+      "Use of rotating machinery",
+      "Press machine operation",
+      "CNC machine operation",
+      "Conveyor operation",
+      "Lockout/tagout during maintenance",
+      "Equipment cleaning",
+      "Equipment lubrication",
+      "Tool change",
+      "Machine troubleshooting",
+    ],
+  },
+  {
+    label: "Maintenance & Engineering",
+    activities: [
+      "Preventive maintenance",
+      "Corrective maintenance",
+      "Electrical maintenance",
+      "Mechanical maintenance",
+      "Hydraulic system maintenance",
+      "Pneumatic system maintenance",
+      "Work at height during maintenance",
+      "Confined space maintenance",
+      "Hot work maintenance",
+      "Contractor maintenance work",
+    ],
+  },
+  {
+    label: "Materials & Chemical Handling",
+    activities: [
+      "Chemical handling",
+      "Solvent use",
+      "Paint/coating application",
+      "Compressed gas cylinder handling",
+      "Flammable material storage",
+      "Raw material handling",
+      "Powder handling",
+      "Dust-generating process",
+      "Spill response",
+      "Waste chemical handling",
+    ],
+  },
+  {
+    label: "Workplace Environment",
+    activities: [
+      "Noise exposure areas",
+      "Heat stress areas",
+      "Poor ventilation areas",
+      "Slip/trip hazard areas",
+      "Manual handling tasks",
+      "Forklift interaction areas",
+      "Pedestrian movement in production area",
+      "Cleaning and sanitation",
+      "Emergency evacuation",
+      "Fire prevention",
+    ],
+  },
+];
+
+const officeActivityGroups: ActivityGroup[] = [
+  {
+    label: "Office Workstations",
+    activities: [
+      "Display screen equipment work",
+      "Desk-based computer work",
+      "Workstation setup",
+      "Prolonged sitting",
+      "Keyboard and mouse use",
+      "Document handling",
+      "Shared workstation use",
+      "Remote/hybrid office work",
+    ],
+  },
+  {
+    label: "Office Movement & Housekeeping",
+    activities: [
+      "Walking in office corridors",
+      "Stair use",
+      "Office housekeeping",
+      "Cable management",
+      "Storage cabinet use",
+      "Filing and archive work",
+      "Carrying office supplies",
+      "Cleaning coordination",
+    ],
+  },
+  {
+    label: "Facilities & Building Safety",
+    activities: [
+      "Fire evacuation",
+      "Emergency drills",
+      "First aid response",
+      "Electrical equipment use",
+      "Printer and copier use",
+      "Kitchen/pantry use",
+      "Meeting room use",
+      "Visitor management",
+    ],
+  },
+  {
+    label: "Psychosocial & Organizational",
+    activities: [
+      "Workload pressure",
+      "Long screen time",
+      "Lone working after hours",
+      "Workplace stress",
+      "Workplace communication",
+      "Working with difficult clients",
+      "Fatigue from overtime",
+      "New employee onboarding",
+    ],
+  },
+  {
+    label: "Office Maintenance & Support",
+    activities: [
+      "Minor office maintenance",
+      "Contractor work in office",
+      "Furniture moving",
+      "Lighting maintenance",
+      "HVAC comfort issues",
+      "Indoor air quality concerns",
+      "Waste handling",
+      "Paper shredding",
+    ],
+  },
+];
+
+const healthcareActivityGroups: ActivityGroup[] = [
+  {
+    label: "Patient Care",
+    activities: [
+      "Patient handling and repositioning",
+      "Patient transfer",
+      "Bedside care",
+      "Assisting mobility",
+      "Patient bathing",
+      "Patient feeding",
+      "Handling aggressive patients",
+      "Isolation room care",
+      "Emergency patient response",
+      "Home healthcare visit",
+    ],
+  },
+  {
+    label: "Clinical Procedures",
+    activities: [
+      "Injection administration",
+      "Blood sampling",
+      "IV line insertion",
+      "Wound dressing",
+      "Minor procedure assistance",
+      "Sharps handling",
+      "Specimen collection",
+      "Medication preparation",
+      "Use of medical devices",
+      "Clinical waste disposal",
+    ],
+  },
+  {
+    label: "Infection Prevention",
+    activities: [
+      "Cleaning contaminated surfaces",
+      "Handling infectious materials",
+      "PPE donning and doffing",
+      "Disinfection procedures",
+      "Laundry handling",
+      "Isolation waste handling",
+      "Exposure to blood/body fluids",
+      "Respiratory infection control",
+      "Sterile area work",
+      "Spill cleanup",
+    ],
+  },
+  {
+    label: "Laboratory & Diagnostic Work",
+    activities: [
+      "Sample receiving",
+      "Laboratory testing",
+      "Chemical reagent handling",
+      "Biological sample handling",
+      "Centrifuge use",
+      "Microscope work",
+      "Autoclave operation",
+      "Laboratory waste handling",
+      "Cold storage/freezer access",
+      "Equipment calibration",
+    ],
+  },
+  {
+    label: "Facility & Support Services",
+    activities: [
+      "Medical gas cylinder handling",
+      "Cleaning clinical areas",
+      "Hospital laundry work",
+      "Food service in healthcare",
+      "Maintenance in clinical areas",
+      "Waste transportation",
+      "Emergency evacuation",
+      "Fire response",
+      "Security incident response",
+      "Night shift healthcare work",
+    ],
+  },
+];
+
 const activityGroupsBySector: Record<string, ActivityGroup[]> = {
   Construction: constructionActivityGroups,
   "Warehouse & Logistics": warehouseActivityGroups,
+  Manufacturing: manufacturingActivityGroups,
+  "Office & Administrative": officeActivityGroups,
+  "Healthcare & Medical Facilities": healthcareActivityGroups,
 };
 
 const sectorOptions = Object.keys(activityGroupsBySector);
@@ -5732,12 +5959,460 @@ const warehouseRiskAssessmentLibrary = Object.fromEntries(
   ]),
 ) as Record<string, { title: string; createHazards: () => HazardRow[] }>;
 
+type SmartSectorCategoryProfile = {
+  people: string;
+  planningHazard: string;
+  equipmentHazard: string;
+  interfaceHazard: string;
+  exposureHazard: string;
+  emergencyHazard: string;
+  existingMeasures: string;
+  specificControls: string;
+  consequence: string;
+};
+
+const createSmartSectorHazards = (
+  sector: string,
+  category: string,
+  activity: string,
+  profile: SmartSectorCategoryProfile,
+): HazardRow[] =>
+  createLibraryHazards([
+    libraryHazardTemplate(
+      `${activity} planning and supervision`,
+      `${activity} in ${sector} ${profile.planningHazard}`,
+      profile.people,
+      profile.consequence,
+      profile.existingMeasures,
+      3,
+      5,
+      `${profile.specificControls}; confirm responsibilities, supervision, safe sequencing, and stop-work criteria before the task starts`,
+      libraryControls.engAdminPpe,
+      1,
+      4,
+    ),
+    libraryHazardTemplate(
+      `${activity} equipment, tools, and materials`,
+      `${activity} may involve ${profile.equipmentHazard}`,
+      profile.people,
+      "Cuts, crush injury, burns, equipment damage, ill health, lost time injury",
+      "Equipment, tools, materials, and work areas are visually checked before use; defects are reported to supervision",
+      3,
+      4,
+      `${profile.specificControls}; remove defective equipment, use suitable tools, keep guards or barriers in place, and verify task-specific PPE`,
+      libraryControls.substitutionEngAdminPpe,
+      1,
+      3,
+    ),
+    libraryHazardTemplate(
+      `${activity} people, workflow, and interface controls`,
+      `${activity} can expose people to ${profile.interfaceHazard}`,
+      profile.people,
+      "Struck-by injury, collision, contact injury, stress, delayed care, serious injury",
+      "Work areas, access routes, and communication arrangements are defined before work begins",
+      3,
+      5,
+      `${profile.specificControls}; separate affected people from the hazard, brief all involved workers, control access, and coordinate with nearby teams`,
+      libraryControls.engAdminPpe,
+      1,
+      4,
+    ),
+    libraryHazardTemplate(
+      `${activity} exposure, ergonomics, and environment`,
+      `${activity} may create ${profile.exposureHazard}`,
+      profile.people,
+      "Musculoskeletal injury, exposure-related illness, fatigue, slips, trips, reduced performance",
+      "Basic housekeeping, welfare, ventilation, lighting, and PPE arrangements are available where required",
+      3,
+      4,
+      `${profile.specificControls}; reduce exposure at source, rotate tasks, improve the work environment, and escalate symptoms or unsafe conditions early`,
+      libraryControls.eliminationEngAdminPpe,
+      1,
+      3,
+    ),
+    libraryHazardTemplate(
+      `${activity} emergency response and handover`,
+      `${activity} may be affected by ${profile.emergencyHazard}`,
+      "Workers, supervisors, first aiders, emergency responders, affected occupants",
+      "Delayed response, uncontrolled escalation, serious injury, business interruption, fatality",
+      "Emergency contacts, first aid arrangements, reporting routes, and escalation procedures are communicated",
+      2,
+      5,
+      `${profile.specificControls}; verify emergency access, report incidents and defects, document open actions, and communicate residual risks during handover`,
+      libraryControls.adminPpe,
+      1,
+      4,
+    ),
+  ]);
+
+const manufacturingCategoryProfiles: Record<
+  string,
+  SmartSectorCategoryProfile
+> = {
+  "Production Operations": {
+    people:
+      "Production operators, line supervisors, quality inspectors, maintenance workers, nearby workers",
+    planningHazard:
+      "can create exposure to moving production processes, task pressure, unclear line responsibilities, unsafe sequencing, and changing production conditions",
+    equipmentHazard:
+      "unguarded moving parts, pinch points, sharp edges, hot surfaces, powered tools, conveyor movement, and unstable materials",
+    interfaceHazard:
+      "interaction between operators, maintenance personnel, forklifts, material movements, and adjacent production lines",
+    exposureHazard:
+      "noise, vibration, repetitive work, manual handling, dust, poor ventilation, heat, and slips from process residues",
+    emergencyHazard:
+      "machine stoppages, jams, product spills, fire risk, emergency stop failure, or delayed response to line incidents",
+    existingMeasures:
+      "Standard operating procedures, supervisor oversight, machine guards, emergency stops, PPE, and line briefings are in place",
+    specificControls:
+      "verify guarding and emergency stops, keep hands clear of moving parts, manage production pace, maintain housekeeping, and report abnormal machine behavior",
+    consequence:
+      "Entanglement, crushing, cuts, burns, musculoskeletal injury, serious injury",
+  },
+  "Machinery & Equipment": {
+    people:
+      "Machine operators, technicians, maintenance workers, supervisors, nearby production workers",
+    planningHazard:
+      "can expose workers to hazardous energy, poor guarding, rotating equipment, stored energy, and unsafe access to operating machinery",
+    equipmentHazard:
+      "rotating shafts, presses, CNC equipment, conveyors, sharp tooling, hydraulic or pneumatic movement, and defective guards",
+    interfaceHazard:
+      "workers troubleshooting, cleaning, adjusting, or inspecting equipment while others continue production nearby",
+    exposureHazard:
+      "noise, vibration, metalworking fluids, sharp swarf, heat, dust, and awkward postures around equipment",
+    emergencyHazard:
+      "unexpected startup, emergency stop failure, jam clearing incident, entrapment, or delayed isolation of defective machinery",
+    existingMeasures:
+      "Machine guarding, lockout/tagout procedures, emergency stops, operator training, and planned inspection routines are available",
+    specificControls:
+      "apply lockout/tagout where required, inspect guards, test emergency stops, use competent operators, and prohibit bypassing safety devices",
+    consequence:
+      "Entanglement, amputation, crushing, electric shock, serious injury, fatality",
+  },
+  "Maintenance & Engineering": {
+    people:
+      "Maintenance technicians, engineers, contractors, production workers, supervisors",
+    planningHazard:
+      "can involve unplanned intervention, live services, stored energy, work at height, confined areas, hot work, and contractor interface risks",
+    equipmentHazard:
+      "electrical panels, hydraulic systems, pneumatic systems, tools, lifting aids, access equipment, and removed machine guards",
+    interfaceHazard:
+      "maintenance teams working beside live production areas, contractors, operators, mobile equipment, and restricted access zones",
+    exposureHazard:
+      "electrical exposure, burns, oil mist, sharp parts, manual handling, noise, poor access, heat, and fatigue",
+    emergencyHazard:
+      "unexpected energization, fire during hot work, rescue from height or confined space, release of stored pressure, or delayed contractor emergency response",
+    existingMeasures:
+      "Permit-to-work, maintenance planning, lockout/tagout, contractor induction, PPE, and supervisor coordination are used",
+    specificControls:
+      "isolate all energy sources, verify zero energy, use permits for high-risk tasks, control contractors, and reinstate guards before handover",
+    consequence:
+      "Electric shock, burns, crush injury, fall injury, fire, fatality",
+  },
+  "Materials & Chemical Handling": {
+    people:
+      "Production workers, chemical handlers, maintenance workers, cleaners, emergency responders",
+    planningHazard:
+      "can expose workers to incompatible substances, unclear labeling, poor storage, uncontrolled transfer, and insufficient chemical information",
+    equipmentHazard:
+      "containers, transfer pumps, compressed gas cylinders, mixing tools, spray equipment, spill pallets, and ventilation systems",
+    interfaceHazard:
+      "chemical handling near production workers, forklift routes, ignition sources, drains, and waste collection areas",
+    exposureHazard:
+      "skin contact, inhalation, dust exposure, solvent vapor, flammable atmospheres, chemical burns, and environmental release",
+    emergencyHazard:
+      "chemical spill, gas release, fire, exposure symptoms, blocked eyewash, or delayed access to safety data sheets",
+    existingMeasures:
+      "Safety data sheets, labeling, PPE, spill kits, ventilation, segregation, and chemical storage rules are available",
+    specificControls:
+      "segregate incompatible materials, minimize quantities, ventilate work areas, control ignition sources, and train workers in spill response",
+    consequence:
+      "Chemical burns, respiratory illness, fire, explosion, environmental harm, serious injury",
+  },
+  "Workplace Environment": {
+    people:
+      "Production workers, pedestrians, forklift operators, cleaners, visitors, emergency wardens",
+    planningHazard:
+      "can create exposure to poor housekeeping, moving vehicles, environmental stressors, blocked routes, and unclear emergency arrangements",
+    equipmentHazard:
+      "forklifts, cleaning equipment, ventilation systems, fire protection equipment, emergency doors, and housekeeping tools",
+    interfaceHazard:
+      "pedestrians moving through production areas, forklift interaction, emergency movements, and cleaning in active work zones",
+    exposureHazard:
+      "noise, heat stress, poor ventilation, slips, trips, manual handling, dust, and fatigue",
+    emergencyHazard:
+      "blocked evacuation routes, fire spread, poor alarm response, delayed first aid, or failure to control environmental hazards",
+    existingMeasures:
+      "Walkways, housekeeping rules, fire procedures, PPE, emergency drills, and workplace inspections are in place",
+    specificControls:
+      "keep routes clear, segregate vehicles and pedestrians, monitor exposure conditions, inspect fire controls, and close housekeeping actions promptly",
+    consequence:
+      "Slips, collisions, heat illness, hearing damage, fire, serious injury",
+  },
+};
+
+const officeCategoryProfiles: Record<string, SmartSectorCategoryProfile> = {
+  "Office Workstations": {
+    people:
+      "Office employees, remote workers, managers, temporary workers, workstation users",
+    planningHazard:
+      "can lead to poorly arranged workstations, unsuitable screen setup, prolonged static posture, and insufficient ergonomic adjustment",
+    equipmentHazard:
+      "display screens, keyboards, mice, chairs, desks, docking stations, document holders, and shared workstation equipment",
+    interfaceHazard:
+      "shared desks, hybrid work arrangements, poor reporting of discomfort, and workers adapting unsuitable workspaces",
+    exposureHazard:
+      "eye strain, neck and shoulder discomfort, repetitive strain, prolonged sitting, fatigue, and poor lighting",
+    emergencyHazard:
+      "delayed reporting of discomfort, workstation defects, remote worker isolation, or unresolved ergonomic issues becoming chronic",
+    existingMeasures:
+      "Basic workstation equipment, DSE guidance, manager support, and issue reporting routes are available",
+    specificControls:
+      "complete DSE assessments, adjust seating and screens, provide suitable accessories, encourage breaks, and review remote work setups",
+    consequence:
+      "Musculoskeletal disorder, eye strain, fatigue, discomfort, reduced wellbeing",
+  },
+  "Office Movement & Housekeeping": {
+    people:
+      "Office employees, visitors, cleaners, facilities staff, contractors",
+    planningHazard:
+      "can expose people to poor housekeeping, congested walkways, unmanaged storage, trailing cables, and unsuitable manual handling",
+    equipmentHazard:
+      "cables, storage cabinets, trolleys, archive boxes, cleaning tools, stairs, doors, and office furniture",
+    interfaceHazard:
+      "people moving through corridors, stairs, cleaning areas, storage rooms, and shared office spaces",
+    exposureHazard:
+      "slips, trips, falls, manual handling strain, falling stored items, and poor visibility",
+    emergencyHazard:
+      "blocked escape routes, delayed response to falls, cleaning-related slip incidents, or unreported building defects",
+    existingMeasures:
+      "Housekeeping standards, marked routes, cleaning coordination, storage rules, and defect reporting are in place",
+    specificControls:
+      "keep walkways clear, secure cables, manage storage heights, use safe carrying methods, and coordinate cleaning with occupancy",
+    consequence:
+      "Slips, trips, falls, strains, cuts, lost time injury",
+  },
+  "Facilities & Building Safety": {
+    people:
+      "Office employees, visitors, first aiders, fire wardens, facilities staff",
+    planningHazard:
+      "can involve unclear emergency roles, building system defects, insufficient visitor control, or unsafe use of shared facilities",
+    equipmentHazard:
+      "electrical appliances, printers, copiers, kitchen equipment, meeting room systems, first aid kits, alarms, and extinguishers",
+    interfaceHazard:
+      "employees, visitors, contractors, fire wardens, and first aiders sharing office facilities during routine and emergency situations",
+    exposureHazard:
+      "electric shock, burns, slips, indoor comfort issues, crowding, and poor emergency route awareness",
+    emergencyHazard:
+      "fire evacuation failure, blocked exits, first aid delay, emergency drill confusion, or visitor accountability gaps",
+    existingMeasures:
+      "Fire procedures, first aid arrangements, equipment checks, visitor sign-in, and facilities reporting processes are available",
+    specificControls:
+      "inspect emergency routes, test alarms, maintain appliances, brief visitors, keep kitchens tidy, and verify first aid supplies",
+    consequence:
+      "Burns, electric shock, slips, delayed evacuation, serious injury",
+  },
+  "Psychosocial & Organizational": {
+    people:
+      "Office employees, managers, supervisors, remote workers, client-facing staff",
+    planningHazard:
+      "can create unmanaged workload, poor role clarity, difficult communications, lone working, and insufficient support for new or fatigued workers",
+    equipmentHazard:
+      "communication systems, workload management tools, remote work equipment, and support channels that may be inadequate or unavailable",
+    interfaceHazard:
+      "workers interacting with managers, clients, colleagues, and remote teams under time pressure or conflict conditions",
+    exposureHazard:
+      "stress, fatigue, long screen time, poor recovery, isolation, and reduced concentration",
+    emergencyHazard:
+      "delayed escalation of stress concerns, lone worker incident, conflict escalation, or fatigue-related errors",
+    existingMeasures:
+      "Management support, reporting routes, onboarding processes, HR guidance, and communication channels are in place",
+    specificControls:
+      "monitor workload, encourage breaks, clarify expectations, support difficult interactions, check lone workers, and escalate wellbeing concerns early",
+    consequence:
+      "Stress-related illness, fatigue, reduced wellbeing, errors, absence",
+  },
+  "Office Maintenance & Support": {
+    people:
+      "Facilities staff, office employees, contractors, cleaners, visitors",
+    planningHazard:
+      "can expose occupants to maintenance work, contractor activity, furniture moves, waste handling, and building comfort concerns",
+    equipmentHazard:
+      "hand tools, ladders, lighting fittings, HVAC equipment, shredders, waste containers, and moved furniture",
+    interfaceHazard:
+      "contractors and support workers operating in occupied office areas near employees and visitors",
+    exposureHazard:
+      "manual handling, dust, noise, poor air quality, poor lighting, slips, and contact with moving furniture or equipment",
+    emergencyHazard:
+      "contractor incident, blocked routes, failed lighting or HVAC, waste fire risk, or delayed reporting of facility defects",
+    existingMeasures:
+      "Contractor controls, facilities tickets, waste processes, basic PPE, and office communication arrangements are used",
+    specificControls:
+      "segregate maintenance areas, schedule disruptive work, inspect ladders and tools, manage manual handling, and communicate temporary restrictions",
+    consequence:
+      "Strains, slips, cuts, poor indoor comfort, contractor injury, lost time injury",
+  },
+};
+
+const healthcareCategoryProfiles: Record<
+  string,
+  SmartSectorCategoryProfile
+> = {
+  "Patient Care": {
+    people:
+      "Patients, nurses, healthcare assistants, clinicians, carers, visitors",
+    planningHazard:
+      "can expose staff and patients to unsafe patient movement, changing clinical conditions, aggression, infection status, and insufficient staffing or equipment",
+    equipmentHazard:
+      "beds, hoists, slings, wheelchairs, mobility aids, patient monitors, and patient care equipment",
+    interfaceHazard:
+      "staff, patients, visitors, and support teams interacting during care delivery, transfer, isolation, or emergency response",
+    exposureHazard:
+      "manual patient handling, blood or body fluids, slips, fatigue, emotional stress, and respiratory infection exposure",
+    emergencyHazard:
+      "patient deterioration, aggression, delayed clinical response, failed transfer equipment, or isolation breach",
+    existingMeasures:
+      "Care plans, patient handling guidance, PPE, clinical supervision, infection control procedures, and escalation routes are available",
+    specificControls:
+      "assess patient mobility and behavior, use suitable handling aids, maintain infection precautions, request assistance, and keep escalation routes clear",
+    consequence:
+      "Patient fall, staff injury, infection exposure, violence-related injury, serious harm",
+  },
+  "Clinical Procedures": {
+    people:
+      "Clinicians, nurses, patients, laboratory staff, cleaners, waste handlers",
+    planningHazard:
+      "can involve sharps, bloodborne pathogens, medication errors, contaminated equipment, and unclear clinical preparation",
+    equipmentHazard:
+      "needles, cannulas, sharps containers, medical devices, specimen containers, medication preparation tools, and clinical waste bins",
+    interfaceHazard:
+      "clinicians, patients, assistants, and waste handlers working around procedure areas and contaminated items",
+    exposureHazard:
+      "needlestick injury, blood or body fluid exposure, infection, chemical disinfectants, awkward posture, and patient movement",
+    emergencyHazard:
+      "sharps injury, medication incident, specimen spill, device malfunction, or delayed post-exposure response",
+    existingMeasures:
+      "Clinical procedures, sharps safety rules, PPE, hand hygiene, medication checks, and clinical waste segregation are in place",
+    specificControls:
+      "use aseptic technique, activate sharps safety devices, dispose of sharps immediately, label specimens, and follow post-exposure protocols",
+    consequence:
+      "Sharps injury, infection, medication error, patient harm, serious illness",
+  },
+  "Infection Prevention": {
+    people:
+      "Healthcare workers, patients, cleaners, laundry staff, visitors, waste handlers",
+    planningHazard:
+      "can expose people to infectious materials, contaminated surfaces, incorrect PPE use, and incomplete isolation or disinfection controls",
+    equipmentHazard:
+      "PPE, disinfectants, cleaning tools, laundry bags, clinical waste containers, spill kits, and isolation room equipment",
+    interfaceHazard:
+      "staff, patients, visitors, cleaners, and waste handlers moving between contaminated and clean areas",
+    exposureHazard:
+      "bloodborne pathogens, respiratory infection, contaminated laundry, chemical disinfectants, splash exposure, and poor hand hygiene",
+    emergencyHazard:
+      "infection control breach, body fluid spill, PPE failure, isolation waste incident, or delayed exposure reporting",
+    existingMeasures:
+      "Hand hygiene, PPE procedures, cleaning schedules, isolation protocols, waste segregation, and exposure reporting routes are established",
+    specificControls:
+      "follow transmission-based precautions, train PPE donning and doffing, use approved disinfectants, segregate waste, and report exposures immediately",
+    consequence:
+      "Infection transmission, occupational illness, chemical irritation, outbreak risk, patient harm",
+  },
+  "Laboratory & Diagnostic Work": {
+    people:
+      "Laboratory staff, clinicians, sample couriers, maintenance workers, cleaners",
+    planningHazard:
+      "can involve biological samples, chemical reagents, diagnostic equipment, time-sensitive testing, and sample identification controls",
+    equipmentHazard:
+      "centrifuges, microscopes, autoclaves, analyzers, freezers, calibration tools, sample racks, and laboratory waste containers",
+    interfaceHazard:
+      "sample handover between clinical areas, couriers, laboratory benches, diagnostic equipment, and waste collection points",
+    exposureHazard:
+      "biological exposure, chemical reagent contact, aerosols, repetitive microscope work, cold burns, and sharps or glass breakage",
+    emergencyHazard:
+      "sample spill, centrifuge failure, freezer alarm, autoclave burn, equipment calibration failure, or delayed exposure response",
+    existingMeasures:
+      "Laboratory procedures, PPE, biosafety controls, reagent labeling, equipment maintenance, and waste segregation are in place",
+    specificControls:
+      "verify sample labeling, use biosafety controls, balance centrifuges, inspect equipment, handle reagents under controls, and document calibration",
+    consequence:
+      "Biological exposure, chemical burns, infection, equipment failure, diagnostic delay",
+  },
+  "Facility & Support Services": {
+    people:
+      "Support staff, cleaners, porters, maintenance workers, security staff, patients, visitors",
+    planningHazard:
+      "can expose support teams to clinical area hazards, medical gases, waste movement, fire response, security incidents, and night shift pressures",
+    equipmentHazard:
+      "medical gas cylinders, cleaning machines, laundry equipment, food service equipment, waste carts, fire systems, and security devices",
+    interfaceHazard:
+      "support teams moving through patient areas, public areas, clinical zones, emergency routes, and back-of-house service areas",
+    exposureHazard:
+      "biological contamination, manual handling, slips, chemical disinfectants, fatigue, aggression, and poor lighting",
+    emergencyHazard:
+      "medical gas leak, fire, security incident, emergency evacuation difficulty, clinical waste spill, or delayed night shift response",
+    existingMeasures:
+      "Service procedures, PPE, manual handling guidance, emergency plans, waste segregation, security escalation, and supervision are available",
+    specificControls:
+      "secure cylinders, segregate waste, coordinate with clinical teams, maintain emergency routes, manage fatigue, and escalate security concerns promptly",
+    consequence:
+      "Infection exposure, cylinder impact, slips, manual handling injury, fire, serious injury",
+  },
+};
+
+const createSmartSectorRiskAssessmentLibrary = (
+  sector: string,
+  groups: ActivityGroup[],
+  profiles: Record<string, SmartSectorCategoryProfile>,
+) =>
+  Object.fromEntries(
+    groups.flatMap((group) => {
+      const profile = profiles[group.label];
+
+      if (!profile) {
+        throw new Error(`Missing risk profile for ${sector}: ${group.label}`);
+      }
+
+      return group.activities.map((activity) => [
+        activity,
+        {
+          title: `${sector} - ${activity} Risk Assessment`,
+          createHazards: () =>
+            createSmartSectorHazards(sector, group.label, activity, profile),
+        },
+      ]);
+    }),
+  ) as Record<string, { title: string; createHazards: () => HazardRow[] }>;
+
+const manufacturingRiskAssessmentLibrary =
+  createSmartSectorRiskAssessmentLibrary(
+    "Manufacturing",
+    manufacturingActivityGroups,
+    manufacturingCategoryProfiles,
+  );
+
+const officeRiskAssessmentLibrary = createSmartSectorRiskAssessmentLibrary(
+  "Office & Administrative",
+  officeActivityGroups,
+  officeCategoryProfiles,
+);
+
+const healthcareRiskAssessmentLibrary =
+  createSmartSectorRiskAssessmentLibrary(
+    "Healthcare & Medical Facilities",
+    healthcareActivityGroups,
+    healthcareCategoryProfiles,
+  );
+
 const riskAssessmentLibraryBySector: Record<
   string,
   Record<string, { title: string; createHazards: () => HazardRow[] }>
 > = {
   Construction: constructionRiskAssessmentLibrary,
   "Warehouse & Logistics": warehouseRiskAssessmentLibrary,
+  Manufacturing: manufacturingRiskAssessmentLibrary,
+  "Office & Administrative": officeRiskAssessmentLibrary,
+  "Healthcare & Medical Facilities": healthcareRiskAssessmentLibrary,
 };
 
 const toRiskValue = (value: string): RiskValue => Number(value) as RiskValue;
