@@ -2162,7 +2162,7 @@ export default function Home() {
       </div>
       ) : (
         activeWorkspaceModule === "risk-assessments" ? (
-          <RiskAssessmentsModule userId={authUserId} />
+          <RiskAssessmentsModule userId={authUserId} darkMode={darkMode} />
         ) : (
           renderComingSoonModule()
         )

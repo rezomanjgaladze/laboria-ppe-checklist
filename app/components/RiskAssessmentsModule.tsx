@@ -62,6 +62,7 @@ type SavedRiskAssessment = {
 
 type RiskAssessmentsModuleProps = {
   userId: string | null;
+  darkMode: boolean;
 };
 
 type SelectOption = {
@@ -8349,12 +8350,15 @@ const riskLevel = (score: number): RiskLevel => {
   return "High";
 };
 
-const riskTone = (level: RiskLevel) => {
+const riskTone = (level: RiskLevel, darkMode = true) => {
   if (level === "High") {
     return {
-      badge:
-        "border-rose-400/40 bg-rose-500/12 text-rose-200 ring-1 ring-rose-400/20",
-      cell: "bg-rose-500/16 text-rose-100 border-rose-400/25",
+      badge: darkMode
+        ? "border-rose-400/40 bg-rose-500/12 text-rose-200 ring-1 ring-rose-400/20"
+        : "border-rose-200 bg-rose-50 text-rose-700 ring-1 ring-rose-100",
+      cell: darkMode
+        ? "bg-rose-500/16 text-rose-100 border-rose-400/25"
+        : "bg-rose-50 text-rose-700 border-rose-200",
       exportBg: "#FEE2E2",
       exportText: "#991B1B",
     };
@@ -8362,18 +8366,24 @@ const riskTone = (level: RiskLevel) => {
 
   if (level === "Medium") {
     return {
-      badge:
-        "border-amber-400/35 bg-amber-400/12 text-amber-100 ring-1 ring-amber-400/20",
-      cell: "bg-amber-400/15 text-amber-100 border-amber-300/25",
+      badge: darkMode
+        ? "border-amber-400/35 bg-amber-400/12 text-amber-100 ring-1 ring-amber-400/20"
+        : "border-amber-200 bg-amber-50 text-amber-800 ring-1 ring-amber-100",
+      cell: darkMode
+        ? "bg-amber-400/15 text-amber-100 border-amber-300/25"
+        : "bg-amber-50 text-amber-800 border-amber-200",
       exportBg: "#FEF3C7",
       exportText: "#92400E",
     };
   }
 
   return {
-    badge:
-      "border-emerald-400/35 bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-400/20",
-    cell: "bg-emerald-400/12 text-emerald-100 border-emerald-300/20",
+    badge: darkMode
+      ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-400/20"
+      : "border-emerald-200 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100",
+    cell: darkMode
+      ? "bg-emerald-400/12 text-emerald-100 border-emerald-300/20"
+      : "bg-emerald-50 text-emerald-700 border-emerald-200",
     exportBg: "#DCFCE7",
     exportText: "#166534",
   };
@@ -8477,21 +8487,112 @@ const writeRiskAssessments = (
   }
 };
 
+const joinClasses = (...classes: Array<string | false | null | undefined>) =>
+  classes.filter(Boolean).join(" ");
+
+const getRiskAssessmentTheme = (darkMode: boolean) => ({
+  pageText: darkMode ? "text-[#F5F7FA]" : "text-slate-900",
+  shell: darkMode
+    ? "border-white/10 bg-[#071225]/82 shadow-[0_30px_100px_rgba(0,0,0,0.34)]"
+    : "border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]",
+  shellHeader: darkMode
+    ? "border-white/10 bg-white/[0.035]"
+    : "border-slate-200 bg-slate-50/80",
+  section: darkMode
+    ? "border-white/10 bg-[#071225]/72 shadow-[0_20px_70px_rgba(0,0,0,0.22)]"
+    : "border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)]",
+  statCard: darkMode
+    ? "border-white/10 bg-white/[0.045]"
+    : "border-slate-200 bg-white shadow-sm",
+  muted: darkMode ? "text-slate-400" : "text-slate-600",
+  soft: darkMode ? "text-slate-300" : "text-slate-700",
+  heading: darkMode ? "text-white" : "text-slate-950",
+  label: darkMode ? "text-slate-400" : "text-slate-600",
+  field: darkMode
+    ? "border-white/10 bg-white/[0.055] text-white placeholder:text-slate-500 focus:border-[#4DEBFF]/45 focus:bg-white/[0.075]"
+    : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#1E90FF] focus:bg-white focus:ring-4 focus:ring-[#1E90FF]/10",
+  select: darkMode
+    ? "border-white/10 bg-[#071225] text-white focus:border-[#4DEBFF]/45"
+    : "border-slate-300 bg-white text-slate-900 focus:border-[#1E90FF] focus:ring-4 focus:ring-[#1E90FF]/10",
+  ghostButton: darkMode
+    ? "border-white/10 bg-white/[0.055] text-slate-100 hover:bg-white/[0.09]"
+    : "border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-950",
+  exportButton: darkMode
+    ? "border-[#4DEBFF]/30 bg-[#4DEBFF]/10 text-[#DDFBFF] hover:bg-[#4DEBFF]/15"
+    : "border-[#1E90FF]/25 bg-[#1E90FF]/10 text-[#0759A8] hover:bg-[#1E90FF]/15",
+  notice: darkMode
+    ? "border-[#4DEBFF]/20 bg-[#4DEBFF]/10 text-[#DDFBFF]"
+    : "border-[#1E90FF]/20 bg-[#1E90FF]/10 text-[#0759A8]",
+  libraryCard: darkMode
+    ? "border-[#4DEBFF]/25 bg-[#4DEBFF]/10"
+    : "border-[#1E90FF]/20 bg-[#1E90FF]/8",
+  libraryTitle: darkMode ? "text-[#DDFBFF]" : "text-[#0759A8]",
+  emptyState: darkMode
+    ? "border-white/15 bg-white/[0.03] text-slate-400"
+    : "border-slate-300 bg-slate-50 text-slate-500",
+  hazardCard: darkMode
+    ? "border-white/10 bg-white/[0.04]"
+    : "border-slate-200 bg-slate-50/80 shadow-sm",
+  divider: darkMode ? "border-white/10" : "border-slate-200",
+  riskPanel: darkMode
+    ? "border-white/10 bg-[#071225]/60"
+    : "border-slate-200 bg-white",
+  miniCard: darkMode
+    ? "border-white/10 bg-white/[0.04]"
+    : "border-slate-200 bg-slate-50",
+  scoreText: darkMode ? "text-white" : "text-slate-950",
+  matrixCard: darkMode
+    ? "border-white/10 bg-white/[0.045] shadow-[0_18px_60px_rgba(0,0,0,0.22)]"
+    : "border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)]",
+  matrixHeaderCell: darkMode
+    ? "border-white/10 bg-white/[0.03] text-slate-300"
+    : "border-slate-200 bg-slate-50 text-slate-600",
+  matrixCornerCell: darkMode
+    ? "border-white/10 bg-white/[0.03] text-slate-400"
+    : "border-slate-200 bg-slate-100 text-slate-600",
+  checkboxSelected: darkMode
+    ? "border-[#4DEBFF]/40 bg-[#4DEBFF]/10 text-[#DDFBFF]"
+    : "border-[#1E90FF]/35 bg-[#1E90FF]/10 text-[#0759A8]",
+  checkboxIdle: darkMode
+    ? "border-white/10 bg-white/[0.035] text-slate-300 hover:bg-white/[0.06]"
+    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+  deleteButton: darkMode
+    ? "border-rose-400/25 bg-rose-500/10 text-rose-100 hover:bg-rose-500/15"
+    : "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100",
+  savedCard: (active: boolean) =>
+    active
+      ? darkMode
+        ? "border-[#4DEBFF]/35 bg-[#4DEBFF]/10"
+        : "border-[#1E90FF]/30 bg-[#1E90FF]/8 shadow-sm"
+      : darkMode
+        ? "border-white/10 bg-white/[0.04] hover:bg-white/[0.06]"
+        : "border-slate-200 bg-white hover:bg-slate-50 shadow-sm",
+});
+
+type RiskAssessmentTheme = ReturnType<typeof getRiskAssessmentTheme>;
+
 const Field = ({
   label,
   value,
   onChange,
+  theme,
   type = "text",
   placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  theme: RiskAssessmentTheme;
   type?: string;
   placeholder?: string;
 }) => (
   <label className="block">
-    <span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+    <span
+      className={joinClasses(
+        "mb-2 block text-xs font-bold uppercase tracking-[0.14em]",
+        theme.label,
+      )}
+    >
       {label}
     </span>
     <input
@@ -8499,7 +8600,10 @@ const Field = ({
       value={value}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
-      className="w-full rounded-xl border border-white/10 bg-white/[0.055] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-[#4DEBFF]/45 focus:bg-white/[0.075]"
+      className={joinClasses(
+        "w-full rounded-xl border px-4 py-3 text-sm outline-none transition",
+        theme.field,
+      )}
     />
   </label>
 );
@@ -8508,17 +8612,24 @@ const TextAreaField = ({
   label,
   value,
   onChange,
+  theme,
   placeholder,
   rows = 3,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  theme: RiskAssessmentTheme;
   placeholder?: string;
   rows?: number;
 }) => (
   <label className="block">
-    <span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+    <span
+      className={joinClasses(
+        "mb-2 block text-xs font-bold uppercase tracking-[0.14em]",
+        theme.label,
+      )}
+    >
       {label}
     </span>
     <textarea
@@ -8526,7 +8637,10 @@ const TextAreaField = ({
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.055] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-[#4DEBFF]/45 focus:bg-white/[0.075]"
+      className={joinClasses(
+        "w-full resize-y rounded-xl border px-4 py-3 text-sm leading-6 outline-none transition",
+        theme.field,
+      )}
     />
   </label>
 );
@@ -8537,6 +8651,7 @@ const SelectField = ({
   onChange,
   options,
   optionGroups = [],
+  theme,
   placeholder,
   disabled = false,
 }: {
@@ -8545,18 +8660,27 @@ const SelectField = ({
   onChange: (value: string) => void;
   options: SelectOption[];
   optionGroups?: SelectOptionGroup[];
+  theme: RiskAssessmentTheme;
   placeholder: string;
   disabled?: boolean;
 }) => (
   <label className="block">
-    <span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+    <span
+      className={joinClasses(
+        "mb-2 block text-xs font-bold uppercase tracking-[0.14em]",
+        theme.label,
+      )}
+    >
       {label}
     </span>
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
       disabled={disabled}
-      className="w-full rounded-xl border border-white/10 bg-[#071225] px-4 py-3 text-sm text-white outline-none transition focus:border-[#4DEBFF]/45 disabled:cursor-not-allowed disabled:opacity-50"
+      className={joinClasses(
+        "w-full rounded-xl border px-4 py-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-50",
+        theme.select,
+      )}
     >
       <option value="">{placeholder}</option>
       {optionGroups.map((group) => (
@@ -8577,24 +8701,43 @@ const SelectField = ({
   </label>
 );
 
-const RiskBadge = ({ score }: { score: number }) => {
+const RiskBadge = ({
+  score,
+  darkMode,
+}: {
+  score: number;
+  darkMode: boolean;
+}) => {
   const level = riskLevel(score);
 
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${riskTone(level).badge}`}
+      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${riskTone(level, darkMode).badge}`}
     >
       {score} - {level}
     </span>
   );
 };
 
-const RiskMatrixGuide = () => (
-  <div className="rounded-3xl border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
+const RiskMatrixGuide = ({
+  darkMode,
+  theme,
+}: {
+  darkMode: boolean;
+  theme: RiskAssessmentTheme;
+}) => (
+  <div
+    className={joinClasses(
+      "rounded-3xl border p-5",
+      theme.matrixCard,
+    )}
+  >
     <div className="flex items-center justify-between gap-3">
       <div>
-        <h3 className="text-sm font-semibold text-white">5x5 Risk Matrix</h3>
-        <p className="mt-1 text-xs text-slate-400">
+        <h3 className={joinClasses("text-sm font-semibold", theme.heading)}>
+          5x5 Risk Matrix
+        </h3>
+        <p className={joinClasses("mt-1 text-xs", theme.muted)}>
           Risk Score = Probability x Severity
         </p>
       </div>
@@ -8604,13 +8747,13 @@ const RiskMatrixGuide = () => (
     </div>
 
     <div className="mt-4 grid grid-cols-6 gap-1 text-center text-[11px] font-bold">
-      <div className="rounded-lg border border-white/10 bg-white/[0.03] p-2 text-slate-400">
+      <div className={joinClasses("rounded-lg border p-2", theme.matrixCornerCell)}>
         S / P
       </div>
       {riskValues.map((probability) => (
         <div
           key={`probability-${probability}`}
-          className="rounded-lg border border-white/10 bg-white/[0.03] p-2 text-slate-300"
+          className={joinClasses("rounded-lg border p-2", theme.matrixHeaderCell)}
         >
           P{probability}
         </div>
@@ -8622,7 +8765,7 @@ const RiskMatrixGuide = () => (
           <Fragment key={`severity-row-${severity}`}>
             <div
               key={`severity-${severity}`}
-              className="rounded-lg border border-white/10 bg-white/[0.03] p-2 text-slate-300"
+              className={joinClasses("rounded-lg border p-2", theme.matrixHeaderCell)}
             >
               S{severity}
             </div>
@@ -8633,7 +8776,7 @@ const RiskMatrixGuide = () => (
               return (
                 <div
                   key={`${probability}-${severity}`}
-                  className={`rounded-lg border p-2 ${riskTone(level).cell}`}
+                  className={`rounded-lg border p-2 ${riskTone(level, darkMode).cell}`}
                   title={`${score} - ${level}`}
                 >
                   {score}
@@ -8648,6 +8791,7 @@ const RiskMatrixGuide = () => (
 
 export default function RiskAssessmentsModule({
   userId,
+  darkMode,
 }: RiskAssessmentsModuleProps) {
   const [header, setHeader] = useState<RiskAssessmentHeader>(
     createEmptyHeader,
@@ -9056,26 +9200,51 @@ export default function RiskAssessmentsModule({
     pdf.save(`LABORIA_${safeName || "Risk_Assessment"}.pdf`);
   };
 
+  const theme = getRiskAssessmentTheme(darkMode);
+
   const summaryCards = [
-    { label: "Total hazards", value: summary.totalHazards, tone: "text-white" },
+    {
+      label: "Total hazards",
+      value: summary.totalHazards,
+      tone: theme.scoreText,
+    },
     {
       label: "High initial risks",
       value: summary.highInitialRisks,
-      tone: "text-rose-300",
+      tone: darkMode ? "text-rose-300" : "text-rose-600",
     },
     {
       label: "High residual risks",
       value: summary.highResidualRisks,
-      tone: "text-amber-200",
+      tone: darkMode ? "text-amber-200" : "text-amber-600",
     },
-    { label: "Open actions", value: summary.openActions, tone: "text-cyan-200" },
+    {
+      label: "Open actions",
+      value: summary.openActions,
+      tone: darkMode ? "text-cyan-200" : "text-[#0759A8]",
+    },
   ];
 
   return (
-    <div className="relative z-10 min-h-screen w-full min-w-0 px-4 py-24 text-[#F5F7FA] sm:px-6 lg:px-10 lg:py-10">
+    <div
+      className={joinClasses(
+        "relative z-10 min-h-screen w-full min-w-0 px-4 py-24 transition-colors duration-300 sm:px-6 lg:px-10 lg:py-10",
+        theme.pageText,
+      )}
+    >
       <div className="mx-auto w-full max-w-7xl space-y-6">
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#071225]/82 shadow-[0_30px_100px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
-          <div className="border-b border-white/10 bg-white/[0.035] px-5 py-5 sm:px-7">
+        <div
+          className={joinClasses(
+            "overflow-hidden rounded-3xl border backdrop-blur-2xl",
+            theme.shell,
+          )}
+        >
+          <div
+            className={joinClasses(
+              "border-b px-5 py-5 sm:px-7",
+              theme.shellHeader,
+            )}
+          >
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
               <div className="min-w-0">
                 <div className="text-xs font-bold uppercase tracking-[0.22em] text-[#4DEBFF]">
@@ -9084,7 +9253,7 @@ export default function RiskAssessmentsModule({
                 <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
                   5x5 Workplace Risk Assessment
                 </h1>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                <p className={joinClasses("mt-2 max-w-3xl text-sm leading-6", theme.muted)}>
                   Manually document hazards, evaluate initial and residual risk,
                   assign controls, and export a professional Laboria report.
                 </p>
@@ -9094,7 +9263,10 @@ export default function RiskAssessmentsModule({
                 <button
                   type="button"
                   onClick={newAssessment}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.055] px-4 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/[0.09]"
+                  className={joinClasses(
+                    "inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition",
+                    theme.ghostButton,
+                  )}
                 >
                   <FileText size={16} aria-hidden />
                   New
@@ -9110,7 +9282,10 @@ export default function RiskAssessmentsModule({
                 <button
                   type="button"
                   onClick={() => void exportRiskAssessmentPDF()}
-                  className="inline-flex items-center gap-2 rounded-xl border border-[#4DEBFF]/30 bg-[#4DEBFF]/10 px-4 py-3 text-sm font-semibold text-[#DDFBFF] transition hover:bg-[#4DEBFF]/15"
+                  className={joinClasses(
+                    "inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition",
+                    theme.exportButton,
+                  )}
                 >
                   <Download size={16} aria-hidden />
                   Export PDF
@@ -9119,7 +9294,12 @@ export default function RiskAssessmentsModule({
             </div>
 
             {notice ? (
-              <div className="mt-4 rounded-xl border border-[#4DEBFF]/20 bg-[#4DEBFF]/10 px-4 py-3 text-sm font-semibold text-[#DDFBFF]">
+              <div
+                className={joinClasses(
+                  "mt-4 rounded-xl border px-4 py-3 text-sm font-semibold",
+                  theme.notice,
+                )}
+              >
                 {notice}
               </div>
             ) : null}
@@ -9129,9 +9309,14 @@ export default function RiskAssessmentsModule({
             {summaryCards.map((card) => (
               <div
                 key={card.label}
-                className="rounded-2xl border border-white/10 bg-white/[0.045] p-4"
+                className={joinClasses("rounded-2xl border p-4", theme.statCard)}
               >
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                <div
+                  className={joinClasses(
+                    "text-xs font-semibold uppercase tracking-[0.16em]",
+                    theme.label,
+                  )}
+                >
                   {card.label}
                 </div>
                 <div className={`mt-3 text-3xl font-bold ${card.tone}`}>
@@ -9144,11 +9329,16 @@ export default function RiskAssessmentsModule({
 
         <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
           <div className="space-y-6">
-            <section className="rounded-3xl border border-white/10 bg-[#071225]/72 p-5 shadow-[0_20px_70px_rgba(0,0,0,0.22)] backdrop-blur-2xl sm:p-7">
+            <section
+              className={joinClasses(
+                "rounded-3xl border p-5 backdrop-blur-2xl sm:p-7",
+                theme.section,
+              )}
+            >
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold">Assessment header</h2>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <p className={joinClasses("mt-1 text-sm", theme.muted)}>
                     Core context for the risk assessment report.
                   </p>
                 </div>
@@ -9159,31 +9349,37 @@ export default function RiskAssessmentsModule({
                   label="Company name"
                   value={header.company}
                   onChange={(value) => updateHeader("company", value)}
+                  theme={theme}
                 />
                 <Field
                   label="Site / Location"
                   value={header.site}
                   onChange={(value) => updateHeader("site", value)}
+                  theme={theme}
                 />
                 <Field
                   label="Department / Area"
                   value={header.department}
                   onChange={(value) => updateHeader("department", value)}
+                  theme={theme}
                 />
                 <Field
                   label="Assessment title"
                   value={header.title}
                   onChange={(value) => updateHeader("title", value)}
+                  theme={theme}
                 />
                 <Field
                   label="Assessor"
                   value={header.assessor}
                   onChange={(value) => updateHeader("assessor", value)}
+                  theme={theme}
                 />
                 <Field
                   label="Assessment date"
                   value={header.assessmentDate}
                   onChange={(value) => updateHeader("assessmentDate", value)}
+                  theme={theme}
                   type="date"
                 />
                 <SelectField
@@ -9191,6 +9387,7 @@ export default function RiskAssessmentsModule({
                   value={sectorSelectValue}
                   onChange={updateSector}
                   options={sectorSelectOptions}
+                  theme={theme}
                   placeholder="Select sector"
                 />
                 {customSectorMode ? (
@@ -9198,6 +9395,7 @@ export default function RiskAssessmentsModule({
                     label="Custom sector / category"
                     value={header.sector}
                     onChange={(value) => updateHeader("sector", value)}
+                    theme={theme}
                   />
                 ) : null}
                 {!customSectorMode ? (
@@ -9207,6 +9405,7 @@ export default function RiskAssessmentsModule({
                     onChange={updateActivity}
                     options={activitySelectOptions}
                     optionGroups={activitySelectGroups}
+                    theme={theme}
                     placeholder={
                       header.sector
                         ? "Select activity"
@@ -9219,6 +9418,7 @@ export default function RiskAssessmentsModule({
                     label="Activity / Task"
                     value={header.activity}
                     onChange={(value) => updateHeader("activity", value)}
+                    theme={theme}
                   />
                 )}
                 {!customSectorMode && customActivityMode ? (
@@ -9226,18 +9426,24 @@ export default function RiskAssessmentsModule({
                     label="Custom activity / task"
                     value={header.activity}
                     onChange={(value) => updateHeader("activity", value)}
+                    theme={theme}
                   />
                 ) : null}
               </div>
 
               {canGenerateLibraryAssessment ? (
-                <div className="mt-5 rounded-2xl border border-[#4DEBFF]/25 bg-[#4DEBFF]/10 p-4">
+                <div
+                  className={joinClasses(
+                    "mt-5 rounded-2xl border p-4",
+                    theme.libraryCard,
+                  )}
+                >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <div className="text-sm font-semibold text-[#DDFBFF]">
+                      <div className={joinClasses("text-sm font-semibold", theme.libraryTitle)}>
                         Laboria HSE Library prototype available
                       </div>
-                      <p className="mt-1 text-sm text-slate-300">
+                      <p className={joinClasses("mt-1 text-sm", theme.soft)}>
                         Generate a complete editable assessment for{" "}
                         {header.sector} - {header.activity}.
                       </p>
@@ -9254,11 +9460,16 @@ export default function RiskAssessmentsModule({
               ) : null}
             </section>
 
-            <section className="rounded-3xl border border-white/10 bg-[#071225]/72 p-5 shadow-[0_20px_70px_rgba(0,0,0,0.22)] backdrop-blur-2xl sm:p-7">
+            <section
+              className={joinClasses(
+                "rounded-3xl border p-5 backdrop-blur-2xl sm:p-7",
+                theme.section,
+              )}
+            >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold">Hazard register</h2>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <p className={joinClasses("mt-1 text-sm", theme.muted)}>
                     Add hazards and score initial and residual risk using the
                     5x5 matrix.
                   </p>
@@ -9275,7 +9486,12 @@ export default function RiskAssessmentsModule({
 
               <div className="mt-5 space-y-5">
                 {hazards.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-5 py-8 text-center text-sm text-slate-400">
+                  <div
+                    className={joinClasses(
+                      "rounded-2xl border border-dashed px-5 py-8 text-center text-sm",
+                      theme.emptyState,
+                    )}
+                  >
                     No hazards added yet.
                   </div>
                 ) : null}
@@ -9293,16 +9509,24 @@ export default function RiskAssessmentsModule({
                   return (
                     <div
                       key={hazard.id}
-                      className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:p-5"
+                      className={joinClasses(
+                        "rounded-3xl border p-4 sm:p-5",
+                        theme.hazardCard,
+                      )}
                     >
-                      <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div
+                        className={joinClasses(
+                          "flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-center sm:justify-between",
+                          theme.divider,
+                        )}
+                      >
                         <div>
                           <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#4DEBFF]">
                             Hazard row {index + 1}
                           </div>
                           <div className="mt-2 flex flex-wrap gap-2">
-                            <RiskBadge score={initialScore} />
-                            <RiskBadge score={residualScore} />
+                            <RiskBadge score={initialScore} darkMode={darkMode} />
+                            <RiskBadge score={residualScore} darkMode={darkMode} />
                           </div>
                         </div>
 
@@ -9310,7 +9534,10 @@ export default function RiskAssessmentsModule({
                           <button
                             type="button"
                             onClick={() => duplicateHazard(hazard)}
-                            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.055] px-3 py-2 text-xs font-semibold text-slate-100 transition hover:bg-white/[0.09]"
+                            className={joinClasses(
+                              "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition",
+                              theme.ghostButton,
+                            )}
                           >
                             <Copy size={14} aria-hidden />
                             Duplicate
@@ -9318,7 +9545,10 @@ export default function RiskAssessmentsModule({
                           <button
                             type="button"
                             onClick={() => deleteHazard(hazard.id)}
-                            className="inline-flex items-center gap-2 rounded-xl border border-rose-400/25 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/15"
+                            className={joinClasses(
+                              "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition",
+                              theme.deleteButton,
+                            )}
                           >
                             <Trash2 size={14} aria-hidden />
                             Delete
@@ -9337,6 +9567,7 @@ export default function RiskAssessmentsModule({
                               value,
                             )
                           }
+                          theme={theme}
                         />
                         <Field
                           label="Who may be harmed"
@@ -9344,6 +9575,7 @@ export default function RiskAssessmentsModule({
                           onChange={(value) =>
                             updateHazard(hazard.id, "whoMayBeHarmed", value)
                           }
+                          theme={theme}
                         />
                         <TextAreaField
                           label="Hazard description"
@@ -9351,6 +9583,7 @@ export default function RiskAssessmentsModule({
                           onChange={(value) =>
                             updateHazard(hazard.id, "hazardDescription", value)
                           }
+                          theme={theme}
                         />
                         <TextAreaField
                           label="Possible consequence"
@@ -9362,6 +9595,7 @@ export default function RiskAssessmentsModule({
                               value,
                             )
                           }
+                          theme={theme}
                         />
                         <TextAreaField
                           label="Existing preventive measures"
@@ -9369,6 +9603,7 @@ export default function RiskAssessmentsModule({
                           onChange={(value) =>
                             updateHazard(hazard.id, "existingMeasures", value)
                           }
+                          theme={theme}
                         />
                         <TextAreaField
                           label="Additional preventive measures"
@@ -9380,20 +9615,31 @@ export default function RiskAssessmentsModule({
                               value,
                             )
                           }
+                          theme={theme}
                         />
                       </div>
 
                       <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                        <div className="rounded-2xl border border-white/10 bg-[#071225]/60 p-4">
+                        <div
+                          className={joinClasses(
+                            "rounded-2xl border p-4",
+                            theme.riskPanel,
+                          )}
+                        >
                           <div className="mb-4 flex items-center justify-between gap-3">
                             <h3 className="text-sm font-semibold">
                               Initial risk
                             </h3>
-                            <RiskBadge score={initialScore} />
+                            <RiskBadge score={initialScore} darkMode={darkMode} />
                           </div>
                           <div className="grid gap-3 sm:grid-cols-2">
                             <label>
-                              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                              <span
+                                className={joinClasses(
+                                  "mb-2 block text-xs font-bold uppercase tracking-[0.14em]",
+                                  theme.label,
+                                )}
+                              >
                                 Initial Probability
                               </span>
                               <select
@@ -9405,7 +9651,10 @@ export default function RiskAssessmentsModule({
                                     toRiskValue(event.target.value),
                                   )
                                 }
-                                className="w-full rounded-xl border border-white/10 bg-[#071225] px-4 py-3 text-sm text-white outline-none focus:border-[#4DEBFF]/45"
+                                className={joinClasses(
+                                  "w-full rounded-xl border px-4 py-3 text-sm outline-none transition",
+                                  theme.select,
+                                )}
                               >
                                 {riskValues.map((value) => (
                                   <option key={value} value={value}>
@@ -9415,7 +9664,12 @@ export default function RiskAssessmentsModule({
                               </select>
                             </label>
                             <label>
-                              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                              <span
+                                className={joinClasses(
+                                  "mb-2 block text-xs font-bold uppercase tracking-[0.14em]",
+                                  theme.label,
+                                )}
+                              >
                                 Initial Severity
                               </span>
                               <select
@@ -9427,7 +9681,10 @@ export default function RiskAssessmentsModule({
                                     toRiskValue(event.target.value),
                                   )
                                 }
-                                className="w-full rounded-xl border border-white/10 bg-[#071225] px-4 py-3 text-sm text-white outline-none focus:border-[#4DEBFF]/45"
+                                className={joinClasses(
+                                  "w-full rounded-xl border px-4 py-3 text-sm outline-none transition",
+                                  theme.select,
+                                )}
                               >
                                 {riskValues.map((value) => (
                                   <option key={value} value={value}>
@@ -9438,35 +9695,65 @@ export default function RiskAssessmentsModule({
                             </label>
                           </div>
                           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                              <div className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                            <div
+                              className={joinClasses(
+                                "rounded-xl border p-3",
+                                theme.miniCard,
+                              )}
+                            >
+                              <div
+                                className={joinClasses(
+                                  "text-xs font-bold uppercase tracking-[0.14em]",
+                                  theme.label,
+                                )}
+                              >
                                 Initial Risk Score
                               </div>
-                              <div className="mt-2 text-2xl font-bold text-white">
+                              <div className={joinClasses("mt-2 text-2xl font-bold", theme.scoreText)}>
                                 {initialScore}
                               </div>
                             </div>
-                            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                              <div className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                            <div
+                              className={joinClasses(
+                                "rounded-xl border p-3",
+                                theme.miniCard,
+                              )}
+                            >
+                              <div
+                                className={joinClasses(
+                                  "text-xs font-bold uppercase tracking-[0.14em]",
+                                  theme.label,
+                                )}
+                              >
                                 Initial Risk Level
                               </div>
                               <div className="mt-2">
-                                <RiskBadge score={initialScore} />
+                                <RiskBadge score={initialScore} darkMode={darkMode} />
                               </div>
                             </div>
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-[#071225]/60 p-4">
+                        <div
+                          className={joinClasses(
+                            "rounded-2xl border p-4",
+                            theme.riskPanel,
+                          )}
+                        >
                           <div className="mb-4 flex items-center justify-between gap-3">
                             <h3 className="text-sm font-semibold">
                               Residual risk
                             </h3>
-                            <RiskBadge score={residualScore} />
+                            <RiskBadge score={residualScore} darkMode={darkMode} />
                           </div>
                           <div className="grid gap-3 sm:grid-cols-2">
                             <label>
-                              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                              <span
+                                className={joinClasses(
+                                  "mb-2 block text-xs font-bold uppercase tracking-[0.14em]",
+                                  theme.label,
+                                )}
+                              >
                                 Residual Probability
                               </span>
                               <select
@@ -9478,7 +9765,10 @@ export default function RiskAssessmentsModule({
                                     toRiskValue(event.target.value),
                                   )
                                 }
-                                className="w-full rounded-xl border border-white/10 bg-[#071225] px-4 py-3 text-sm text-white outline-none focus:border-[#4DEBFF]/45"
+                                className={joinClasses(
+                                  "w-full rounded-xl border px-4 py-3 text-sm outline-none transition",
+                                  theme.select,
+                                )}
                               >
                                 {riskValues.map((value) => (
                                   <option key={value} value={value}>
@@ -9488,7 +9778,12 @@ export default function RiskAssessmentsModule({
                               </select>
                             </label>
                             <label>
-                              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                              <span
+                                className={joinClasses(
+                                  "mb-2 block text-xs font-bold uppercase tracking-[0.14em]",
+                                  theme.label,
+                                )}
+                              >
                                 Residual Severity
                               </span>
                               <select
@@ -9500,7 +9795,10 @@ export default function RiskAssessmentsModule({
                                     toRiskValue(event.target.value),
                                   )
                                 }
-                                className="w-full rounded-xl border border-white/10 bg-[#071225] px-4 py-3 text-sm text-white outline-none focus:border-[#4DEBFF]/45"
+                                className={joinClasses(
+                                  "w-full rounded-xl border px-4 py-3 text-sm outline-none transition",
+                                  theme.select,
+                                )}
                               >
                                 {riskValues.map((value) => (
                                   <option key={value} value={value}>
@@ -9511,20 +9809,40 @@ export default function RiskAssessmentsModule({
                             </label>
                           </div>
                           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                              <div className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                            <div
+                              className={joinClasses(
+                                "rounded-xl border p-3",
+                                theme.miniCard,
+                              )}
+                            >
+                              <div
+                                className={joinClasses(
+                                  "text-xs font-bold uppercase tracking-[0.14em]",
+                                  theme.label,
+                                )}
+                              >
                                 Residual Risk Score
                               </div>
-                              <div className="mt-2 text-2xl font-bold text-white">
+                              <div className={joinClasses("mt-2 text-2xl font-bold", theme.scoreText)}>
                                 {residualScore}
                               </div>
                             </div>
-                            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                              <div className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                            <div
+                              className={joinClasses(
+                                "rounded-xl border p-3",
+                                theme.miniCard,
+                              )}
+                            >
+                              <div
+                                className={joinClasses(
+                                  "text-xs font-bold uppercase tracking-[0.14em]",
+                                  theme.label,
+                                )}
+                              >
                                 Residual Risk Level
                               </div>
                               <div className="mt-2">
-                                <RiskBadge score={residualScore} />
+                                <RiskBadge score={residualScore} darkMode={darkMode} />
                               </div>
                             </div>
                           </div>
@@ -9533,7 +9851,12 @@ export default function RiskAssessmentsModule({
 
                       <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <div>
-                          <span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                          <span
+                            className={joinClasses(
+                              "mb-2 block text-xs font-bold uppercase tracking-[0.14em]",
+                              theme.label,
+                            )}
+                          >
                             Control hierarchy used
                           </span>
                           <div className="grid gap-2">
@@ -9542,8 +9865,8 @@ export default function RiskAssessmentsModule({
                                 key={option}
                                 className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                                   hazard.controlHierarchy.includes(option)
-                                    ? "border-[#4DEBFF]/40 bg-[#4DEBFF]/10 text-[#DDFBFF]"
-                                    : "border-white/10 bg-white/[0.035] text-slate-300 hover:bg-white/[0.06]"
+                                    ? theme.checkboxSelected
+                                    : theme.checkboxIdle
                                 }`}
                               >
                                 <input
@@ -9567,6 +9890,7 @@ export default function RiskAssessmentsModule({
                           onChange={(value) =>
                             updateHazard(hazard.id, "responsiblePerson", value)
                           }
+                          theme={theme}
                         />
                         <Field
                           label="Completion deadline / date"
@@ -9578,10 +9902,16 @@ export default function RiskAssessmentsModule({
                               value,
                             )
                           }
+                          theme={theme}
                           type="date"
                         />
                         <label>
-                          <span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                          <span
+                            className={joinClasses(
+                              "mb-2 block text-xs font-bold uppercase tracking-[0.14em]",
+                              theme.label,
+                            )}
+                          >
                             Status
                           </span>
                           <select
@@ -9593,7 +9923,10 @@ export default function RiskAssessmentsModule({
                                 event.target.value as ActionStatus,
                               )
                             }
-                            className="w-full rounded-xl border border-white/10 bg-[#071225] px-4 py-3 text-sm text-white outline-none focus:border-[#4DEBFF]/45"
+                            className={joinClasses(
+                              "w-full rounded-xl border px-4 py-3 text-sm outline-none transition",
+                              theme.select,
+                            )}
                           >
                             {actionStatusOptions.map((option) => (
                               <option key={option} value={option}>
@@ -9611,6 +9944,7 @@ export default function RiskAssessmentsModule({
                           onChange={(value) =>
                             updateHazard(hazard.id, "comments", value)
                           }
+                          theme={theme}
                           rows={2}
                         />
                       </div>
@@ -9622,13 +9956,18 @@ export default function RiskAssessmentsModule({
           </div>
 
           <aside className="space-y-6">
-            <RiskMatrixGuide />
+            <RiskMatrixGuide darkMode={darkMode} theme={theme} />
 
-            <section className="rounded-3xl border border-white/10 bg-[#071225]/72 p-5 shadow-[0_20px_70px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
+            <section
+              className={joinClasses(
+                "rounded-3xl border p-5 backdrop-blur-2xl",
+                theme.section,
+              )}
+            >
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold">Saved assessments</h2>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <p className={joinClasses("mt-1 text-sm", theme.muted)}>
                     Load previous manual risk assessments.
                   </p>
                 </div>
@@ -9636,7 +9975,12 @@ export default function RiskAssessmentsModule({
 
               <div className="mt-4 space-y-3">
                 {savedAssessments.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-6 text-sm text-slate-400">
+                  <div
+                    className={joinClasses(
+                      "rounded-2xl border border-dashed px-4 py-6 text-sm",
+                      theme.emptyState,
+                    )}
+                  >
                     No saved risk assessments yet.
                   </div>
                 ) : null}
@@ -9644,16 +9988,15 @@ export default function RiskAssessmentsModule({
                 {savedAssessments.map((assessment) => (
                   <div
                     key={assessment.id}
-                    className={`rounded-2xl border p-4 transition ${
-                      currentAssessmentId === assessment.id
-                        ? "border-[#4DEBFF]/35 bg-[#4DEBFF]/10"
-                        : "border-white/10 bg-white/[0.04]"
-                    }`}
+                    className={joinClasses(
+                      "rounded-2xl border p-4 transition",
+                      theme.savedCard(currentAssessmentId === assessment.id),
+                    )}
                   >
-                    <div className="font-semibold text-white">
+                    <div className={joinClasses("font-semibold", theme.heading)}>
                       {assessment.header.title || "Untitled risk assessment"}
                     </div>
-                    <div className="mt-1 text-xs leading-5 text-slate-400">
+                    <div className={joinClasses("mt-1 text-xs leading-5", theme.muted)}>
                       {assessment.header.company || "No company"} -{" "}
                       {assessment.header.assessmentDate || "No date"}
                     </div>
@@ -9668,7 +10011,10 @@ export default function RiskAssessmentsModule({
                       <button
                         type="button"
                         onClick={() => deleteAssessment(assessment.id)}
-                        className="rounded-lg border border-rose-400/25 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/15"
+                        className={joinClasses(
+                          "rounded-lg border px-3 py-2 text-xs font-semibold transition",
+                          theme.deleteButton,
+                        )}
                       >
                         Delete
                       </button>
