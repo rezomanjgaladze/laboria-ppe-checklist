@@ -17,7 +17,6 @@ import {
   TriangleAlert,
   CheckCircle2,
   GraduationCap,
-  Microscope,
   BarChart3,
   Settings,
   LogOut,
@@ -67,10 +66,10 @@ type AutosaveStatus = "dirty" | "saving" | "saved";
 type WorkspaceModuleId =
   | "inspections"
   | "risk-assessments"
-  | "corrective-actions"
-  | "trainings"
-  | "occupational-hygiene"
-  | "analytics"
+  | "action-tracker"
+  | "training-management"
+  | "incident-management"
+  | "hse-analytics"
   | "settings";
 
 type WorkspaceModule = {
@@ -233,32 +232,32 @@ const WORKSPACE_MODULES: WorkspaceModule[] = [
     icon: TriangleAlert,
   },
   {
-    id: "corrective-actions",
-    label: "Corrective Actions",
+    id: "action-tracker",
+    label: "Action Tracker",
     description:
-      "Track assigned corrective actions, ownership, deadlines, and closure evidence.",
+      "Track assigned HSE actions, ownership, deadlines, and closure evidence.",
     status: "Coming Soon",
     icon: CheckCircle2,
   },
   {
-    id: "trainings",
-    label: "Trainings",
+    id: "training-management",
+    label: "Training Management",
     description:
       "Plan safety trainings, toolbox talks, attendance records, and competency logs.",
     status: "Coming Soon",
     icon: GraduationCap,
   },
   {
-    id: "occupational-hygiene",
-    label: "Occupational Hygiene",
+    id: "incident-management",
+    label: "Incident Management",
     description:
-      "Manage exposure monitoring, sampling records, and occupational hygiene findings.",
+      "Record incidents, near misses, investigations, corrective actions, and lessons learned.",
     status: "Coming Soon",
-    icon: Microscope,
+    icon: HeartPulse,
   },
   {
-    id: "analytics",
-    label: "Analytics",
+    id: "hse-analytics",
+    label: "HSE Analytics",
     description:
       "Review inspection trends, risk patterns, and HSE performance insights.",
     status: "Coming Soon",
