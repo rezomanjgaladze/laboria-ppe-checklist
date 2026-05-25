@@ -200,14 +200,75 @@ const constructionActivityGroups: ActivityGroup[] = [
   },
 ];
 
-const constructionActivityOptions = constructionActivityGroups.flatMap(
-  (group) => group.activities,
-);
+const warehouseActivityGroups: ActivityGroup[] = [
+  {
+    label: "Warehouse Operations",
+    activities: [
+      "Goods receiving",
+      "Loading and unloading",
+      "Pallet handling",
+      "Order picking",
+      "Packing operations",
+      "Dispatch operations",
+      "Container unloading",
+      "Returns handling",
+    ],
+  },
+  {
+    label: "Forklifts & Mobile Equipment",
+    activities: [
+      "Forklift operation",
+      "Reach truck operation",
+      "Pallet truck operation",
+      "Battery charging",
+      "Refueling operations",
+    ],
+  },
+  {
+    label: "Storage & Racking",
+    activities: [
+      "Racking inspection",
+      "High-level storage",
+      "Manual stacking",
+      "Storage of hazardous materials",
+      "Cold storage operations",
+    ],
+  },
+  {
+    label: "Maintenance & Facility",
+    activities: [
+      "Cleaning operations",
+      "Waste handling",
+      "Conveyor maintenance",
+      "Electrical maintenance",
+      "Dock leveler operation",
+    ],
+  },
+  {
+    label: "High-Risk Operations",
+    activities: [
+      "Work at height in warehouse",
+      "Confined space entry",
+      "Fire emergency response",
+      "Spill response",
+      "Lone working",
+      "Night shift warehouse operations",
+    ],
+  },
+];
 
-const sectorOptions = ["Construction"];
-const activitiesBySector: Record<string, string[]> = {
-  Construction: constructionActivityOptions,
+const activityGroupsBySector: Record<string, ActivityGroup[]> = {
+  Construction: constructionActivityGroups,
+  "Warehouse & Logistics": warehouseActivityGroups,
 };
+
+const sectorOptions = Object.keys(activityGroupsBySector);
+const activitiesBySector: Record<string, string[]> = Object.fromEntries(
+  Object.entries(activityGroupsBySector).map(([sector, groups]) => [
+    sector,
+    groups.flatMap((group) => group.activities),
+  ]),
+);
 const customLibraryOption = "__custom__";
 
 const actionStatusOptions: ActionStatus[] = ["Open", "In Progress", "Closed"];
@@ -5081,6 +5142,604 @@ const constructionRiskAssessmentLibrary: Record<
   ...compactAdditionalConstructionRiskAssessmentLibrary,
 };
 
+type WarehouseActivityProfile = {
+  title: string;
+  people: string;
+  planningHazard: string;
+  equipmentHazard: string;
+  trafficHazard: string;
+  exposureHazard: string;
+  emergencyHazard: string;
+  specificControls: string;
+  consequence: string;
+};
+
+const createWarehouseHazards = (
+  activity: string,
+  profile: WarehouseActivityProfile,
+): HazardRow[] =>
+  createLibraryHazards([
+    libraryHazardTemplate(
+      `${activity} planning and work area controls`,
+      profile.planningHazard,
+      profile.people,
+      profile.consequence,
+      "Task area identified; supervisors brief workers; basic warehouse rules, PPE, and housekeeping controls are in place",
+      3,
+      5,
+      `${profile.specificControls}; confirm safe system of work, communicate restricted areas, and stop the activity if controls are not effective`,
+      libraryControls.engAdminPpe,
+      1,
+      4,
+    ),
+    libraryHazardTemplate(
+      `${activity} equipment, load, and material handling`,
+      profile.equipmentHazard,
+      profile.people,
+      "Crush injury, cuts, dropped goods, equipment damage, serious injury",
+      "Equipment is visually checked; loads are assessed before movement; damaged items are reported to supervision",
+      3,
+      4,
+      `${profile.specificControls}; inspect equipment, secure unstable loads, keep hands clear of pinch points, and remove damaged pallets or tools from use`,
+      libraryControls.substitutionEngAdminPpe,
+      1,
+      3,
+    ),
+    libraryHazardTemplate(
+      `${activity} pedestrian, vehicle, and route interface`,
+      profile.trafficHazard,
+      "Warehouse workers, forklift operators, delivery drivers, contractors, visitors",
+      "Struck-by injury, collision, falls, fractures, fatality",
+      "Pedestrian routes and vehicle routes are marked; speed limits and site traffic rules are communicated",
+      3,
+      5,
+      `${profile.specificControls}; segregate pedestrians and mobile equipment, use banksmen where needed, maintain visibility, and control access to active work areas`,
+      libraryControls.engAdminPpe,
+      1,
+      4,
+    ),
+    libraryHazardTemplate(
+      `${activity} exposure, ergonomics, and environment`,
+      profile.exposureHazard,
+      profile.people,
+      "Musculoskeletal injury, slips, chemical exposure, fatigue, reduced visibility, health effects",
+      "Manual handling guidance, spill kits, lighting, ventilation, and welfare arrangements are available",
+      3,
+      4,
+      `${profile.specificControls}; reduce manual handling, improve ventilation or lighting, rotate tasks, clean spills promptly, and provide task-specific PPE`,
+      libraryControls.engAdminPpe,
+      1,
+      3,
+    ),
+    libraryHazardTemplate(
+      `${activity} emergency response, inspection, and handover`,
+      profile.emergencyHazard,
+      "Workers, supervisors, first aiders, emergency wardens, emergency responders",
+      "Delayed rescue, uncontrolled escalation, serious injury, fire, environmental impact",
+      "Emergency contacts are known; first aid and spill response equipment are accessible; supervisors monitor work progress",
+      2,
+      5,
+      `${profile.specificControls}; verify emergency routes, report defects, document outstanding actions, and brief the next shift before handover`,
+      libraryControls.adminPpe,
+      1,
+      4,
+    ),
+  ]);
+
+const warehouseActivityProfiles: Record<string, WarehouseActivityProfile> = {
+  "Goods receiving": {
+    title: "Warehouse & Logistics - Goods Receiving Risk Assessment",
+    people: "Receiving operatives, forklift operators, delivery drivers, supervisors",
+    planningHazard:
+      "Congested receiving bays, unplanned deliveries, mixed pedestrian and vehicle movement, or unclear unloading sequence",
+    equipmentHazard:
+      "Damaged pallets, unstable inbound goods, defective dock equipment, or incorrect handling aids used during receiving",
+    trafficHazard:
+      "Delivery vehicles, forklifts, pallet trucks, and pedestrians interacting in the receiving area",
+    exposureHazard:
+      "Manual handling strain, damaged packaging, leaking products, poor lighting, or slippery receiving floors",
+    emergencyHazard:
+      "Delayed isolation of damaged goods, spills, vehicle incident, or blocked receiving exit routes",
+    specificControls:
+      "schedule deliveries, inspect inbound loads, use designated receiving lanes, quarantine damaged goods, and keep docks clear",
+    consequence: "Crush injury, struck-by injury, slips, sprains, serious injury",
+  },
+  "Loading and unloading": {
+    title: "Warehouse & Logistics - Loading and Unloading Risk Assessment",
+    people: "Warehouse operatives, forklift operators, delivery drivers, pedestrians",
+    planningHazard:
+      "Trailer movement, uncontrolled loading sequence, dock edge exposure, or poor coordination between driver and warehouse team",
+    equipmentHazard:
+      "Dock plates, dock levelers, lifting equipment, restraints, or pallets failing during loading and unloading",
+    trafficHazard:
+      "Forklifts, trailers, reversing vehicles, and pedestrians sharing dock approaches or loading bays",
+    exposureHazard:
+      "Manual handling, unstable loads, weather at dock doors, slippery floors, and poor visibility inside trailers",
+    emergencyHazard:
+      "Load collapse, fall from dock, vehicle pull-away, spill, or blocked emergency access at the bay",
+    specificControls:
+      "use vehicle restraints or chocks, confirm driver handover, control dock edges, inspect loads, and enforce exclusion zones",
+    consequence: "Crushing, falls from dock, struck-by injury, fractures, fatality",
+  },
+  "Pallet handling": {
+    title: "Warehouse & Logistics - Pallet Handling Risk Assessment",
+    people: "Warehouse operatives, forklift operators, order pickers, supervisors",
+    planningHazard:
+      "Incorrect pallet selection, overloaded pallets, unstable stacking, or poor segregation of damaged pallets",
+    equipmentHazard:
+      "Broken boards, protruding nails, pallet truck failure, damaged wrap, or shifting goods during pallet movement",
+    trafficHazard:
+      "Pedestrians exposed to pallet trucks, forklifts, dropped pallets, or blocked aisles",
+    exposureHazard:
+      "Manual lifting, splinters, sharp edges, repetitive handling, and trip hazards from loose pallets",
+    emergencyHazard:
+      "Pallet collapse, product spill, blocked fire routes, or delayed removal of damaged pallets",
+    specificControls:
+      "inspect pallets before use, remove damaged pallets, keep stacks stable, limit stack heights, and store pallets in marked areas",
+    consequence: "Foot injury, cuts, crush injury, sprains, lost time injury",
+  },
+  "Order picking": {
+    title: "Warehouse & Logistics - Order Picking Risk Assessment",
+    people: "Order pickers, reach truck operators, warehouse workers, supervisors",
+    planningHazard:
+      "Picking from unsuitable locations, congested aisles, poor pick sequence, or pressure to rush orders",
+    equipmentHazard:
+      "Picking trolleys, scanners, ladders, pallet trucks, or stock containers damaged or incorrectly used",
+    trafficHazard:
+      "Pickers working close to forklifts, reach trucks, pallet trucks, and other aisle traffic",
+    exposureHazard:
+      "Repetitive movement, awkward reaching, heavy items, slips, trips, and poor lighting at pick faces",
+    emergencyHazard:
+      "Delayed response to injury in aisles, blocked evacuation routes, damaged stock, or missing stock controls",
+    specificControls:
+      "plan pick routes, keep aisles clear, use suitable picking equipment, separate MHE zones, and rotate repetitive tasks",
+    consequence: "Musculoskeletal injury, collision, falls, cuts, serious injury",
+  },
+  "Packing operations": {
+    title: "Warehouse & Logistics - Packing Operations Risk Assessment",
+    people: "Packing operatives, quality inspectors, supervisors, maintenance workers",
+    planningHazard:
+      "Congested packing benches, poor workflow, packaging waste accumulation, or rushed packing targets",
+    equipmentHazard:
+      "Cutters, strapping tools, heat sealers, conveyors, scales, or packing machinery causing cuts, burns, or pinch injuries",
+    trafficHazard:
+      "Pallet trucks, trolleys, and finished goods moving through packing areas with limited separation",
+    exposureHazard:
+      "Repetitive packing, awkward postures, noise, adhesive exposure, dust, and slips from packaging waste",
+    emergencyHazard:
+      "Fire from packaging materials, blocked exits, machinery incident, or delayed first aid response",
+    specificControls:
+      "keep packing stations organized, guard equipment, control blades, manage waste, and apply ergonomic workstation setup",
+    consequence: "Cuts, burns, strain injuries, slips, fire, lost time injury",
+  },
+  "Dispatch operations": {
+    title: "Warehouse & Logistics - Dispatch Operations Risk Assessment",
+    people: "Dispatch operatives, forklift operators, drivers, supervisors",
+    planningHazard:
+      "Incorrect staging, rushed dispatch deadlines, poor load sequencing, or mixed pedestrian and vehicle routes",
+    equipmentHazard:
+      "Pallet wrap, straps, dock equipment, scanners, or load restraints missing, damaged, or incorrectly applied",
+    trafficHazard:
+      "Forklifts, delivery vehicles, pallet trucks, and pedestrians interacting around dispatch lanes",
+    exposureHazard:
+      "Manual handling, fatigue, weather exposure at dock doors, unstable outbound loads, and poor housekeeping",
+    emergencyHazard:
+      "Vehicle movement during loading, load collapse in dispatch lane, blocked exits, or documentation errors delaying response",
+    specificControls:
+      "use dispatch staging lanes, verify load stability, secure outbound loads, control driver access, and maintain clear dock communication",
+    consequence: "Crush injury, struck-by injury, sprains, falls, serious injury",
+  },
+  "Container unloading": {
+    title: "Warehouse & Logistics - Container Unloading Risk Assessment",
+    people: "Warehouse operatives, forklift operators, drivers, supervisors",
+    planningHazard:
+      "Unplanned container contents, shifted cargo, poor unloading sequence, or unsafe container door opening",
+    equipmentHazard:
+      "Damaged pallets, container doors, forklifts, dock plates, or handling aids failing during unloading",
+    trafficHazard:
+      "Forklifts, pallet trucks, pedestrians, and vehicle movements around container unloading zones",
+    exposureHazard:
+      "Heat stress, poor ventilation, fumigation residues, dust, manual handling, and slippery container floors",
+    emergencyHazard:
+      "Cargo collapse, suspected fumigant exposure, worker injury inside container, or blocked exit from container",
+    specificControls:
+      "inspect container before entry, open doors from a safe position, ventilate container, test where required, and unload in controlled sequence",
+    consequence: "Crushing, toxic exposure, heat stress, slips, serious injury",
+  },
+  "Returns handling": {
+    title: "Warehouse & Logistics - Returns Handling Risk Assessment",
+    people: "Returns operatives, quality inspectors, warehouse workers, supervisors",
+    planningHazard:
+      "Unknown condition of returned goods, poor quarantine controls, or mixing damaged items with normal stock",
+    equipmentHazard:
+      "Damaged packaging, leaking containers, sharp edges, broken products, or unsuitable handling tools",
+    trafficHazard:
+      "Pallet trucks, trolleys, and pedestrians moving around sorting and quarantine areas",
+    exposureHazard:
+      "Chemical residue, biological contamination, sharps, manual handling, and slips from damaged products",
+    emergencyHazard:
+      "Uncontrolled spill, contaminated goods, blocked quarantine area, or unclear escalation to supervisors",
+    specificControls:
+      "segregate returns, inspect packaging before handling, quarantine suspect goods, use spill kits, and document rejection decisions",
+    consequence: "Cuts, contamination, chemical exposure, sprains, environmental harm",
+  },
+  "Forklift operation": {
+    title: "Warehouse & Logistics - Forklift Operation Risk Assessment",
+    people: "Forklift operators, pedestrians, delivery drivers, supervisors",
+    planningHazard:
+      "Forklift movements planned through congested aisles, poor traffic segregation, blind corners, or unsuitable travel routes",
+    equipmentHazard:
+      "Forks, brakes, steering, mast, tyres, seatbelt, warning devices, or load backrest damaged or not inspected",
+    trafficHazard:
+      "Forklift collision with pedestrians, other forklifts, racking, dock edges, or delivery vehicles",
+    exposureHazard:
+      "Poor visibility, reversing hazards, uneven floors, battery or fuel exposure, vibration, and operator fatigue",
+    emergencyHazard:
+      "Overturn, falling load, collision, blocked aisle, or delayed rescue after operator injury",
+    specificControls:
+      "use trained operators, daily pre-use checks, seatbelts, speed limits, pedestrian segregation, and controlled reversing",
+    consequence: "Pedestrian collision, crushing, overturn, falling load, fatality",
+  },
+  "Reach truck operation": {
+    title: "Warehouse & Logistics - Reach Truck Operation Risk Assessment",
+    people: "Reach truck operators, warehouse workers, order pickers, supervisors",
+    planningHazard:
+      "High-level pallet handling in narrow aisles without adequate exclusion, visibility, or load planning",
+    equipmentHazard:
+      "Mast, forks, reach mechanism, cameras, warning devices, or load indicators failing during high-level storage work",
+    trafficHazard:
+      "Reach trucks operating in narrow aisles with pedestrians, pickers, or other mobile equipment nearby",
+    exposureHazard:
+      "Neck strain, poor aisle lighting, falling stock, damaged racking, and fatigue during repetitive high-level work",
+    emergencyHazard:
+      "Pallet fall, truck collision, rack strike, trapped operator, or blocked aisle emergency access",
+    specificControls:
+      "restrict pedestrian access to aisles, inspect trucks and racking, keep loads stable, use spotters where needed, and enforce speed limits",
+    consequence: "Falling goods, collision, crush injury, racking damage, serious injury",
+  },
+  "Pallet truck operation": {
+    title: "Warehouse & Logistics - Pallet Truck Operation Risk Assessment",
+    people: "Warehouse operatives, order pickers, dispatch workers, pedestrians",
+    planningHazard:
+      "Manual or powered pallet trucks used on unsuitable routes, slopes, congested aisles, or with excessive loads",
+    equipmentHazard:
+      "Wheels, handles, brakes, forks, batteries, or lifting mechanisms damaged or poorly maintained",
+    trafficHazard:
+      "Pallet trucks colliding with pedestrians, forklifts, racking, doors, or dock edges",
+    exposureHazard:
+      "Manual pushing and pulling strain, foot crush injuries, slips, uneven floors, and awkward maneuvering",
+    emergencyHazard:
+      "Runaway pallet truck, load collapse, injury in aisle, or blocked evacuation route",
+    specificControls:
+      "check pallet truck condition, set weight limits, avoid slopes where possible, keep routes clear, and use safety footwear",
+    consequence: "Foot injuries, strains, collisions, dropped loads, lost time injury",
+  },
+  "Battery charging": {
+    title: "Warehouse & Logistics - Battery Charging Risk Assessment",
+    people: "Forklift operators, maintenance workers, warehouse workers, supervisors",
+    planningHazard:
+      "Battery charging performed in unsuitable areas without ventilation, segregation, or emergency controls",
+    equipmentHazard:
+      "Chargers, cables, connectors, batteries, eye wash units, or lifting aids damaged or used incorrectly",
+    trafficHazard:
+      "Mobile equipment or pedestrians entering charging areas and striking chargers, cables, or parked forklifts",
+    exposureHazard:
+      "Hydrogen gas, acid exposure, electrical shock, fire, poor ventilation, and manual handling of batteries",
+    emergencyHazard:
+      "Battery fire, acid spill, electric shock, gas accumulation, or delayed access to eyewash and spill equipment",
+    specificControls:
+      "ventilate charging areas, prohibit ignition sources, inspect chargers, provide eyewash and spill kits, and train authorized users",
+    consequence: "Chemical burns, electric shock, fire, explosion, serious injury",
+  },
+  "Refueling operations": {
+    title: "Warehouse & Logistics - Refueling Operations Risk Assessment",
+    people: "Forklift operators, plant operators, maintenance workers, supervisors",
+    planningHazard:
+      "Refueling conducted without exclusion, ignition control, spill prevention, or clear responsibility",
+    equipmentHazard:
+      "Fuel hoses, LPG cylinders, valves, pumps, spill trays, or bonding arrangements damaged or incorrectly used",
+    trafficHazard:
+      "Vehicles, forklifts, and pedestrians moving through the refueling area during fuel transfer",
+    exposureHazard:
+      "Fuel vapors, skin contact, fire, environmental contamination, poor ventilation, and manual handling of cylinders",
+    emergencyHazard:
+      "Fuel spill, fire, LPG leak, vehicle impact, or delayed emergency isolation",
+    specificControls:
+      "use authorized refueling zones, remove ignition sources, inspect hoses and cylinders, keep spill kits ready, and train operators",
+    consequence: "Fire, burns, explosion, environmental harm, serious injury",
+  },
+  "Racking inspection": {
+    title: "Warehouse & Logistics - Racking Inspection Risk Assessment",
+    people: "Racking inspectors, warehouse workers, forklift operators, supervisors",
+    planningHazard:
+      "Inspections missed or incomplete, allowing damaged racking, overloading, or poor load placement to remain in service",
+    equipmentHazard:
+      "Damaged beams, uprights, protectors, floor fixings, pallets, or load notices affecting rack integrity",
+    trafficHazard:
+      "Inspectors exposed to forklifts, reach trucks, falling stock, or active picking in racking aisles",
+    exposureHazard:
+      "High-level visual checks, poor lighting, awkward access, dust, and falling-object exposure",
+    emergencyHazard:
+      "Delayed isolation of unsafe racking, rack collapse, falling stock, or unclear defect escalation",
+    specificControls:
+      "use competent inspections, tag damaged racking, quarantine unsafe bays, verify load limits, and repair defects before reuse",
+    consequence: "Falling stock, racking collapse, crush injury, fatality",
+  },
+  "High-level storage": {
+    title: "Warehouse & Logistics - High-Level Storage Risk Assessment",
+    people: "Reach truck operators, forklift operators, warehouse workers, order pickers",
+    planningHazard:
+      "Poorly planned high-level storage causing overloaded racks, unstable pallets, or unsuitable goods stored at height",
+    equipmentHazard:
+      "Damaged pallets, racking, reach trucks, wrapping, or lifting accessories used for high-level storage",
+    trafficHazard:
+      "Mobile equipment and pedestrians operating near high-level storage zones and narrow aisles",
+    exposureHazard:
+      "Falling objects, poor visibility, awkward checking, damaged packaging, and high-level retrieval pressure",
+    emergencyHazard:
+      "Load fall, rack strike, aisle blockage, or delayed isolation of unsafe high-level stock",
+    specificControls:
+      "verify rack capacity, store heavy goods low, wrap pallets correctly, inspect loads before lifting, and restrict aisle access",
+    consequence: "Falling stock, crush injury, racking damage, serious injury, fatality",
+  },
+  "Manual stacking": {
+    title: "Warehouse & Logistics - Manual Stacking Risk Assessment",
+    people: "Warehouse operatives, order pickers, supervisors, nearby workers",
+    planningHazard:
+      "Manual stacks built too high, on uneven surfaces, or with incompatible goods creating collapse risk",
+    equipmentHazard:
+      "Damaged pallets, boxes, straps, wrap, step aids, or handling tools used during stacking",
+    trafficHazard:
+      "Workers stacking in aisles or near mobile equipment, doors, and pedestrian routes",
+    exposureHazard:
+      "Heavy lifting, awkward postures, repetitive handling, hand injuries, and trips around stacked goods",
+    emergencyHazard:
+      "Stack collapse, blocked fire routes, trapped worker, or delayed removal of unstable goods",
+    specificControls:
+      "set stack height limits, keep heavy items low, use mechanical aids, inspect packaging, and maintain aisle clearance",
+    consequence: "Back injury, crush injury, falling goods, sprains, lost time injury",
+  },
+  "Storage of hazardous materials": {
+    title: "Warehouse & Logistics - Storage of Hazardous Materials Risk Assessment",
+    people: "Warehouse workers, forklift operators, maintenance workers, emergency responders",
+    planningHazard:
+      "Incompatible hazardous materials stored together, poor labeling, inadequate segregation, or missing safety data",
+    equipmentHazard:
+      "Damaged containers, leaking drums, unsuitable pallets, spill pallets, ventilation, or fire protection systems",
+    trafficHazard:
+      "Forklifts or pallet trucks striking hazardous material storage areas or spill containment equipment",
+    exposureHazard:
+      "Chemical inhalation, skin contact, fire, reactive substances, poor ventilation, and environmental release",
+    emergencyHazard:
+      "Chemical spill, fire, exposure incident, missing SDS, or delayed emergency response",
+    specificControls:
+      "segregate incompatible materials, label containers, use bunding, maintain SDS access, inspect storage, and train spill responders",
+    consequence: "Chemical burns, inhalation injury, fire, environmental harm, serious injury",
+  },
+  "Cold storage operations": {
+    title: "Warehouse & Logistics - Cold Storage Operations Risk Assessment",
+    people: "Cold store workers, forklift operators, order pickers, maintenance workers",
+    planningHazard:
+      "Work in cold rooms planned without exposure limits, suitable clothing, visibility controls, or worker check-ins",
+    equipmentHazard:
+      "Cold room doors, alarms, lighting, forklifts, racking, or insulated PPE failing during cold storage work",
+    trafficHazard:
+      "Forklifts and pedestrians moving on icy floors, tight aisles, and low-visibility cold store routes",
+    exposureHazard:
+      "Cold stress, slippery ice, condensation, reduced dexterity, poor visibility, and isolation inside cold rooms",
+    emergencyHazard:
+      "Worker trapped in cold room, delayed assistance for cold stress, door failure, or blocked escape route",
+    specificControls:
+      "use cold-rated PPE, anti-slip controls, door release checks, worker check-in systems, floor inspections, and exposure rotation",
+    consequence: "Cold stress, slips, falls, collision, serious injury",
+  },
+  "Cleaning operations": {
+    title: "Warehouse & Logistics - Cleaning Operations Risk Assessment",
+    people: "Cleaners, warehouse workers, forklift operators, contractors",
+    planningHazard:
+      "Cleaning conducted during active operations without segregation, signage, or coordination with warehouse traffic",
+    equipmentHazard:
+      "Cleaning machines, chemicals, hoses, buckets, scrubbers, or ladders damaged or incorrectly used",
+    trafficHazard:
+      "Cleaners exposed to forklifts, pallet trucks, pedestrians, or vehicles while working in operational areas",
+    exposureHazard:
+      "Wet floors, chemical contact, fumes, manual handling, sharps in waste, and poor ventilation",
+    emergencyHazard:
+      "Chemical splash, slip incident, equipment entanglement, blocked exit, or uncontrolled spill",
+    specificControls:
+      "schedule cleaning safely, use wet floor controls, dilute chemicals correctly, segregate cleaning zones, and store chemicals securely",
+    consequence: "Slips, chemical burns, respiratory irritation, strains, lost time injury",
+  },
+  "Waste handling": {
+    title: "Warehouse & Logistics - Waste Handling Risk Assessment",
+    people: "Warehouse workers, cleaners, waste contractors, supervisors",
+    planningHazard:
+      "Waste streams mixed, poorly segregated, overflowing, or handled without clear disposal routes",
+    equipmentHazard:
+      "Bins, compactors, balers, sharps containers, pallets, or waste cages damaged or overloaded",
+    trafficHazard:
+      "Waste movement crossing forklift routes, dock areas, pedestrian walkways, or contractor collection zones",
+    exposureHazard:
+      "Sharps, contamination, manual handling, dust, odors, fire loading, and slips from spilled waste",
+    emergencyHazard:
+      "Waste fire, compactor incident, blocked exits, spill, or delayed contractor collection",
+    specificControls:
+      "segregate waste, control bin weights, inspect compactors, remove combustible waste promptly, and train workers in waste hazards",
+    consequence: "Cuts, contamination, fire, strains, environmental harm",
+  },
+  "Conveyor maintenance": {
+    title: "Warehouse & Logistics - Conveyor Maintenance Risk Assessment",
+    people: "Maintenance workers, operators, contractors, supervisors",
+    planningHazard:
+      "Maintenance started without isolation, permit controls, communication, or understanding of stored energy",
+    equipmentHazard:
+      "Belts, rollers, motors, guards, sensors, and pinch points creating entanglement or crush hazards",
+    trafficHazard:
+      "Maintenance workers exposed to warehouse traffic, adjacent conveyors, or nearby loading operations",
+    exposureHazard:
+      "Noise, dust, awkward access, sharp edges, manual handling of parts, and electrical exposure",
+    emergencyHazard:
+      "Unexpected startup, trapped worker, electrical incident, or delayed rescue from conveyor line",
+    specificControls:
+      "apply lockout/tagout, test for zero energy, keep guards in place, use permits, and communicate maintenance status",
+    consequence: "Entanglement, crushing, amputation, electric shock, fatality",
+  },
+  "Electrical maintenance": {
+    title: "Warehouse & Logistics - Electrical Maintenance Risk Assessment",
+    people: "Electricians, maintenance workers, warehouse workers, contractors",
+    planningHazard:
+      "Electrical maintenance performed without correct isolation, access control, permits, or verification of competence",
+    equipmentHazard:
+      "Panels, cables, chargers, lighting circuits, tools, test equipment, or temporary supplies damaged or incorrectly used",
+    trafficHazard:
+      "Workers maintaining equipment near active aisles, dock areas, forklifts, or temporary barriers",
+    exposureHazard:
+      "Electric shock, arc flash, burns, poor lighting, working at height, and contact with live parts",
+    emergencyHazard:
+      "Arc flash, electric shock, fire, failed isolation, or delayed emergency shutoff",
+    specificControls:
+      "use authorized electricians, lockout/tagout, prove dead, use insulated tools, control live testing, and maintain arc flash boundaries",
+    consequence: "Electric shock, burns, fire, arc flash, fatality",
+  },
+  "Dock leveler operation": {
+    title: "Warehouse & Logistics - Dock Leveler Operation Risk Assessment",
+    people: "Dock operators, forklift operators, delivery drivers, maintenance workers",
+    planningHazard:
+      "Dock leveler used without vehicle restraint, inspection, edge control, or clear communication with the driver",
+    equipmentHazard:
+      "Leveler platform, lip, controls, hydraulics, guards, dock bumpers, or restraints failing during use",
+    trafficHazard:
+      "Forklifts, pedestrians, and vehicles moving across dock leveler areas and dock edges",
+    exposureHazard:
+      "Pinch points, crush zones, slips at dock edge, weather exposure, and poor visibility inside trailers",
+    emergencyHazard:
+      "Leveler collapse, vehicle pull-away, trapped worker, fall from dock, or delayed isolation for maintenance",
+    specificControls:
+      "inspect dock levelers, restrain vehicles, keep pedestrians clear, train operators, and isolate levelers before maintenance",
+    consequence: "Crush injury, falls from dock, struck-by injury, serious injury",
+  },
+  "Work at height in warehouse": {
+    title: "Warehouse & Logistics - Work at Height Risk Assessment",
+    people: "Maintenance workers, order pickers, contractors, supervisors, workers below",
+    planningHazard:
+      "Work at height in aisles, racks, docks, or mezzanines planned without suitable access equipment or exclusion zones",
+    equipmentHazard:
+      "Ladders, MEWPs, fall protection, guardrails, tools, or platforms damaged or incorrectly used",
+    trafficHazard:
+      "People or mobile equipment entering the area below work at height or striking access equipment",
+    exposureHazard:
+      "Falling objects, overreaching, poor lighting, slippery platforms, and fatigue during elevated work",
+    emergencyHazard:
+      "Fall, dropped object, MEWP breakdown, suspension trauma, or delayed rescue from elevated position",
+    specificControls:
+      "select suitable access equipment, inspect fall protection, set exclusion zones below, secure tools, and prepare rescue arrangements",
+    consequence: "Fall from height, falling objects, fractures, serious injury, fatality",
+  },
+  "Confined space entry": {
+    title: "Warehouse & Logistics - Confined Space Entry Risk Assessment",
+    people: "Authorized entrants, attendants, maintenance workers, emergency responders",
+    planningHazard:
+      "Entry to tanks, pits, compactors, containers, or restricted spaces without permit, testing, or rescue planning",
+    equipmentHazard:
+      "Gas monitors, ventilation, lighting, retrieval equipment, or communication devices missing, damaged, or uncalibrated",
+    trafficHazard:
+      "Forklifts, pedestrians, or warehouse operations affecting the entry point, access route, or rescue area",
+    exposureHazard:
+      "Oxygen deficiency, toxic or flammable atmosphere, heat stress, poor visibility, and restricted movement",
+    emergencyHazard:
+      "Entrant collapse, failed communication, delayed rescue, unauthorized entry, or reliance on emergency services alone",
+    specificControls:
+      "use permit-to-work, atmospheric testing, forced ventilation, trained attendants, rescue equipment, and controlled access",
+    consequence: "Asphyxiation, poisoning, fire, entrapment, fatality",
+  },
+  "Fire emergency response": {
+    title: "Warehouse & Logistics - Fire Emergency Response Risk Assessment",
+    people: "Warehouse workers, visitors, fire wardens, contractors, emergency responders",
+    planningHazard:
+      "Fire response plans not understood, blocked evacuation routes, high fire loading, or unclear assembly process",
+    equipmentHazard:
+      "Fire alarms, extinguishers, sprinklers, emergency lighting, doors, or radios missing, blocked, or not maintained",
+    trafficHazard:
+      "Evacuating workers exposed to vehicles, forklifts, dock traffic, or congested muster areas",
+    exposureHazard:
+      "Smoke inhalation, heat, panic, poor visibility, and fatigue during evacuation or first response",
+    emergencyHazard:
+      "Delayed alarm activation, blocked exits, failed headcount, emergency equipment failure, or uncontrolled fire spread",
+    specificControls:
+      "keep exits clear, inspect fire equipment, train wardens, run evacuation drills, control combustible storage, and verify headcounts",
+    consequence: "Smoke exposure, burns, panic injuries, property loss, fatality",
+  },
+  "Spill response": {
+    title: "Warehouse & Logistics - Spill Response Risk Assessment",
+    people: "Warehouse workers, spill responders, cleaners, supervisors, contractors",
+    planningHazard:
+      "Spill response started without identifying substance, isolating area, or selecting compatible cleanup materials",
+    equipmentHazard:
+      "Spill kits, absorbents, drains covers, PPE, waste containers, or SDS information unavailable or unsuitable",
+    trafficHazard:
+      "Forklifts, pallet trucks, pedestrians, and vehicles entering contaminated or slippery spill areas",
+    exposureHazard:
+      "Chemical contact, inhalation, slips, incompatible absorbents, environmental release, and contaminated waste handling",
+    emergencyHazard:
+      "Uncontrolled spill migration, exposure symptoms, fire risk, drain contamination, or delayed escalation",
+    specificControls:
+      "identify product, isolate spill area, use SDS, protect drains, select correct PPE and absorbents, and dispose of waste correctly",
+    consequence: "Chemical injury, slips, fire, environmental harm, serious injury",
+  },
+  "Lone working": {
+    title: "Warehouse & Logistics - Lone Working Risk Assessment",
+    people: "Lone workers, supervisors, security personnel, emergency responders",
+    planningHazard:
+      "Workers assigned to isolated warehouse areas, yards, cold rooms, or maintenance tasks without check-in controls",
+    equipmentHazard:
+      "Radios, phones, panic alarms, access systems, lighting, or monitoring equipment unavailable or unreliable",
+    trafficHazard:
+      "Lone workers moving through yards, aisles, docks, or parking areas without immediate assistance nearby",
+    exposureHazard:
+      "Fatigue, manual handling, slips, cold exposure, security threats, and delayed medical assistance",
+    emergencyHazard:
+      "Injury or illness not discovered quickly, failed communication, security incident, or delayed first aid",
+    specificControls:
+      "use lone worker check-ins, communication devices, task limits, supervisor escalation, and prohibit high-risk work alone",
+    consequence: "Delayed rescue, serious injury, medical deterioration, security incident",
+  },
+  "Night shift warehouse operations": {
+    title: "Warehouse & Logistics - Night Shift Warehouse Operations Risk Assessment",
+    people: "Night shift workers, forklift operators, supervisors, security staff",
+    planningHazard:
+      "Night operations planned with reduced supervision, fewer support staff, changed traffic patterns, or fatigue risk",
+    equipmentHazard:
+      "Lighting, alarms, radios, forklifts, dock systems, and emergency equipment not checked for night shift use",
+    trafficHazard:
+      "Reduced visibility between pedestrians, forklifts, yard vehicles, and delivery drivers during night operations",
+    exposureHazard:
+      "Fatigue, poor lighting, cold conditions, lone working, security concerns, and reduced alertness",
+    emergencyHazard:
+      "Delayed emergency response, reduced first aid cover, communication failure, or difficulty accounting for workers",
+    specificControls:
+      "manage fatigue, maintain lighting, verify communication and emergency cover, increase supervision, and secure access points",
+    consequence: "Collision, fatigue-related error, slips, delayed response, serious injury",
+  },
+};
+
+const warehouseRiskAssessmentLibrary = Object.fromEntries(
+  Object.entries(warehouseActivityProfiles).map(([activity, profile]) => [
+    activity,
+    {
+      title: profile.title,
+      createHazards: () => createWarehouseHazards(activity, profile),
+    },
+  ]),
+) as Record<string, { title: string; createHazards: () => HazardRow[] }>;
+
+const riskAssessmentLibraryBySector: Record<
+  string,
+  Record<string, { title: string; createHazards: () => HazardRow[] }>
+> = {
+  Construction: constructionRiskAssessmentLibrary,
+  "Warehouse & Logistics": warehouseRiskAssessmentLibrary,
+};
+
 const toRiskValue = (value: string): RiskValue => Number(value) as RiskValue;
 
 const riskScore = (probability: RiskValue, severity: RiskValue) =>
@@ -5477,16 +6136,17 @@ export default function RiskAssessmentsModule({
     ...sectorOptions.map((sector) => ({ value: sector, label: sector })),
     { value: customLibraryOption, label: "Other / Manual" },
   ];
+  const activeActivityGroups = customSectorMode
+    ? []
+    : (activityGroupsBySector[header.sector] ?? []);
   const activitySelectGroups =
-    header.sector === "Construction" && !customSectorMode
-      ? constructionActivityGroups.map((group) => ({
-          label: group.label,
-          options: group.activities.map((activity) => ({
-            value: activity,
-            label: activity,
-          })),
-        }))
-      : [];
+    activeActivityGroups.map((group) => ({
+      label: group.label,
+      options: group.activities.map((activity) => ({
+        value: activity,
+        label: activity,
+      })),
+    }));
   const activitySelectOptions = [
     ...(activitySelectGroups.length > 0
       ? []
@@ -5497,8 +6157,8 @@ export default function RiskAssessmentsModule({
     { value: customLibraryOption, label: "Other / Manual" },
   ];
   const selectedLibraryAssessment =
-    header.sector === "Construction" && !customSectorMode
-      ? constructionRiskAssessmentLibrary[header.activity]
+    !customSectorMode && !customActivityMode
+      ? riskAssessmentLibraryBySector[header.sector]?.[header.activity]
       : undefined;
   const canGenerateLibraryAssessment = Boolean(selectedLibraryAssessment);
   const hasEnteredHazardData = hazards.some((hazard) => {
@@ -5638,7 +6298,7 @@ export default function RiskAssessmentsModule({
 
     setHeader((current) => ({
       ...current,
-      sector: "Construction",
+      sector: header.sector,
       activity: header.activity,
       title:
         current.title.trim().length > 0
@@ -5986,8 +6646,8 @@ export default function RiskAssessmentsModule({
                         Laboria HSE Library prototype available
                       </div>
                       <p className="mt-1 text-sm text-slate-300">
-                        Generate a complete editable assessment for Construction
-                        - {header.activity}.
+                        Generate a complete editable assessment for{" "}
+                        {header.sector} - {header.activity}.
                       </p>
                     </div>
                     <button
