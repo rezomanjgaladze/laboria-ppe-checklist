@@ -481,12 +481,249 @@ const healthcareActivityGroups: ActivityGroup[] = [
   },
 ];
 
+const oilGasActivityGroups: ActivityGroup[] = [
+  {
+    label: "Drilling & Well Operations",
+    activities: [
+      "Drilling operations",
+      "Well intervention",
+      "Mud handling",
+      "Rig floor operations",
+      "Casing installation",
+      "Pressure testing",
+      "Wellhead maintenance",
+      "Blowout prevention equipment inspection",
+      "Cementing operations",
+      "Wireline operations",
+    ],
+  },
+  {
+    label: "Process & Production Operations",
+    activities: [
+      "Process plant operation",
+      "Separator operation",
+      "Pump operation",
+      "Compressor operation",
+      "Valve maintenance",
+      "Pipeline pigging",
+      "Tank operations",
+      "Gas detection monitoring",
+      "Flare system operation",
+      "Utility system operation",
+    ],
+  },
+  {
+    label: "Maintenance & Shutdown",
+    activities: [
+      "Mechanical maintenance",
+      "Electrical maintenance",
+      "Instrument maintenance",
+      "Hot work during shutdown",
+      "Confined space entry",
+      "Work at height",
+      "Isolation/LOTO",
+      "Scaffold use",
+      "Contractor maintenance",
+      "Emergency repair work",
+    ],
+  },
+  {
+    label: "Chemical & Hazardous Materials",
+    activities: [
+      "Chemical injection",
+      "Fuel transfer",
+      "Hydrocarbon sampling",
+      "Corrosive chemical handling",
+      "H2S exposure areas",
+      "Flammable liquid handling",
+      "Gas cylinder handling",
+      "Spill response",
+      "Waste oil handling",
+      "Hazardous waste storage",
+    ],
+  },
+  {
+    label: "Marine & Logistics",
+    activities: [
+      "Crane lifting operations",
+      "Helicopter landing operations",
+      "Vessel loading/unloading",
+      "Offshore transfer operations",
+      "Forklift operation",
+      "Material handling",
+      "Working over water",
+      "Emergency evacuation drill",
+      "Lifeboat drill",
+      "Night operations",
+    ],
+  },
+];
+
+const miningActivityGroups: ActivityGroup[] = [
+  {
+    label: "Surface Mining Operations",
+    activities: [
+      "Excavation operations",
+      "Blasting preparation",
+      "Rock breaking",
+      "Haul truck operation",
+      "Loader operation",
+      "Bulldozer operation",
+      "Drilling operations",
+      "Stockpile management",
+      "Ore handling",
+      "Waste dumping",
+    ],
+  },
+  {
+    label: "Underground Mining",
+    activities: [
+      "Underground drilling",
+      "Tunnel support installation",
+      "Ventilation system work",
+      "Underground transport",
+      "Confined underground work",
+      "Ground stability inspection",
+      "Dewatering underground",
+      "Emergency refuge operations",
+      "Explosive handling underground",
+      "Underground maintenance",
+    ],
+  },
+  {
+    label: "Processing Plant Operations",
+    activities: [
+      "Crushing operations",
+      "Screening operations",
+      "Conveyor operation",
+      "Material transfer",
+      "Grinding/milling",
+      "Chemical processing",
+      "Flotation process",
+      "Sampling operations",
+      "Tailings management",
+      "Dust suppression",
+    ],
+  },
+  {
+    label: "Maintenance & Engineering",
+    activities: [
+      "Heavy equipment maintenance",
+      "Conveyor maintenance",
+      "Electrical maintenance",
+      "Welding and cutting",
+      "Hydraulic maintenance",
+      "Tire changing",
+      "Lifting operations",
+      "Work at height",
+      "Shutdown maintenance",
+      "Lockout/tagout",
+    ],
+  },
+  {
+    label: "Health, Safety & Environment",
+    activities: [
+      "Silica dust exposure work",
+      "Noise exposure areas",
+      "Heat stress exposure",
+      "Explosive storage",
+      "Hazardous chemical storage",
+      "Fuel handling",
+      "Emergency response drill",
+      "Slope stability monitoring",
+      "Environmental spill response",
+      "Remote/lone working",
+    ],
+  },
+];
+
+const foodProductionActivityGroups: ActivityGroup[] = [
+  {
+    label: "Food Processing Operations",
+    activities: [
+      "Food preparation",
+      "Mixing operations",
+      "Cutting and slicing",
+      "Cooking operations",
+      "Baking operations",
+      "Packaging operations",
+      "Bottling operations",
+      "Labeling operations",
+      "Ingredient handling",
+      "Product inspection",
+    ],
+  },
+  {
+    label: "Machinery & Equipment",
+    activities: [
+      "Conveyor operation",
+      "Machine cleaning",
+      "Machine guarding inspection",
+      "Mixer operation",
+      "Filling machine operation",
+      "Refrigeration system operation",
+      "Boiler operation",
+      "Steam system work",
+      "Preventive maintenance",
+      "Lockout/tagout",
+    ],
+  },
+  {
+    label: "Hygiene & Sanitation",
+    activities: [
+      "Cleaning and sanitation",
+      "Chemical disinfection",
+      "Waste handling",
+      "Pest control coordination",
+      "Spill cleanup",
+      "Drain cleaning",
+      "High-pressure washing",
+      "Food contamination prevention",
+      "Hand hygiene operations",
+      "Laundry/uniform handling",
+    ],
+  },
+  {
+    label: "Storage & Logistics",
+    activities: [
+      "Cold storage work",
+      "Forklift operation",
+      "Manual pallet handling",
+      "Loading/unloading",
+      "Warehouse storage",
+      "Raw material storage",
+      "Finished product dispatch",
+      "Battery charging",
+      "Delivery vehicle loading",
+      "Container unloading",
+    ],
+  },
+  {
+    label: "Quality & Laboratory",
+    activities: [
+      "Quality control testing",
+      "Food sampling",
+      "Laboratory testing",
+      "Chemical reagent handling",
+      "Allergen handling",
+      "Temperature monitoring",
+      "Glass and brittle plastic inspection",
+      "Metal detector testing",
+      "Calibration activities",
+      "Documentation and traceability work",
+    ],
+  },
+];
+
 const activityGroupsBySector: Record<string, ActivityGroup[]> = {
   Construction: constructionActivityGroups,
   "Warehouse & Logistics": warehouseActivityGroups,
   Manufacturing: manufacturingActivityGroups,
   "Office & Administrative": officeActivityGroups,
   "Healthcare & Medical Facilities": healthcareActivityGroups,
+  "Oil & Gas": oilGasActivityGroups,
+  "Mining & Quarrying": miningActivityGroups,
+  "Food Production & Processing": foodProductionActivityGroups,
 };
 
 const sectorOptions = Object.keys(activityGroupsBySector);
@@ -6360,6 +6597,318 @@ const healthcareCategoryProfiles: Record<
   },
 };
 
+const oilGasCategoryProfiles: Record<string, SmartSectorCategoryProfile> = {
+  "Drilling & Well Operations": {
+    people:
+      "Drilling crew, well services personnel, supervisors, contractors, emergency responders",
+    planningHazard:
+      "can involve high-pressure well control hazards, heavy tubular handling, dropped objects, rotating equipment, and changing well conditions",
+    equipmentHazard:
+      "top drives, drawworks, mud systems, casing tools, pressure test equipment, BOP components, wireline units, and cementing equipment",
+    interfaceHazard:
+      "rig floor crews, service contractors, crane operators, mud engineers, and supervisors working in tight high-energy zones",
+    exposureHazard:
+      "drilling mud exposure, hydrocarbons, H2S, noise, vibration, heat stress, manual handling, and fatigue from extended shifts",
+    emergencyHazard:
+      "well kick, blowout, pressure release, dropped object, fire, gas release, or delayed muster and emergency response",
+    existingMeasures:
+      "Permit-to-work, well control procedures, exclusion zones, gas monitoring, PPE, toolbox talks, and emergency response plans are in place",
+    specificControls:
+      "verify well control barriers, inspect lifting and pressure equipment, maintain dropped-object controls, monitor gas levels, and stop work during abnormal well conditions",
+    consequence:
+      "Explosion, fire, pressure release injury, toxic exposure, dropped object injury, fatality",
+  },
+  "Process & Production Operations": {
+    people:
+      "Process operators, production technicians, control room staff, maintenance workers, contractors",
+    planningHazard:
+      "can expose workers to process upset, hydrocarbon release, pressure systems, ignition sources, and unclear operating limits",
+    equipmentHazard:
+      "separators, pumps, compressors, valves, pipelines, tanks, gas detectors, flare systems, and utility equipment",
+    interfaceHazard:
+      "operators, maintenance workers, contractors, control room teams, and logistics personnel working around live process equipment",
+    exposureHazard:
+      "hydrocarbon vapor, H2S, noise, hot surfaces, pressure release, chemical additives, poor ventilation, and fatigue",
+    emergencyHazard:
+      "process alarm, gas detection, flare event, compressor trip, tank overfill, line rupture, or emergency shutdown failure",
+    existingMeasures:
+      "Operating procedures, alarms, gas detection, process isolation, inspection routines, PPE, and emergency shutdown systems are available",
+    specificControls:
+      "monitor process parameters, verify isolation and depressurization, control ignition sources, respond to gas alarms, and maintain clear communication with control room",
+    consequence:
+      "Hydrocarbon release, fire, explosion, toxic exposure, burns, serious injury",
+  },
+  "Maintenance & Shutdown": {
+    people:
+      "Maintenance technicians, shutdown crews, electricians, scaffolders, contractors, supervisors",
+    planningHazard:
+      "can involve simultaneous operations, incomplete isolation, confined spaces, hot work, work at height, and urgent repair pressure",
+    equipmentHazard:
+      "electrical systems, rotating equipment, instruments, scaffolds, pressure equipment, welding tools, and temporary access equipment",
+    interfaceHazard:
+      "maintenance teams, contractors, operations staff, permit issuers, and emergency repair crews working in shared shutdown areas",
+    exposureHazard:
+      "residual hydrocarbons, H2S, welding fumes, electrical energy, heat, noise, manual handling, and poor access",
+    emergencyHazard:
+      "isolation failure, fire during hot work, confined space rescue, dropped object, scaffold incident, or emergency repair escalation",
+    existingMeasures:
+      "Permit-to-work, isolation certificates, gas testing, toolbox talks, contractor controls, rescue planning, and PPE requirements are used",
+    specificControls:
+      "verify zero energy, test for gas, control simultaneous operations, supervise hot work, inspect access equipment, and keep rescue arrangements ready",
+    consequence:
+      "Fire, explosion, electric shock, confined space injury, fall injury, fatality",
+  },
+  "Chemical & Hazardous Materials": {
+    people:
+      "Chemical handlers, operators, maintenance workers, waste handlers, emergency responders",
+    planningHazard:
+      "can involve hazardous substances, H2S exposure, hydrocarbon sampling, incompatible chemicals, poor storage, and transfer failures",
+    equipmentHazard:
+      "chemical injection skids, fuel hoses, sample points, gas cylinders, tanks, spill kits, waste containers, and containment systems",
+    interfaceHazard:
+      "workers handling hazardous substances near live process areas, drains, ignition sources, transport routes, and storage areas",
+    exposureHazard:
+      "toxic gas, corrosive chemicals, hydrocarbon vapor, flammable liquids, skin contact, inhalation, and environmental contamination",
+    emergencyHazard:
+      "H2S alarm, fuel spill, chemical splash, gas cylinder leak, hydrocarbon release, fire, or delayed decontamination",
+    existingMeasures:
+      "Safety data sheets, gas detection, chemical labeling, bunding, PPE, spill response equipment, and hazardous waste procedures are in place",
+    specificControls:
+      "segregate incompatible materials, use closed transfer where possible, control ignition sources, wear substance-specific PPE, and escalate gas or spill events immediately",
+    consequence:
+      "Toxic exposure, chemical burns, fire, explosion, environmental harm, fatality",
+  },
+  "Marine & Logistics": {
+    people:
+      "Deck crew, crane operators, riggers, forklift operators, pilots, vessel crew, offshore personnel",
+    planningHazard:
+      "can involve offshore transfer, lifting over water, marine movements, aircraft interface, night work, and emergency evacuation complexity",
+    equipmentHazard:
+      "cranes, lifting accessories, forklifts, helideck equipment, vessels, gangways, lifeboats, lifejackets, and radios",
+    interfaceHazard:
+      "personnel transferring between vessels, helidecks, decks, laydown areas, material routes, and emergency stations",
+    exposureHazard:
+      "dropped objects, sea state, weather, poor visibility, fatigue, slips on wet decks, noise, and manual handling",
+    emergencyHazard:
+      "man overboard, helicopter incident, vessel collision, failed evacuation drill, lifeboat fault, or delayed offshore rescue",
+    existingMeasures:
+      "Lift plans, helideck procedures, vessel transfer rules, emergency drills, PPE, radios, and permit controls are used",
+    specificControls:
+      "confirm weather limits, inspect lifting gear, control deck exclusion zones, brief transfer routes, verify lifesaving equipment, and maintain radio communication",
+    consequence:
+      "Dropped object injury, drowning, collision, fall overboard, serious injury, fatality",
+  },
+};
+
+const miningCategoryProfiles: Record<string, SmartSectorCategoryProfile> = {
+  "Surface Mining Operations": {
+    people:
+      "Equipment operators, drill crews, shotfirers, supervisors, surveyors, maintenance workers",
+    planningHazard:
+      "can expose workers to unstable ground, blasting areas, heavy mobile equipment, slope hazards, and changing ground conditions",
+    equipmentHazard:
+      "excavators, haul trucks, loaders, bulldozers, drills, breakers, stockpile equipment, and dumping area controls",
+    interfaceHazard:
+      "heavy vehicles, light vehicles, pedestrians, blast crews, spotters, and maintenance teams sharing mine traffic areas",
+    exposureHazard:
+      "silica dust, noise, vibration, heat, poor visibility, fatigue, and manual handling around ground operations",
+    emergencyHazard:
+      "vehicle collision, rockfall, slope failure, misfire, stockpile collapse, or delayed rescue in remote pit areas",
+    existingMeasures:
+      "Traffic management plans, blast permits, exclusion zones, operator training, PPE, and supervisor inspections are in place",
+    specificControls:
+      "maintain exclusion zones, inspect ground conditions, use positive communication, control vehicle speeds, monitor dust, and stop work near unstable faces",
+    consequence:
+      "Rockfall injury, vehicle collision, crushing, silica exposure, serious injury, fatality",
+  },
+  "Underground Mining": {
+    people:
+      "Underground miners, drillers, maintenance workers, ventilation technicians, supervisors, emergency responders",
+    planningHazard:
+      "can involve confined underground atmospheres, ground instability, restricted access, poor visibility, and limited emergency escape options",
+    equipmentHazard:
+      "drilling rigs, support systems, underground vehicles, ventilation fans, pumps, refuge equipment, and explosive handling equipment",
+    interfaceHazard:
+      "miners, vehicles, maintenance crews, ventilation teams, explosive handlers, and emergency responders operating in restricted tunnels",
+    exposureHazard:
+      "oxygen deficiency, diesel emissions, silica dust, heat, noise, vibration, water ingress, and fatigue",
+    emergencyHazard:
+      "ground fall, ventilation failure, fire, flooding, explosive incident, refuge activation, or delayed underground rescue",
+    existingMeasures:
+      "Ground control plans, ventilation monitoring, refuge chambers, communication systems, permits, PPE, and emergency plans are available",
+    specificControls:
+      "verify ground support, monitor ventilation, control vehicle movements, maintain communications, inspect escape routes, and follow explosive handling procedures",
+    consequence:
+      "Entrapment, asphyxiation, rockfall injury, fire, flooding, fatality",
+  },
+  "Processing Plant Operations": {
+    people:
+      "Plant operators, maintenance workers, sampling technicians, supervisors, contractors",
+    planningHazard:
+      "can expose workers to moving conveyors, crushers, screens, mills, chemical processes, dust, and tailings systems",
+    equipmentHazard:
+      "crushers, screens, conveyors, transfer points, mills, pumps, flotation cells, samplers, and dust suppression systems",
+    interfaceHazard:
+      "operators, maintenance teams, samplers, contractors, and mobile equipment working around processing lines and transfer points",
+    exposureHazard:
+      "silica dust, noise, vibration, chemical reagents, slurry, wet floors, manual handling, and poor visibility",
+    emergencyHazard:
+      "conveyor entanglement, crusher blockage, chemical spill, tailings release, dust suppression failure, or isolation failure",
+    existingMeasures:
+      "Machine guards, lockout/tagout, dust suppression, chemical controls, operating procedures, and PPE are in place",
+    specificControls:
+      "keep guards fitted, isolate before clearing blockages, monitor dust controls, segregate sampling areas, and inspect tailings controls",
+    consequence:
+      "Entanglement, crushing, respiratory illness, chemical exposure, serious injury",
+  },
+  "Maintenance & Engineering": {
+    people:
+      "Maintenance technicians, electricians, welders, tire fitters, riggers, contractors, supervisors",
+    planningHazard:
+      "can involve heavy equipment energy, shutdown pressure, lifting hazards, hot work, electrical systems, and isolation failure",
+    equipmentHazard:
+      "haul trucks, conveyors, electrical panels, hydraulic systems, tires, lifting gear, welding tools, and access equipment",
+    interfaceHazard:
+      "maintenance teams, production operators, contractors, riggers, and mobile plant interacting during repairs and shutdowns",
+    exposureHazard:
+      "stored energy, hydraulic pressure, hot surfaces, welding fumes, noise, manual handling, working at height, and fatigue",
+    emergencyHazard:
+      "unexpected startup, tire explosion, hydraulic injection injury, dropped load, fire, fall, or delayed remote-area rescue",
+    existingMeasures:
+      "Maintenance procedures, lockout/tagout, lift plans, hot work permits, PPE, and competent supervision are used",
+    specificControls:
+      "verify isolation, release stored energy, inspect lifting gear, control hot work, deflate and restrain tires safely, and maintain exclusion zones",
+    consequence:
+      "Crush injury, electric shock, burns, hydraulic injection, fall injury, fatality",
+  },
+  "Health, Safety & Environment": {
+    people:
+      "Mine workers, HSE personnel, emergency responders, contractors, environmental technicians",
+    planningHazard:
+      "can involve high exposure environments, explosive storage, slope monitoring, remote work, emergency drills, and environmental response",
+    equipmentHazard:
+      "monitoring instruments, emergency equipment, spill kits, fuel systems, explosive magazines, radios, and environmental controls",
+    interfaceHazard:
+      "workers, supervisors, emergency teams, fuel handlers, environmental staff, and lone workers operating across remote mine areas",
+    exposureHazard:
+      "silica dust, noise, heat stress, fuel vapors, hazardous chemicals, fatigue, isolation, and poor weather",
+    emergencyHazard:
+      "slope failure, explosive incident, fuel spill, heat illness, remote worker emergency, or delayed emergency response",
+    existingMeasures:
+      "Monitoring programs, emergency plans, exposure controls, PPE, radio communication, and environmental response procedures are in place",
+    specificControls:
+      "monitor exposure limits, inspect explosive and chemical storage, verify communications, manage fatigue, and keep emergency equipment accessible",
+    consequence:
+      "Occupational illness, explosion, environmental harm, heat illness, serious injury, fatality",
+  },
+};
+
+const foodProductionCategoryProfiles: Record<
+  string,
+  SmartSectorCategoryProfile
+> = {
+  "Food Processing Operations": {
+    people:
+      "Food production workers, line operators, quality inspectors, supervisors, cleaners",
+    planningHazard:
+      "can expose workers to fast-moving production lines, sharp tools, hot processes, ingredient handling, contamination controls, and repetitive work",
+    equipmentHazard:
+      "mixers, slicers, ovens, packaging machines, bottling lines, labeling equipment, utensils, and inspection equipment",
+    interfaceHazard:
+      "operators, cleaners, quality staff, maintenance teams, and material handlers working around active food lines",
+    exposureHazard:
+      "cuts, burns, steam, wet floors, repetitive movement, manual handling, allergens, biological contamination, and cold or hot environments",
+    emergencyHazard:
+      "machine jam, burn incident, contamination event, allergen mix-up, product spill, or delayed line stop response",
+    existingMeasures:
+      "Food safety procedures, machine guards, hygiene rules, PPE, line supervision, and quality checks are in place",
+    specificControls:
+      "keep guards fitted, use cut-resistant PPE where needed, control allergens, maintain hygiene zoning, and stop lines for unsafe conditions",
+    consequence:
+      "Cuts, burns, entanglement, slips, food contamination, serious injury",
+  },
+  "Machinery & Equipment": {
+    people:
+      "Machine operators, maintenance workers, sanitation workers, engineers, supervisors",
+    planningHazard:
+      "can involve machinery entanglement, lockout/tagout failure, steam or refrigeration systems, pressure systems, and sanitation access needs",
+    equipmentHazard:
+      "conveyors, mixers, filling machines, refrigeration systems, boilers, steam lines, guards, controls, and isolation points",
+    interfaceHazard:
+      "operators, cleaners, maintenance teams, and quality staff working near equipment during production, cleaning, and maintenance",
+    exposureHazard:
+      "moving parts, pinch points, hot surfaces, cold burns, steam, noise, wet floors, and chemical residues",
+    emergencyHazard:
+      "unexpected startup, ammonia or refrigerant leak, steam release, boiler fault, machine entrapment, or emergency stop failure",
+    existingMeasures:
+      "Machine guarding, lockout/tagout, preventive maintenance, operating procedures, emergency stops, and PPE requirements are used",
+    specificControls:
+      "verify isolation before cleaning or maintenance, inspect guards, test emergency stops, control steam and refrigeration hazards, and train authorized workers",
+    consequence:
+      "Entanglement, crushing, burns, refrigerant exposure, pressure release injury, fatality",
+  },
+  "Hygiene & Sanitation": {
+    people:
+      "Sanitation workers, production workers, cleaners, pest control contractors, quality staff",
+    planningHazard:
+      "can expose workers to sanitation chemicals, high-pressure cleaning, wet floors, contamination control failures, and contractor interface risks",
+    equipmentHazard:
+      "disinfectants, pressure washers, cleaning tools, drains, waste bins, pest control materials, laundry bags, and spill kits",
+    interfaceHazard:
+      "cleaners, production workers, quality teams, contractors, and waste handlers moving between hygiene zones",
+    exposureHazard:
+      "chemical splash, inhalation, biological residues, slips, ergonomic strain, high-pressure injection injury, and allergen cross-contact",
+    emergencyHazard:
+      "chemical spill, splash injury, contamination incident, pest control exposure, blocked drains, or delayed sanitation verification",
+    existingMeasures:
+      "Cleaning schedules, chemical instructions, PPE, food safety controls, waste segregation, and hygiene procedures are in place",
+    specificControls:
+      "dilute chemicals correctly, segregate wet areas, protect drains, verify sanitation release, coordinate pest control, and prevent cross-contamination",
+    consequence:
+      "Chemical burns, slips, biological exposure, food contamination, serious injury",
+  },
+  "Storage & Logistics": {
+    people:
+      "Warehouse workers, forklift operators, delivery drivers, cold store workers, dispatch staff",
+    planningHazard:
+      "can involve cold storage, vehicle movements, unstable pallets, allergen segregation, delivery pressure, and temperature-controlled goods",
+    equipmentHazard:
+      "forklifts, pallet trucks, cold rooms, chargers, loading docks, containers, racking, and delivery vehicles",
+    interfaceHazard:
+      "forklifts, pedestrians, delivery drivers, warehouse teams, quality inspectors, and dispatch workers sharing storage and dock areas",
+    exposureHazard:
+      "cold stress, slips on wet or icy floors, manual handling, falling goods, battery charging hazards, and poor visibility",
+    emergencyHazard:
+      "cold room entrapment, load collapse, dock incident, battery fire, temperature excursion, or delayed product quarantine",
+    existingMeasures:
+      "Traffic routes, cold store procedures, racking controls, temperature checks, PPE, and loading bay rules are in place",
+    specificControls:
+      "segregate pedestrians and forklifts, control dock movements, inspect pallets, maintain cold room escape systems, and protect temperature-critical stock",
+    consequence:
+      "Collision, crush injury, cold stress, slips, product loss, serious injury",
+  },
+  "Quality & Laboratory": {
+    people:
+      "Quality technicians, laboratory staff, production workers, maintenance workers, supervisors",
+    planningHazard:
+      "can involve sampling, allergen controls, laboratory reagents, glass or brittle plastic inspection, calibration, and traceability requirements",
+    equipmentHazard:
+      "laboratory instruments, reagents, sampling tools, thermometers, metal detectors, calibration weights, and documentation systems",
+    interfaceHazard:
+      "quality staff collecting samples from live production areas and coordinating with operators, laboratory teams, and supervisors",
+    exposureHazard:
+      "chemical reagent contact, allergen exposure, biological samples, repetitive bench work, cuts from glass, and slips near production lines",
+    emergencyHazard:
+      "allergen cross-contact, foreign body incident, failed metal detector challenge, reagent spill, temperature deviation, or traceability failure",
+    existingMeasures:
+      "Quality procedures, sampling plans, allergen controls, calibration schedules, PPE, and documentation systems are available",
+    specificControls:
+      "label samples clearly, segregate allergens, control glass and brittle plastic, verify detector checks, calibrate equipment, and escalate nonconforming product",
+    consequence:
+      "Allergic reaction, food safety incident, chemical exposure, cuts, product recall risk",
+  },
+};
+
 const createSmartSectorRiskAssessmentLibrary = (
   sector: string,
   groups: ActivityGroup[],
@@ -6404,6 +6953,25 @@ const healthcareRiskAssessmentLibrary =
     healthcareCategoryProfiles,
   );
 
+const oilGasRiskAssessmentLibrary = createSmartSectorRiskAssessmentLibrary(
+  "Oil & Gas",
+  oilGasActivityGroups,
+  oilGasCategoryProfiles,
+);
+
+const miningRiskAssessmentLibrary = createSmartSectorRiskAssessmentLibrary(
+  "Mining & Quarrying",
+  miningActivityGroups,
+  miningCategoryProfiles,
+);
+
+const foodProductionRiskAssessmentLibrary =
+  createSmartSectorRiskAssessmentLibrary(
+    "Food Production & Processing",
+    foodProductionActivityGroups,
+    foodProductionCategoryProfiles,
+  );
+
 const riskAssessmentLibraryBySector: Record<
   string,
   Record<string, { title: string; createHazards: () => HazardRow[] }>
@@ -6413,6 +6981,9 @@ const riskAssessmentLibraryBySector: Record<
   Manufacturing: manufacturingRiskAssessmentLibrary,
   "Office & Administrative": officeRiskAssessmentLibrary,
   "Healthcare & Medical Facilities": healthcareRiskAssessmentLibrary,
+  "Oil & Gas": oilGasRiskAssessmentLibrary,
+  "Mining & Quarrying": miningRiskAssessmentLibrary,
+  "Food Production & Processing": foodProductionRiskAssessmentLibrary,
 };
 
 const toRiskValue = (value: string): RiskValue => Number(value) as RiskValue;
