@@ -20,6 +20,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Plus,
   type LucideIcon,
 } from "lucide-react";
 
@@ -32,6 +33,13 @@ import { ALL_CHECKLISTS } from "./data/checklists";
 import ActionTrackerModule from "./components/ActionTrackerModule";
 import RiskAssessmentsModule from "./components/RiskAssessmentsModule";
 import { createClient } from "@/lib/supabase/client";
+import {
+  appendActionTrackerAction,
+  createActionFromInput,
+  findActionByLinkedSource,
+  getDateInputDaysFromNow,
+  type ActionPriority,
+} from "@/app/lib/actionTracker";
 import type { User } from "@supabase/supabase-js";
 
 type InspectionResult = {
@@ -560,6 +568,8 @@ export default function Home() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [risk, setRisk] = useState<Record<string, string>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
+  const [createdInspectionActionLinks, setCreatedInspectionActionLinks] =
+    useState<string[]>([]);
 
   const [company, setCompany] = useState("");
   const [site, setSite] = useState("");
@@ -918,6 +928,106 @@ export default function Home() {
         return updated;
       });
     }
+  };
+
+  const getInspectionActionLinkId = (questionId: string) =>
+    `inspection:${activeChecklistId}:${questionId}`;
+
+  const getInspectionActionPriority = (
+    answer: string | undefined,
+    riskLevel: string | undefined,
+  ): ActionPriority => {
+    if (riskLevel === "H") {
+      return "Critical";
+    }
+
+    if (riskLevel === "M") {
+      return "High";
+    }
+
+    if (riskLevel === "L") {
+      return "Medium";
+    }
+
+    if (answer === "no") {
+      return "Medium";
+    }
+
+    return "Low";
+  };
+
+  const getInspectionRiskLabel = (riskLevel: string | undefined) => {
+    if (riskLevel === "H") {
+      return "High";
+    }
+
+    if (riskLevel === "M") {
+      return "Medium";
+    }
+
+    if (riskLevel === "L") {
+      return "Low";
+    }
+
+    return "Not rated";
+  };
+
+  const createActionFromInspectionFinding = (
+    questionId: string,
+    sectionTitle: string,
+    questionText: string,
+  ) => {
+    const linkedInspectionId = getInspectionActionLinkId(questionId);
+    const existingAction = findActionByLinkedSource({
+      userId: authUserId,
+      linkedInspectionId,
+    });
+
+    if (existingAction) {
+      const shouldCreateAnother = window.confirm(
+        "An action may already exist for this item. Create another?",
+      );
+
+      if (!shouldCreateAnother) {
+        return;
+      }
+    }
+
+    const answer = answers[questionId] || "Not selected";
+    const findingRisk = risk[questionId];
+    const observation = comments[questionId]?.trim() || "Not provided";
+    const action = createActionFromInput({
+      title: `Corrective action: ${questionText}`,
+      description: [
+        `Checklist/report name: ${activeChecklist.headerTitleEN}`,
+        `Section/subsection: ${sectionTitle || "Not provided"}`,
+        `Question text: ${questionText}`,
+        `Answer selected: ${answer.toUpperCase()}`,
+        `Finding risk level: ${getInspectionRiskLabel(findingRisk)}`,
+        `Comment/Observation: ${observation}`,
+        `Company name: ${company || "Not provided"}`,
+        `Site/location: ${site || "Not provided"}`,
+        `Inspection date: ${inspectionDate || "Not provided"}`,
+        `Inspector: ${inspector || "Not provided"}`,
+      ].join("\n"),
+      sourceModule: "Inspection",
+      priority: getInspectionActionPriority(answer, findingRisk),
+      siteLocation: site,
+      dueDate: getDateInputDaysFromNow(7),
+      createdBy: authProfile?.email ?? authProfile?.name ?? "Signed-in user",
+      linkedInspectionId,
+    });
+
+    appendActionTrackerAction(authUserId, action);
+    setCreatedInspectionActionLinks((current) =>
+      current.includes(linkedInspectionId)
+        ? current
+        : [...current, linkedInspectionId],
+    );
+    setHistoryNotice({
+      type: "success",
+      message: "Action created from inspection finding.",
+    });
   };
 
   const getSelectedFindingRisks = () =>
@@ -2001,6 +2111,15 @@ export default function Home() {
                   <div className="px-6 py-6 space-y-6">
                     {sec.items.map((q, qi) => {
                       const id = `${si}-${qi}`;
+                      const questionText = lang === "EN" ? q.EN : q.KA;
+                      const sectionTitle =
+                        lang === "EN" ? sec.sectionEN : sec.sectionKA;
+                      const linkedInspectionId = getInspectionActionLinkId(id);
+                      const shouldShowCreateAction =
+                        answers[id] === "no" ||
+                        risk[id] === "M" ||
+                        risk[id] === "H" ||
+                        Boolean(comments[id]?.trim());
                       const isHighRiskFinding =
                         (answers[id] === "yes" || answers[id] === "no") &&
                         risk[id] === "H";
@@ -2018,7 +2137,7 @@ export default function Home() {
                           }`}
                         >
                           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                            <div>{lang === "EN" ? q.EN : q.KA}</div>
+                            <div>{questionText}</div>
                             {isHighRiskFinding ? (
                               <span className="shrink-0 rounded-full bg-rose-500/10 px-2.5 py-1 text-xs font-bold text-rose-500">
                                 High risk
@@ -2150,6 +2269,39 @@ export default function Home() {
                               </div>
                             </div>
                           ) : null}
+
+                          {shouldShowCreateAction ? (
+                            <div className="mt-4 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  createActionFromInspectionFinding(
+                                    id,
+                                    sectionTitle,
+                                    questionText,
+                                  )
+                                }
+                                className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                                  createdInspectionActionLinks.includes(
+                                    linkedInspectionId,
+                                  )
+                                    ? darkMode
+                                      ? "border-[#4DEBFF]/40 bg-[#4DEBFF]/10 text-[#DDFBFF]"
+                                      : "border-[#1E90FF]/35 bg-[#1E90FF]/10 text-[#0759A8]"
+                                    : darkMode
+                                      ? "border-[#4DEBFF]/30 bg-[#4DEBFF]/10 text-[#DDFBFF] hover:bg-[#4DEBFF]/15"
+                                      : "border-[#1E90FF]/25 bg-[#1E90FF]/10 text-[#0759A8] hover:bg-[#1E90FF]/15"
+                                }`}
+                              >
+                                <Plus size={14} aria-hidden />
+                                {createdInspectionActionLinks.includes(
+                                  linkedInspectionId,
+                                )
+                                  ? "Action created"
+                                  : "Create Action"}
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       );
                     })}
@@ -2173,6 +2325,7 @@ export default function Home() {
             userId={authUserId}
             darkMode={darkMode}
             onToggleTheme={() => setDarkMode((current) => !current)}
+            createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
           />
         ) : (
           renderComingSoonModule()

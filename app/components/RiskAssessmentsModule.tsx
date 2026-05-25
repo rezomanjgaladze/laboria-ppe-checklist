@@ -14,6 +14,13 @@ import {
   Sun,
   Trash2,
 } from "lucide-react";
+import {
+  appendActionTrackerAction,
+  createActionFromInput,
+  findActionByLinkedSource,
+  getDateInputDaysFromNow,
+  type ActionPriority,
+} from "@/app/lib/actionTracker";
 
 type RiskValue = 1 | 2 | 3 | 4 | 5;
 type RiskLevel = "Low" | "Medium" | "High";
@@ -66,6 +73,7 @@ type RiskAssessmentsModuleProps = {
   userId: string | null;
   darkMode: boolean;
   onToggleTheme: () => void;
+  createdBy: string;
 };
 
 type SelectOption = {
@@ -8799,6 +8807,7 @@ export default function RiskAssessmentsModule({
   userId,
   darkMode,
   onToggleTheme,
+  createdBy,
 }: RiskAssessmentsModuleProps) {
   const [header, setHeader] = useState<RiskAssessmentHeader>(
     createEmptyHeader,
@@ -8813,6 +8822,7 @@ export default function RiskAssessmentsModule({
   const [notice, setNotice] = useState<string | null>(null);
   const [customSectorMode, setCustomSectorMode] = useState(false);
   const [customActivityMode, setCustomActivityMode] = useState(false);
+  const [createdActionLinks, setCreatedActionLinks] = useState<string[]>([]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -9004,6 +9014,97 @@ export default function RiskAssessmentsModule({
 
   const deleteHazard = (id: string) => {
     setHazards((current) => current.filter((hazard) => hazard.id !== id));
+  };
+
+  const getRiskAssessmentActionLinkId = (hazard: HazardRow) =>
+    `risk-assessment:${hazard.id}`;
+
+  const getRiskAssessmentActionPriority = (
+    initialLevel: RiskLevel,
+    residualLevel: RiskLevel,
+  ): ActionPriority => {
+    if (residualLevel === "High") {
+      return "Critical";
+    }
+
+    if (initialLevel === "High") {
+      return "High";
+    }
+
+    if (residualLevel === "Medium") {
+      return "Medium";
+    }
+
+    return "Low";
+  };
+
+  const createActionFromHazard = (hazard: HazardRow) => {
+    const initialScore = riskScore(
+      hazard.initialProbability,
+      hazard.initialSeverity,
+    );
+    const residualScore = riskScore(
+      hazard.residualProbability,
+      hazard.residualSeverity,
+    );
+    const initialLevel = riskLevel(initialScore);
+    const residualLevel = riskLevel(residualScore);
+    const linkedRiskAssessmentId = getRiskAssessmentActionLinkId(hazard);
+    const existingAction = findActionByLinkedSource({
+      userId,
+      linkedRiskAssessmentId,
+    });
+
+    if (existingAction) {
+      const shouldCreateAnother = window.confirm(
+        "An action may already exist for this item. Create another?",
+      );
+
+      if (!shouldCreateAnother) {
+        return;
+      }
+    }
+
+    const action = createActionFromInput({
+      title:
+        hazard.additionalMeasures.trim().length > 0
+          ? hazard.additionalMeasures.trim()
+          : `Control action for: ${hazard.hazardDescription || "hazard"}`,
+      description: [
+        `Activity / Process: ${hazard.workplaceActivity || "Not provided"}`,
+        `Hazard description: ${hazard.hazardDescription || "Not provided"}`,
+        `Possible consequence: ${hazard.possibleConsequence || "Not provided"}`,
+        `Existing preventive measures: ${
+          hazard.existingMeasures || "Not provided"
+        }`,
+        `Additional preventive measures: ${
+          hazard.additionalMeasures || "Not provided"
+        }`,
+        `Initial risk score/level: ${initialScore} - ${initialLevel}`,
+        `Residual risk score/level: ${residualScore} - ${residualLevel}`,
+        `Control hierarchy used: ${
+          hazard.controlHierarchy.length > 0
+            ? hazard.controlHierarchy.join(", ")
+            : "Not provided"
+        }`,
+      ].join("\n"),
+      sourceModule: "Risk Assessment",
+      priority: getRiskAssessmentActionPriority(initialLevel, residualLevel),
+      responsiblePerson: hazard.responsiblePerson,
+      department: header.department,
+      siteLocation: header.site,
+      dueDate: hazard.completionDeadline || getDateInputDaysFromNow(7),
+      createdBy,
+      linkedRiskAssessmentId,
+    });
+
+    appendActionTrackerAction(userId, action);
+    setCreatedActionLinks((current) =>
+      current.includes(linkedRiskAssessmentId)
+        ? current
+        : [...current, linkedRiskAssessmentId],
+    );
+    setNotice("Action created from risk assessment.");
   };
 
   const toggleControlHierarchy = (id: string, option: ControlHierarchy) => {
@@ -9554,6 +9655,25 @@ export default function RiskAssessmentsModule({
                         </div>
 
                         <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => createActionFromHazard(hazard)}
+                            className={joinClasses(
+                              "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition",
+                              createdActionLinks.includes(
+                                getRiskAssessmentActionLinkId(hazard),
+                              )
+                                ? theme.checkboxSelected
+                                : theme.exportButton,
+                            )}
+                          >
+                            <Plus size={14} aria-hidden />
+                            {createdActionLinks.includes(
+                              getRiskAssessmentActionLinkId(hazard),
+                            )
+                              ? "Action created"
+                              : "Create Action"}
+                          </button>
                           <button
                             type="button"
                             onClick={() => duplicateHazard(hazard)}

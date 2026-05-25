@@ -410,6 +410,36 @@ const statusTone = (status: ActionStatus, darkMode: boolean) => {
     : "border-slate-200 bg-slate-50 text-slate-700";
 };
 
+const sourceTone = (sourceModule: SourceModule, darkMode: boolean) => {
+  if (sourceModule === "Inspection") {
+    return darkMode
+      ? "border-cyan-300/35 bg-cyan-400/10 text-cyan-100"
+      : "border-cyan-200 bg-cyan-50 text-cyan-700";
+  }
+
+  if (sourceModule === "Risk Assessment") {
+    return darkMode
+      ? "border-amber-400/35 bg-amber-400/10 text-amber-100"
+      : "border-amber-200 bg-amber-50 text-amber-800";
+  }
+
+  if (sourceModule === "Incident") {
+    return darkMode
+      ? "border-rose-400/35 bg-rose-500/10 text-rose-100"
+      : "border-rose-200 bg-rose-50 text-rose-700";
+  }
+
+  if (sourceModule === "Training") {
+    return darkMode
+      ? "border-violet-300/35 bg-violet-400/10 text-violet-100"
+      : "border-violet-200 bg-violet-50 text-violet-700";
+  }
+
+  return darkMode
+    ? "border-slate-400/25 bg-white/[0.04] text-slate-200"
+    : "border-slate-200 bg-slate-50 text-slate-700";
+};
+
 const Badge = ({
   children,
   className,
@@ -1320,7 +1350,13 @@ export default function ActionTrackerModule({
                           {action.description || "No description"}
                         </div>
                       </td>
-                      <td className="px-4 py-4">{action.sourceModule}</td>
+                      <td className="px-4 py-4">
+                        <Badge
+                          className={sourceTone(action.sourceModule, darkMode)}
+                        >
+                          {action.sourceModule}
+                        </Badge>
+                      </td>
                       <td className="px-4 py-4">
                         <Badge
                           className={priorityTone(action.priority, darkMode)}
@@ -1404,9 +1440,15 @@ export default function ActionTrackerModule({
                       >
                         {action.title}
                       </div>
-                      <div className={joinClasses("mt-1 text-xs", theme.muted)}>
-                        {action.sourceModule} -{" "}
-                        {action.responsiblePerson || "Unassigned"}
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Badge
+                          className={sourceTone(action.sourceModule, darkMode)}
+                        >
+                          {action.sourceModule}
+                        </Badge>
+                        <span className={joinClasses("text-xs", theme.muted)}>
+                          {action.responsiblePerson || "Unassigned"}
+                        </span>
                       </div>
                     </div>
                     <Badge className={priorityTone(action.priority, darkMode)}>
