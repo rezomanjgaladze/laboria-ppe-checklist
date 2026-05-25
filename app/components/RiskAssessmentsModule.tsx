@@ -8,8 +8,10 @@ import {
   Copy,
   Download,
   FileText,
+  Moon,
   Plus,
   Save,
+  Sun,
   Trash2,
 } from "lucide-react";
 
@@ -63,6 +65,7 @@ type SavedRiskAssessment = {
 type RiskAssessmentsModuleProps = {
   userId: string | null;
   darkMode: boolean;
+  onToggleTheme: () => void;
 };
 
 type SelectOption = {
@@ -8517,6 +8520,9 @@ const getRiskAssessmentTheme = (darkMode: boolean) => ({
   ghostButton: darkMode
     ? "border-white/10 bg-white/[0.055] text-slate-100 hover:bg-white/[0.09]"
     : "border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-950",
+  themeToggleButton: darkMode
+    ? "border-slate-500/30 bg-slate-800 text-white shadow-md hover:bg-slate-700"
+    : "border-gray-200 bg-white text-gray-700 shadow-md hover:bg-gray-100",
   exportButton: darkMode
     ? "border-[#4DEBFF]/30 bg-[#4DEBFF]/10 text-[#DDFBFF] hover:bg-[#4DEBFF]/15"
     : "border-[#1E90FF]/25 bg-[#1E90FF]/10 text-[#0759A8] hover:bg-[#1E90FF]/15",
@@ -8792,6 +8798,7 @@ const RiskMatrixGuide = ({
 export default function RiskAssessmentsModule({
   userId,
   darkMode,
+  onToggleTheme,
 }: RiskAssessmentsModuleProps) {
   const [header, setHeader] = useState<RiskAssessmentHeader>(
     createEmptyHeader,
@@ -9278,6 +9285,22 @@ export default function RiskAssessmentsModule({
                 >
                   <Save size={16} aria-hidden />
                   Save
+                </button>
+                <button
+                  type="button"
+                  onClick={onToggleTheme}
+                  className={joinClasses(
+                    "inline-flex h-12 w-12 items-center justify-center rounded-xl border transition-all duration-200",
+                    theme.themeToggleButton,
+                  )}
+                  title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                  aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                >
+                  {darkMode ? (
+                    <Sun size={18} aria-hidden />
+                  ) : (
+                    <Moon size={18} aria-hidden />
+                  )}
                 </button>
                 <button
                   type="button"
