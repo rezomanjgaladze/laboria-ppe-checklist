@@ -29,6 +29,7 @@ import { useRouter } from "next/navigation";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { ALL_CHECKLISTS } from "./data/checklists";
+import ActionTrackerModule from "./components/ActionTrackerModule";
 import RiskAssessmentsModule from "./components/RiskAssessmentsModule";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -220,7 +221,7 @@ const WORKSPACE_MODULES: WorkspaceModule[] = [
     label: "Action Tracker",
     description:
       "Central operational workspace for managing HSE actions, deadlines, responsibilities, and corrective measures across inspections, risk assessments, incidents, and training activities.",
-    status: "Coming Soon",
+    status: "Active",
     icon: CheckCircle2,
   },
   {
@@ -1349,103 +1350,6 @@ export default function Home() {
   const renderComingSoonModule = () => {
     const Icon = activeWorkspaceModuleConfig.icon;
 
-    if (activeWorkspaceModule === "action-tracker") {
-      const actionTrackerPreviewCards = [
-        {
-          label: "Open Actions",
-          description: "Live ownership queue for unresolved HSE actions.",
-          icon: ClipboardCheck,
-          tone: "from-[#1E90FF]/18 to-[#4DEBFF]/8 text-[#4DEBFF]",
-        },
-        {
-          label: "Overdue Actions",
-          description: "Deadline visibility for actions needing escalation.",
-          icon: BarChart3,
-          tone: "from-amber-400/16 to-amber-200/6 text-amber-200",
-        },
-        {
-          label: "Critical Actions",
-          description: "Priority tracking for high-risk corrective measures.",
-          icon: TriangleAlert,
-          tone: "from-rose-500/16 to-rose-300/6 text-rose-200",
-        },
-        {
-          label: "Completed This Month",
-          description: "Closure evidence and monthly completion momentum.",
-          icon: CheckCircle2,
-          tone: "from-emerald-400/14 to-emerald-200/6 text-emerald-200",
-        },
-      ];
-
-      return (
-        <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-5 py-24 sm:px-6">
-          <div className="w-full max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-[#071225]/86 text-[#F5F7FA] shadow-[0_30px_100px_rgba(0,0,0,0.36)] backdrop-blur-2xl">
-            <div className="relative overflow-hidden border-b border-white/10 px-6 py-7 sm:px-8 lg:px-10">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(77,235,255,0.16),transparent_34%),linear-gradient(135deg,rgba(30,144,255,0.14),transparent_52%)]" />
-              <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                <div className="max-w-3xl">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-[#4DEBFF]/25 bg-[#4DEBFF]/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-[#DDFBFF]">
-                    Coming Soon
-                  </div>
-                  <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
-                    Action Tracker
-                  </h1>
-                  <p className="mt-4 text-sm leading-7 text-slate-300 sm:text-base">
-                    Central operational workspace for managing HSE actions,
-                    deadlines, responsibilities, and corrective measures across
-                    inspections, risk assessments, incidents, and training
-                    activities.
-                  </p>
-                </div>
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-[#4DEBFF]/25 bg-[#1E90FF]/15 text-[#4DEBFF] shadow-[0_18px_50px_rgba(30,144,255,0.18)]">
-                  <CheckCircle2 size={30} aria-hidden />
-                </div>
-              </div>
-            </div>
-
-            <div className="px-6 py-7 sm:px-8 lg:px-10">
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {actionTrackerPreviewCards.map((card) => {
-                  const CardIcon = card.icon;
-
-                  return (
-                    <div
-                      key={card.label}
-                      className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.16)]"
-                    >
-                      <div
-                        className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${card.tone}`}
-                      >
-                        <CardIcon size={20} aria-hidden />
-                      </div>
-                      <div className="mt-4 text-sm font-semibold text-white">
-                        {card.label}
-                      </div>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
-                        {card.description}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-                <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#4DEBFF]">
-                  Operational workflow preview
-                </div>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-                  Action Tracker will become the central follow-up layer for
-                  actions created from inspections, risk assessments, incident
-                  reviews, and training workflows. Inspections and Risk
-                  Assessments remain fully available from the sidebar.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-6 py-24">
         <div className="w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-[#071225]/82 text-[#F5F7FA] shadow-[0_30px_100px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
@@ -2257,7 +2161,14 @@ export default function Home() {
         </div>
       </div>
       ) : (
-        activeWorkspaceModule === "risk-assessments" ? (
+        activeWorkspaceModule === "action-tracker" ? (
+          <ActionTrackerModule
+            userId={authUserId}
+            darkMode={darkMode}
+            onToggleTheme={() => setDarkMode((current) => !current)}
+            createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
+          />
+        ) : activeWorkspaceModule === "risk-assessments" ? (
           <RiskAssessmentsModule
             userId={authUserId}
             darkMode={darkMode}
