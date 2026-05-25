@@ -949,6 +949,318 @@ const educationActivityGroups: ActivityGroup[] = [
   },
 ];
 
+const energyUtilitiesActivityGroups: ActivityGroup[] = [
+  {
+    label: "Electrical Power Operations",
+    activities: [
+      "Substation inspection",
+      "Transformer maintenance",
+      "Switchgear operation",
+      "Cable jointing",
+      "Overhead line work",
+      "Underground cable work",
+      "Electrical isolation and lockout",
+      "Energized equipment testing",
+      "Arc flash risk work",
+      "Emergency power restoration",
+    ],
+  },
+  {
+    label: "Water & Wastewater Utilities",
+    activities: [
+      "Pump station operation",
+      "Water treatment operation",
+      "Wastewater treatment operation",
+      "Chlorine handling",
+      "Confined space entry in utility chambers",
+      "Sewer inspection",
+      "Manhole entry",
+      "Sludge handling",
+      "Chemical dosing",
+      "Water sampling",
+    ],
+  },
+  {
+    label: "Gas & District Energy",
+    activities: [
+      "Gas pipeline inspection",
+      "Gas leak response",
+      "Pressure regulator maintenance",
+      "Hot tapping preparation",
+      "Meter installation",
+      "District heating maintenance",
+      "Boiler room operation",
+      "Steam line maintenance",
+      "Pressure testing",
+      "Emergency shutdown response",
+    ],
+  },
+  {
+    label: "Field Maintenance & Infrastructure",
+    activities: [
+      "Utility excavation",
+      "Work near buried services",
+      "Work near live traffic",
+      "Work at height on poles/towers",
+      "Mobile plant operation",
+      "Vehicle-based field work",
+      "Remote/lone working",
+      "Night emergency repair",
+      "Generator maintenance",
+      "Contractor supervision",
+    ],
+  },
+  {
+    label: "Emergency & Environmental Response",
+    activities: [
+      "Storm damage response",
+      "Flood response",
+      "Fuel spill response",
+      "Chemical spill response",
+      "Fire response",
+      "Public interface during repairs",
+      "Temporary traffic management",
+      "Emergency communication",
+      "Critical infrastructure inspection",
+      "Incident investigation",
+    ],
+  },
+];
+
+const agricultureActivityGroups: ActivityGroup[] = [
+  {
+    label: "Crop Production",
+    activities: [
+      "Field preparation",
+      "Planting operations",
+      "Irrigation work",
+      "Fertilizer application",
+      "Pesticide application",
+      "Harvesting",
+      "Crop loading",
+      "Greenhouse work",
+      "Manual crop picking",
+      "Grain handling",
+    ],
+  },
+  {
+    label: "Machinery & Vehicle Operations",
+    activities: [
+      "Tractor operation",
+      "Harvester operation",
+      "Loader operation",
+      "Trailer coupling",
+      "PTO-driven equipment use",
+      "Machinery maintenance",
+      "Fueling agricultural equipment",
+      "Working near moving machinery",
+      "Vehicle movement on farm roads",
+      "Equipment cleaning",
+    ],
+  },
+  {
+    label: "Livestock Operations",
+    activities: [
+      "Animal handling",
+      "Milking operations",
+      "Feeding livestock",
+      "Veterinary treatment assistance",
+      "Cleaning animal housing",
+      "Manure handling",
+      "Working with aggressive animals",
+      "Livestock transport loading",
+      "Biosecurity procedures",
+      "Zoonotic disease exposure",
+    ],
+  },
+  {
+    label: "Storage & Facilities",
+    activities: [
+      "Silo work",
+      "Grain storage",
+      "Hay bale stacking",
+      "Cold storage access",
+      "Farm workshop work",
+      "Chemical storage",
+      "Fertilizer storage",
+      "Barn maintenance",
+      "Working at height on farm buildings",
+      "Fire prevention in storage areas",
+    ],
+  },
+  {
+    label: "Outdoor & Environmental Conditions",
+    activities: [
+      "Heat stress outdoor work",
+      "Cold weather field work",
+      "Working near water/irrigation channels",
+      "Remote/lone working",
+      "Manual handling",
+      "Slips/trips on uneven ground",
+      "Noise exposure",
+      "Dust exposure",
+      "Emergency response on farm",
+      "Seasonal worker onboarding",
+    ],
+  },
+];
+
+const portsMarineActivityGroups: ActivityGroup[] = [
+  {
+    label: "Cargo Handling",
+    activities: [
+      "Container loading and unloading",
+      "Breakbulk cargo handling",
+      "Bulk cargo handling",
+      "Ro-ro vehicle loading",
+      "Cargo securing",
+      "Cargo lashing and unlashing",
+      "Ship/shore cargo transfer",
+      "Cargo inspection",
+      "Palletized cargo movement",
+      "Heavy lift cargo handling",
+    ],
+  },
+  {
+    label: "Vessel & Dock Operations",
+    activities: [
+      "Mooring operations",
+      "Gangway access",
+      "Work on quay edge",
+      "Ship boarding",
+      "Hatch cover operations",
+      "Ballast operation coordination",
+      "Bunkering support",
+      "Vessel maintenance support",
+      "Working over water",
+      "Pilot/crew transfer support",
+    ],
+  },
+  {
+    label: "Mobile Equipment & Traffic",
+    activities: [
+      "Reach stacker operation",
+      "Terminal tractor operation",
+      "Forklift operation",
+      "Crane operation",
+      "Straddle carrier operation",
+      "Yard traffic management",
+      "Reversing vehicle operations",
+      "Pedestrian control in terminal",
+      "Trailer coupling",
+      "Equipment refueling",
+    ],
+  },
+  {
+    label: "Warehousing & Yard Operations",
+    activities: [
+      "Container yard stacking",
+      "Warehouse storage",
+      "Dangerous goods storage",
+      "Reefer container connection",
+      "Container inspection",
+      "Yard housekeeping",
+      "Waste handling",
+      "Spill response",
+      "Night shift terminal work",
+      "Extreme weather port operations",
+    ],
+  },
+  {
+    label: "Emergency & Marine Safety",
+    activities: [
+      "Man overboard response",
+      "Fire emergency response",
+      "Oil spill response",
+      "Dangerous goods incident response",
+      "Evacuation drill",
+      "Rescue equipment inspection",
+      "Confined space entry on vessel",
+      "Hot work on vessel/port area",
+      "Security incident response",
+      "Emergency communication",
+    ],
+  },
+];
+
+const chemicalIndustryActivityGroups: ActivityGroup[] = [
+  {
+    label: "Process Operations",
+    activities: [
+      "Chemical reactor operation",
+      "Mixing and blending",
+      "Distillation operation",
+      "Filtration operation",
+      "Pump operation",
+      "Valve operation",
+      "Process sampling",
+      "Batch charging",
+      "Process monitoring",
+      "Emergency shutdown operation",
+    ],
+  },
+  {
+    label: "Chemical Handling & Storage",
+    activities: [
+      "Raw chemical receiving",
+      "Chemical transfer",
+      "Drum handling",
+      "IBC handling",
+      "Flammable liquid storage",
+      "Corrosive chemical handling",
+      "Toxic chemical handling",
+      "Gas cylinder handling",
+      "Chemical labeling",
+      "Incompatible chemical segregation",
+    ],
+  },
+  {
+    label: "Maintenance & Engineering",
+    activities: [
+      "Mechanical maintenance",
+      "Electrical maintenance",
+      "Instrument calibration",
+      "Pump maintenance",
+      "Pipework maintenance",
+      "Confined space entry",
+      "Hot work permit task",
+      "Line breaking",
+      "Isolation/LOTO",
+      "Contractor maintenance",
+    ],
+  },
+  {
+    label: "Laboratory & Quality Control",
+    activities: [
+      "Laboratory sampling",
+      "Chemical reagent handling",
+      "Fume hood work",
+      "Glassware handling",
+      "Waste sample disposal",
+      "Chemical analysis",
+      "Spill cleanup in laboratory",
+      "Laboratory equipment maintenance",
+      "PPE management",
+      "Emergency shower/eyewash inspection",
+    ],
+  },
+  {
+    label: "Emergency, Waste & Environment",
+    activities: [
+      "Chemical spill response",
+      "Fire emergency response",
+      "Gas leak response",
+      "Hazardous waste storage",
+      "Wastewater treatment",
+      "Emission control inspection",
+      "Emergency drill",
+      "Decontamination procedure",
+      "Chemical exposure first aid",
+      "Incident investigation",
+    ],
+  },
+];
+
 const activityGroupsBySector: Record<string, ActivityGroup[]> = {
   Construction: constructionActivityGroups,
   "Warehouse & Logistics": warehouseActivityGroups,
@@ -961,6 +1273,10 @@ const activityGroupsBySector: Record<string, ActivityGroup[]> = {
   "Hospitality & HORECA": hospitalityActivityGroups,
   "Retail & Commercial Facilities": retailActivityGroups,
   "Education & Training Facilities": educationActivityGroups,
+  "Energy & Utilities": energyUtilitiesActivityGroups,
+  "Agriculture & Farming": agricultureActivityGroups,
+  "Ports & Marine Operations": portsMarineActivityGroups,
+  "Chemical Industry": chemicalIndustryActivityGroups,
 };
 
 const sectorOptions = Object.keys(activityGroupsBySector);
@@ -7461,6 +7777,430 @@ const educationCategoryProfiles: Record<
   },
 };
 
+const energyUtilitiesCategoryProfiles: Record<
+  string,
+  SmartSectorCategoryProfile
+> = {
+  "Electrical Power Operations": {
+    people:
+      "Electrical technicians, utility engineers, switching operators, contractors, emergency repair crews",
+    planningHazard:
+      "can expose workers to live electrical systems, stored energy, switching errors, inadequate isolation, and emergency restoration pressure",
+    equipmentHazard:
+      "substations, transformers, switchgear, cables, overhead lines, test instruments, grounding equipment, and lockout devices",
+    interfaceHazard:
+      "utility crews, contractors, control room staff, public users, and emergency responders working around energized infrastructure",
+    exposureHazard:
+      "electric shock, arc flash, burns, electromagnetic exposure concerns, weather, work at height, and fatigue",
+    emergencyHazard:
+      "arc flash event, electric shock, equipment fire, emergency restoration fault, public exposure, or delayed isolation",
+    existingMeasures:
+      "Electrical safety rules, switching procedures, permits, lockout/tagout, PPE, test equipment, and competent supervision are in place",
+    specificControls:
+      "verify isolation and earthing, apply arc flash boundaries, use rated PPE and tools, control switching authorization, and stop work during unsafe conditions",
+    consequence:
+      "Electric shock, arc flash burns, fire, fall injury, serious injury, fatality",
+  },
+  "Water & Wastewater Utilities": {
+    people:
+      "Water treatment operators, wastewater workers, samplers, maintenance crews, contractors",
+    planningHazard:
+      "can involve confined spaces, biological contamination, chemical dosing, chlorine systems, pump stations, and wet utility chambers",
+    equipmentHazard:
+      "pumps, valves, treatment tanks, dosing systems, chlorine equipment, manholes, sampling tools, and ventilation equipment",
+    interfaceHazard:
+      "operators, contractors, samplers, maintenance workers, and public users around chambers, treatment areas, and access roads",
+    exposureHazard:
+      "chlorine exposure, sewage pathogens, H2S, low oxygen, slips, manual handling, wet surfaces, and chemical contact",
+    emergencyHazard:
+      "chlorine release, confined space rescue, pump failure, sewage overflow, manhole incident, or delayed emergency communication",
+    existingMeasures:
+      "Confined space procedures, gas testing, PPE, hygiene rules, chemical controls, and emergency response procedures are available",
+    specificControls:
+      "test atmospheres, ventilate chambers, use rescue plans, control chlorine handling, maintain hygiene, and segregate public access",
+    consequence:
+      "Toxic exposure, infection, asphyxiation, slips, chemical burns, fatality",
+  },
+  "Gas & District Energy": {
+    people:
+      "Gas technicians, district heating workers, boiler operators, maintenance crews, contractors, public users",
+    planningHazard:
+      "can involve gas release, pressure systems, hot tapping, steam lines, boiler rooms, emergency shutdowns, and ignition sources",
+    equipmentHazard:
+      "pipelines, regulators, meters, boilers, steam lines, pressure test equipment, valves, and gas detection instruments",
+    interfaceHazard:
+      "field crews, plant operators, contractors, control room teams, customers, and public users near live energy infrastructure",
+    exposureHazard:
+      "flammable gas, steam burns, pressure release, hot surfaces, confined plant rooms, noise, and poor ventilation",
+    emergencyHazard:
+      "gas leak, fire, explosion, steam release, pressure regulator failure, boiler fault, or emergency shutdown failure",
+    existingMeasures:
+      "Gas safety procedures, pressure controls, gas detection, isolation plans, permits, PPE, and emergency response plans are in place",
+    specificControls:
+      "monitor gas levels, verify pressure isolation, control ignition sources, use pressure-rated equipment, ventilate work areas, and communicate emergency shutdown steps",
+    consequence:
+      "Fire, explosion, burns, pressure injury, toxic exposure, fatality",
+  },
+  "Field Maintenance & Infrastructure": {
+    people:
+      "Field technicians, mobile plant operators, traffic marshals, contractors, supervisors, public users",
+    planningHazard:
+      "can expose workers to buried services, live traffic, remote work, emergency repair fatigue, work at height, and mobile plant movements",
+    equipmentHazard:
+      "excavators, utility locating tools, poles, towers, vehicles, generators, traffic controls, and temporary repair equipment",
+    interfaceHazard:
+      "field crews, contractors, road users, pedestrians, plant operators, and emergency services sharing temporary work areas",
+    exposureHazard:
+      "vehicle strike, falls from height, electric or service strike, noise, weather, manual handling, and lone working",
+    emergencyHazard:
+      "service strike, traffic incident, fall from pole or tower, generator fault, night repair incident, or delayed remote rescue",
+    existingMeasures:
+      "Permit systems, utility plans, traffic management, vehicle checks, PPE, communication devices, and contractor supervision are used",
+    specificControls:
+      "locate services before digging, segregate traffic, inspect access equipment, manage fatigue, confirm communications, and supervise contractors closely",
+    consequence:
+      "Service strike, collision, fall injury, crush injury, serious injury, fatality",
+  },
+  "Emergency & Environmental Response": {
+    people:
+      "Emergency repair crews, environmental responders, supervisors, public users, contractors, incident investigators",
+    planningHazard:
+      "can involve storm damage, floods, spills, fire, public interface, critical infrastructure failure, and rapidly changing incident conditions",
+    equipmentHazard:
+      "spill kits, pumps, generators, temporary barriers, traffic controls, communication equipment, fire response tools, and inspection instruments",
+    interfaceHazard:
+      "responders, contractors, public users, emergency services, media, and utility control teams interacting during incident response",
+    exposureHazard:
+      "floodwater, fuel or chemical contact, fire smoke, unstable structures, live services, fatigue, and poor visibility",
+    emergencyHazard:
+      "incident escalation, public exposure, communication failure, environmental release, responder injury, or incomplete incident investigation",
+    existingMeasures:
+      "Emergency plans, incident command, spill response equipment, traffic controls, PPE, and communication protocols are available",
+    specificControls:
+      "establish incident command, isolate hazards, protect the public, use environmental controls, rotate responders, and document lessons learned",
+    consequence:
+      "Responder injury, environmental harm, fire exposure, public injury, serious injury",
+  },
+};
+
+const agricultureCategoryProfiles: Record<
+  string,
+  SmartSectorCategoryProfile
+> = {
+  "Crop Production": {
+    people:
+      "Farm workers, seasonal workers, equipment operators, supervisors, contractors",
+    planningHazard:
+      "can expose workers to field machinery, pesticide or fertilizer use, irrigation systems, manual crop handling, and seasonal time pressure",
+    equipmentHazard:
+      "planting equipment, sprayers, harvesters, irrigation pumps, crop bins, grain handling equipment, and greenhouse systems",
+    interfaceHazard:
+      "farm workers, machinery operators, contractors, delivery drivers, and seasonal teams working across changing field areas",
+    exposureHazard:
+      "pesticides, fertilizers, grain dust, heat, cold, repetitive picking, manual handling, uneven ground, and noise",
+    emergencyHazard:
+      "chemical exposure, machinery incident, heat illness, irrigation water incident, grain handling emergency, or delayed field rescue",
+    existingMeasures:
+      "Farm procedures, chemical labels, PPE, equipment checks, worker briefings, and supervisor oversight are in place",
+    specificControls:
+      "follow product labels, manage re-entry intervals, rotate manual tasks, provide shade and water, inspect equipment, and brief seasonal workers",
+    consequence:
+      "Chemical exposure, heat illness, strains, machinery injury, respiratory irritation",
+  },
+  "Machinery & Vehicle Operations": {
+    people:
+      "Tractor operators, harvester operators, maintenance workers, farm workers, supervisors",
+    planningHazard:
+      "can involve tractor overturn, PTO entanglement, moving machinery, farm road traffic, coupling tasks, and fueling hazards",
+    equipmentHazard:
+      "tractors, harvesters, loaders, trailers, PTO shafts, guards, fuel systems, cleaning tools, and maintenance equipment",
+    interfaceHazard:
+      "operators, ground workers, pedestrians, delivery vehicles, and other farm traffic sharing yards, roads, and fields",
+    exposureHazard:
+      "noise, vibration, dust, diesel fumes, crush zones, sharp parts, hot surfaces, and fatigue",
+    emergencyHazard:
+      "tractor rollover, PTO entanglement, vehicle collision, fuel fire, equipment runaway, or delayed rescue on remote farm roads",
+    existingMeasures:
+      "Operator training, machine guards, maintenance schedules, speed controls, PPE, and farm traffic rules are used",
+    specificControls:
+      "keep PTO guards fitted, use seatbelts and rollover protection, isolate machinery before maintenance, control farm traffic, and refuel away from ignition sources",
+    consequence:
+      "Entanglement, crushing, rollover, burns, serious injury, fatality",
+  },
+  "Livestock Operations": {
+    people:
+      "Farm workers, animal handlers, veterinarians, transport drivers, supervisors",
+    planningHazard:
+      "can expose workers to unpredictable animal behavior, zoonotic disease, biosecurity controls, manure, and livestock transport pressure",
+    equipmentHazard:
+      "gates, crushes, milking systems, feeding equipment, trailers, cleaning tools, PPE, and veterinary equipment",
+    interfaceHazard:
+      "handlers, animals, veterinarians, transport drivers, and visitors interacting in yards, housing, milking areas, and loading zones",
+    exposureHazard:
+      "animal kicks or bites, zoonotic pathogens, manure gases, slips, manual handling, noise, and biological contamination",
+    emergencyHazard:
+      "aggressive animal incident, zoonotic exposure, transport injury, worker trapped in pen, or delayed veterinary and first aid response",
+    existingMeasures:
+      "Animal handling procedures, biosecurity rules, PPE, vaccination and hygiene controls, and supervision are in place",
+    specificControls:
+      "use suitable handling facilities, avoid working alone with aggressive animals, follow biosecurity steps, maintain escape routes, and clean contaminated areas safely",
+    consequence:
+      "Kicks, bites, crush injury, infection, slips, serious injury",
+  },
+  "Storage & Facilities": {
+    people:
+      "Farm workers, maintenance workers, contractors, delivery drivers, supervisors",
+    planningHazard:
+      "can involve silos, grain storage, bale stacking, chemical and fertilizer storage, farm workshops, and work at height on farm buildings",
+    equipmentHazard:
+      "silos, grain augers, bale handlers, cold rooms, workshop tools, chemical stores, ladders, and fire protection equipment",
+    interfaceHazard:
+      "workers, contractors, delivery vehicles, and machinery moving around barns, silos, workshops, and storage yards",
+    exposureHazard:
+      "grain dust, engulfment, confined space atmosphere, falling bales, chemical exposure, fire load, and falls from height",
+    emergencyHazard:
+      "silo engulfment, barn fire, chemical spill, bale collapse, workshop injury, or delayed rescue from height",
+    existingMeasures:
+      "Storage rules, chemical segregation, fire prevention checks, equipment guards, PPE, and maintenance controls are available",
+    specificControls:
+      "control silo entry, keep grain handling guarded, stack bales safely, segregate chemicals and fertilizers, inspect ladders, and reduce ignition sources",
+    consequence:
+      "Engulfment, respiratory illness, fire, falls, chemical burns, fatality",
+  },
+  "Outdoor & Environmental Conditions": {
+    people:
+      "Farm workers, seasonal workers, supervisors, contractors, emergency responders",
+    planningHazard:
+      "can expose workers to extreme weather, water hazards, uneven ground, lone work, dust, noise, and new seasonal worker unfamiliarity",
+    equipmentHazard:
+      "vehicles, hand tools, radios, irrigation channels, PPE, noise-generating equipment, and emergency response equipment",
+    interfaceHazard:
+      "workers spread across fields, remote areas, irrigation channels, farm roads, and temporary seasonal teams",
+    exposureHazard:
+      "heat stress, cold stress, slips on uneven ground, drowning risk, dust inhalation, noise, manual handling, and fatigue",
+    emergencyHazard:
+      "remote worker injury, heat illness, water rescue, severe weather, communication failure, or delayed first aid",
+    existingMeasures:
+      "Worker briefings, welfare arrangements, communication checks, PPE, emergency contacts, and supervisor monitoring are in place",
+    specificControls:
+      "monitor weather, schedule rest breaks, maintain communication, control water-edge work, onboard seasonal workers, and plan remote emergency response",
+    consequence:
+      "Heat illness, cold stress, slips, drowning, delayed rescue, serious injury",
+  },
+};
+
+const portsMarineCategoryProfiles: Record<
+  string,
+  SmartSectorCategoryProfile
+> = {
+  "Cargo Handling": {
+    people:
+      "Stevedores, crane operators, riggers, terminal workers, drivers, supervisors",
+    planningHazard:
+      "can expose workers to suspended loads, cargo collapse, ship-shore interface, dropped objects, and changing cargo conditions",
+    equipmentHazard:
+      "containers, lifting gear, cranes, lashings, spreaders, forklifts, pallets, heavy lift equipment, and cargo securing tools",
+    interfaceHazard:
+      "cargo teams, vessel crew, crane operators, drivers, inspectors, and supervisors working across ship and terminal zones",
+    exposureHazard:
+      "crush zones, falling cargo, noise, vibration, manual handling, weather, slippery decks, and fatigue",
+    emergencyHazard:
+      "dropped load, cargo shift, lashing failure, crane incident, vessel movement, or delayed emergency access",
+    existingMeasures:
+      "Lift plans, cargo handling procedures, exclusion zones, PPE, communication protocols, and supervision are in place",
+    specificControls:
+      "inspect lifting gear, keep clear of suspended loads, verify cargo stability, coordinate ship-shore communication, and stop work in unsafe weather",
+    consequence:
+      "Crushing, dropped object injury, cargo collapse, fall injury, fatality",
+  },
+  "Vessel & Dock Operations": {
+    people:
+      "Mooring crews, vessel crew, pilots, dock workers, contractors, supervisors",
+    planningHazard:
+      "can involve mooring snap-back, quay edge exposure, vessel access, working over water, bunkering support, and crew transfer",
+    equipmentHazard:
+      "mooring lines, bollards, gangways, hatch covers, vessel access systems, lifejackets, radios, and transfer equipment",
+    interfaceHazard:
+      "vessel crew, port workers, pilots, contractors, and dock teams coordinating across quay edges and vessel access points",
+    exposureHazard:
+      "falling into water, slippery surfaces, weather, line tension, noise, poor lighting, and manual handling",
+    emergencyHazard:
+      "man overboard, mooring line failure, gangway collapse, bunkering spill, vessel movement, or failed rescue response",
+    existingMeasures:
+      "Mooring procedures, life-saving equipment, gangway inspections, PPE, radios, and vessel coordination procedures are used",
+    specificControls:
+      "stay clear of snap-back zones, inspect gangways, wear flotation PPE near water, control quay edge access, and maintain vessel communication",
+    consequence:
+      "Drowning, crush injury, fall injury, line strike, serious injury, fatality",
+  },
+  "Mobile Equipment & Traffic": {
+    people:
+      "Equipment operators, drivers, pedestrians, traffic marshals, maintenance workers, supervisors",
+    planningHazard:
+      "can expose workers to heavy terminal vehicles, reversing equipment, crane movements, pedestrian interface, and fueling operations",
+    equipmentHazard:
+      "reach stackers, terminal tractors, forklifts, cranes, straddle carriers, trailers, fuel systems, and traffic controls",
+    interfaceHazard:
+      "operators, drivers, pedestrians, crane teams, yard controllers, and maintenance crews working in active terminal routes",
+    exposureHazard:
+      "vehicle collision, blind spots, noise, vibration, diesel exhaust, poor visibility, and fatigue",
+    emergencyHazard:
+      "vehicle strike, equipment overturn, fuel spill, crane collision, blocked emergency route, or communication failure",
+    existingMeasures:
+      "Traffic management plans, operator training, speed limits, radio communication, PPE, and equipment inspections are in place",
+    specificControls:
+      "segregate pedestrians, use banksmen where needed, enforce speed limits, inspect equipment, manage reversing, and control refueling areas",
+    consequence:
+      "Collision, crushing, overturn, fire, serious injury, fatality",
+  },
+  "Warehousing & Yard Operations": {
+    people:
+      "Yard workers, warehouse staff, reefer technicians, dangerous goods handlers, drivers, supervisors",
+    planningHazard:
+      "can involve container stacking, reefer connections, dangerous goods storage, yard housekeeping, night shifts, and extreme weather",
+    equipmentHazard:
+      "containers, reefer cables, racking, forklifts, yard lighting, spill kits, waste equipment, and dangerous goods storage systems",
+    interfaceHazard:
+      "warehouse teams, drivers, reefer technicians, yard planners, dangerous goods handlers, and contractors sharing yard areas",
+    exposureHazard:
+      "falling containers, electric shock from reefers, chemical exposure, slips, manual handling, weather, and fatigue",
+    emergencyHazard:
+      "container stack collapse, dangerous goods incident, reefer electrical fault, spill, extreme weather disruption, or night shift emergency",
+    existingMeasures:
+      "Yard plans, dangerous goods controls, reefer procedures, housekeeping inspections, PPE, and emergency response equipment are available",
+    specificControls:
+      "verify stack limits, inspect reefer cables, segregate dangerous goods, maintain yard lighting, secure loose materials, and pause work in severe weather",
+    consequence:
+      "Crush injury, electric shock, chemical exposure, slips, environmental harm",
+  },
+  "Emergency & Marine Safety": {
+    people:
+      "Emergency responders, port workers, vessel crew, security staff, contractors, supervisors",
+    planningHazard:
+      "can involve marine rescue, dangerous goods incidents, vessel confined spaces, hot work, oil spills, security threats, and emergency communication",
+    equipmentHazard:
+      "rescue equipment, fire systems, spill response kits, gas monitors, hot work equipment, radios, and security systems",
+    interfaceHazard:
+      "port emergency teams, vessel crew, security, contractors, terminal operators, and external emergency services coordinating during incidents",
+    exposureHazard:
+      "smoke, fire, oil contamination, toxic vapors, confined space atmospheres, water exposure, stress, and fatigue",
+    emergencyHazard:
+      "man overboard, fire, oil spill, dangerous goods release, confined space rescue, hot work fire, or security escalation",
+    existingMeasures:
+      "Emergency plans, drills, rescue equipment, spill response procedures, permits, PPE, and communication protocols are established",
+    specificControls:
+      "inspect rescue equipment, test communications, control hot work, use gas testing for confined spaces, coordinate external responders, and debrief incidents",
+    consequence:
+      "Drowning, fire injury, toxic exposure, environmental harm, serious injury, fatality",
+  },
+};
+
+const chemicalIndustryCategoryProfiles: Record<
+  string,
+  SmartSectorCategoryProfile
+> = {
+  "Process Operations": {
+    people:
+      "Process operators, control room staff, maintenance workers, supervisors, contractors",
+    planningHazard:
+      "can expose workers to process upset, reactive chemicals, pressure systems, emergency shutdown demands, and batch charging errors",
+    equipmentHazard:
+      "reactors, mixers, distillation columns, filters, pumps, valves, sampling points, and process control systems",
+    interfaceHazard:
+      "operators, laboratory staff, maintenance workers, control room teams, and contractors working around live process equipment",
+    exposureHazard:
+      "toxic vapors, corrosive chemicals, heat, pressure release, flammable atmospheres, noise, and poor ventilation",
+    emergencyHazard:
+      "runaway reaction, chemical release, fire, explosion, emergency shutdown failure, or delayed process alarm response",
+    existingMeasures:
+      "Operating procedures, process monitoring, alarms, PPE, permits, emergency shutdown systems, and supervisor controls are in place",
+    specificControls:
+      "verify operating limits, control charging sequence, monitor alarms, manage ignition sources, use closed sampling where possible, and escalate process deviations",
+    consequence:
+      "Toxic exposure, chemical burns, pressure injury, fire, explosion, fatality",
+  },
+  "Chemical Handling & Storage": {
+    people:
+      "Chemical handlers, warehouse workers, forklift operators, laboratory staff, emergency responders",
+    planningHazard:
+      "can involve incompatible chemicals, flammable liquids, corrosives, toxic substances, poor labeling, and container transfer hazards",
+    equipmentHazard:
+      "drums, IBCs, transfer hoses, pumps, gas cylinders, storage racks, bunds, labels, and spill response equipment",
+    interfaceHazard:
+      "chemical handlers, transport drivers, forklift operators, supervisors, and emergency responders sharing storage and transfer areas",
+    exposureHazard:
+      "skin contact, inhalation, chemical splash, fire, vapor release, cylinder impact, and environmental contamination",
+    emergencyHazard:
+      "chemical spill, incompatible reaction, gas leak, flammable liquid fire, labeling error, or delayed decontamination",
+    existingMeasures:
+      "Safety data sheets, chemical labels, segregation rules, bunding, PPE, ventilation, and spill kits are available",
+    specificControls:
+      "segregate incompatible chemicals, inspect containers, use closed transfer, control ignition sources, label substances clearly, and train spill responders",
+    consequence:
+      "Chemical burns, toxic exposure, fire, explosion, environmental release, serious injury",
+  },
+  "Maintenance & Engineering": {
+    people:
+      "Maintenance technicians, electricians, instrument technicians, contractors, process operators",
+    planningHazard:
+      "can involve line breaking, isolation failure, confined spaces, hot work, residual chemicals, contractor work, and hazardous energy",
+    equipmentHazard:
+      "pumps, pipework, valves, instruments, electrical panels, isolation points, hot work equipment, and confined space equipment",
+    interfaceHazard:
+      "maintenance teams, contractors, permit issuers, process operators, and emergency responders coordinating around chemical plant equipment",
+    exposureHazard:
+      "residual chemical contact, toxic vapors, pressure release, electric shock, hot work fumes, confined space atmospheres, and manual handling",
+    emergencyHazard:
+      "line breaking release, fire during hot work, confined space rescue, lockout failure, contractor injury, or delayed decontamination",
+    existingMeasures:
+      "Permit-to-work, isolation/LOTO, gas testing, line breaking procedures, PPE, contractor induction, and emergency plans are used",
+    specificControls:
+      "verify isolation and drain-down, test atmospheres, use line break PPE, control hot work ignition sources, supervise contractors, and keep rescue equipment ready",
+    consequence:
+      "Toxic exposure, chemical burns, fire, electric shock, confined space injury, fatality",
+  },
+  "Laboratory & Quality Control": {
+    people:
+      "Laboratory analysts, quality technicians, sample couriers, supervisors, cleaners",
+    planningHazard:
+      "can involve chemical reagents, fume hood use, glassware, sample disposal, equipment maintenance, PPE selection, and emergency shower readiness",
+    equipmentHazard:
+      "fume hoods, glassware, reagents, sample containers, analytical instruments, eyewash stations, emergency showers, and waste containers",
+    interfaceHazard:
+      "laboratory staff, production samplers, cleaners, maintenance workers, and supervisors working in controlled laboratory areas",
+    exposureHazard:
+      "chemical inhalation, corrosive splash, glass cuts, repetitive bench work, incompatible waste, and poor ventilation",
+    emergencyHazard:
+      "lab spill, fume hood failure, eyewash or shower defect, chemical exposure, glass breakage, or delayed emergency response",
+    existingMeasures:
+      "Laboratory procedures, SDS access, fume hoods, PPE, waste segregation, eyewash and shower checks, and supervision are in place",
+    specificControls:
+      "use fume hoods correctly, inspect glassware, segregate lab waste, verify emergency shower and eyewash access, and label samples clearly",
+    consequence:
+      "Chemical burns, inhalation injury, cuts, exposure-related illness, serious injury",
+  },
+  "Emergency, Waste & Environment": {
+    people:
+      "Emergency responders, operators, waste handlers, environmental staff, supervisors, contractors",
+    planningHazard:
+      "can involve chemical spills, fires, gas leaks, hazardous waste, wastewater treatment, emissions control, decontamination, and incident investigation",
+    equipmentHazard:
+      "spill kits, fire systems, gas detectors, hazardous waste containers, wastewater systems, scrubbers, decontamination equipment, and monitoring instruments",
+    interfaceHazard:
+      "emergency teams, operators, waste contractors, environmental staff, regulators, and supervisors coordinating during abnormal events",
+    exposureHazard:
+      "toxic gas, corrosive liquid, smoke, contaminated wastewater, hazardous waste contact, environmental release, and stress",
+    emergencyHazard:
+      "major spill, gas leak, fire, emission control failure, decontamination failure, hazardous waste reaction, or incomplete incident learning",
+    existingMeasures:
+      "Emergency plans, spill response procedures, fire systems, gas detection, waste controls, PPE, and environmental monitoring are available",
+    specificControls:
+      "isolate releases, protect drains, use decontamination procedures, segregate hazardous waste, monitor emissions, and document incident causes and actions",
+    consequence:
+      "Toxic exposure, fire injury, environmental harm, chemical burns, serious injury, fatality",
+  },
+};
+
 const createSmartSectorRiskAssessmentLibrary = (
   sector: string,
   groups: ActivityGroup[],
@@ -7543,6 +8283,34 @@ const educationRiskAssessmentLibrary = createSmartSectorRiskAssessmentLibrary(
   educationCategoryProfiles,
 );
 
+const energyUtilitiesRiskAssessmentLibrary =
+  createSmartSectorRiskAssessmentLibrary(
+    "Energy & Utilities",
+    energyUtilitiesActivityGroups,
+    energyUtilitiesCategoryProfiles,
+  );
+
+const agricultureRiskAssessmentLibrary =
+  createSmartSectorRiskAssessmentLibrary(
+    "Agriculture & Farming",
+    agricultureActivityGroups,
+    agricultureCategoryProfiles,
+  );
+
+const portsMarineRiskAssessmentLibrary =
+  createSmartSectorRiskAssessmentLibrary(
+    "Ports & Marine Operations",
+    portsMarineActivityGroups,
+    portsMarineCategoryProfiles,
+  );
+
+const chemicalIndustryRiskAssessmentLibrary =
+  createSmartSectorRiskAssessmentLibrary(
+    "Chemical Industry",
+    chemicalIndustryActivityGroups,
+    chemicalIndustryCategoryProfiles,
+  );
+
 const riskAssessmentLibraryBySector: Record<
   string,
   Record<string, { title: string; createHazards: () => HazardRow[] }>
@@ -7558,6 +8326,10 @@ const riskAssessmentLibraryBySector: Record<
   "Hospitality & HORECA": hospitalityRiskAssessmentLibrary,
   "Retail & Commercial Facilities": retailRiskAssessmentLibrary,
   "Education & Training Facilities": educationRiskAssessmentLibrary,
+  "Energy & Utilities": energyUtilitiesRiskAssessmentLibrary,
+  "Agriculture & Farming": agricultureRiskAssessmentLibrary,
+  "Ports & Marine Operations": portsMarineRiskAssessmentLibrary,
+  "Chemical Industry": chemicalIndustryRiskAssessmentLibrary,
 };
 
 const toRiskValue = (value: string): RiskValue => Number(value) as RiskValue;
