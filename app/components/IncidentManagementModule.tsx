@@ -64,6 +64,14 @@ type Severity = (typeof severityOptions)[number];
 type IncidentStatus = (typeof statusOptions)[number];
 type YesNo = (typeof yesNoOptions)[number];
 type RootCause = (typeof rootCauseOptions)[number];
+type SuggestionGroup =
+  | "Training & Competency"
+  | "Procedures & System Controls"
+  | "Workplace / Site Controls"
+  | "Equipment & Maintenance"
+  | "Risk Assessment Review"
+  | "Management Review";
+type SuggestionState = "Not Started" | "Action Created" | "Completed";
 
 type IncidentEvent = {
   id: string;
@@ -89,6 +97,7 @@ type IncidentEvent = {
   status: IncidentStatus;
   rootCauses: RootCause[];
   rootCauseNotes: string;
+  completedSuggestionIds: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -97,6 +106,7 @@ type IncidentSuggestion = {
   id: string;
   title: string;
   reason: string;
+  group: SuggestionGroup;
 };
 
 type IncidentFilters = {
@@ -197,6 +207,7 @@ const createEmptyIncident = (): IncidentEvent => {
     status: "Reported",
     rootCauses: [],
     rootCauseNotes: "",
+    completedSuggestionIds: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -252,6 +263,11 @@ const normalizeIncident = (incident: Partial<IncidentEvent>): IncidentEvent => {
       typeof incident.rootCauseNotes === "string"
         ? incident.rootCauseNotes
         : "",
+    completedSuggestionIds: Array.isArray(incident.completedSuggestionIds)
+      ? incident.completedSuggestionIds.filter(
+          (item): item is string => typeof item === "string",
+        )
+      : [],
     createdAt:
       typeof incident.createdAt === "string" ? incident.createdAt : empty.createdAt,
     updatedAt:
@@ -417,22 +433,52 @@ const statusTone = (status: IncidentStatus, darkMode: boolean) => {
     : "border-slate-200 bg-slate-50 text-slate-700";
 };
 
+const suggestionStateTone = (state: SuggestionState, darkMode: boolean) => {
+  if (state === "Completed") {
+    return darkMode
+      ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-100"
+      : "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  if (state === "Action Created") {
+    return darkMode
+      ? "border-[#4DEBFF]/35 bg-[#4DEBFF]/10 text-[#DDFBFF]"
+      : "border-[#1E90FF]/25 bg-[#1E90FF]/10 text-[#0759A8]";
+  }
+
+  return darkMode
+    ? "border-slate-400/25 bg-white/[0.04] text-slate-200"
+    : "border-slate-200 bg-slate-50 text-slate-700";
+};
+
+const suggestionGroupOrder: SuggestionGroup[] = [
+  "Management Review",
+  "Training & Competency",
+  "Procedures & System Controls",
+  "Workplace / Site Controls",
+  "Equipment & Maintenance",
+  "Risk Assessment Review",
+];
+
 const sourceSuggestionSets: Partial<Record<RootCause, IncidentSuggestion[]>> = {
   "Missing or Ineffective Training": [
     {
       id: "training-record-review",
       title: "Review training records for involved employee",
       reason: "Training gap identified as a root cause.",
+      group: "Training & Competency",
     },
     {
       id: "schedule-refresher-training",
       title: "Schedule refresher training",
       reason: "Competency reinforcement is required before task continuation.",
+      group: "Training & Competency",
     },
     {
       id: "verify-competency",
       title: "Verify competency before returning to task",
       reason: "Worker capability should be confirmed after the event.",
+      group: "Training & Competency",
     },
   ],
   "Equipment / Machinery": [
@@ -440,16 +486,19 @@ const sourceSuggestionSets: Partial<Record<RootCause, IncidentSuggestion[]>> = {
       id: "inspect-equipment-before-reuse",
       title: "Inspect equipment before reuse",
       reason: "Equipment or machinery contributed to the event.",
+      group: "Equipment & Maintenance",
     },
     {
       id: "remove-unsafe-equipment",
       title: "Remove equipment from service if unsafe",
       reason: "Unsafe equipment should not remain available for use.",
+      group: "Equipment & Maintenance",
     },
     {
       id: "review-maintenance-records",
       title: "Review maintenance records",
       reason: "Maintenance history may indicate repeat failures or overdue checks.",
+      group: "Equipment & Maintenance",
     },
   ],
   "Procedure / System Failure": [
@@ -457,16 +506,19 @@ const sourceSuggestionSets: Partial<Record<RootCause, IncidentSuggestion[]>> = {
       id: "review-related-procedure",
       title: "Review related procedure",
       reason: "Procedure or system failure was selected as a root cause.",
+      group: "Procedures & System Controls",
     },
     {
       id: "communicate-revised-procedure",
       title: "Communicate revised procedure to workers",
       reason: "Workers need clear instruction after procedural changes.",
+      group: "Procedures & System Controls",
     },
     {
       id: "verify-procedure-implementation",
       title: "Verify implementation on site",
       reason: "Procedure updates must be confirmed in the field.",
+      group: "Procedures & System Controls",
     },
   ],
   "Work Environment": [
@@ -474,16 +526,19 @@ const sourceSuggestionSets: Partial<Record<RootCause, IncidentSuggestion[]>> = {
       id: "inspect-workplace-conditions",
       title: "Inspect workplace conditions",
       reason: "Work environment was selected as a root cause.",
+      group: "Workplace / Site Controls",
     },
     {
       id: "improve-housekeeping-access",
       title: "Improve housekeeping or access control",
       reason: "Environmental conditions may require immediate correction.",
+      group: "Workplace / Site Controls",
     },
     {
       id: "review-environmental-controls",
       title: "Review lighting, ventilation, or weather controls",
       reason: "Site controls should be checked against working conditions.",
+      group: "Workplace / Site Controls",
     },
   ],
   "PPE / Protection Failure": [
@@ -491,11 +546,13 @@ const sourceSuggestionSets: Partial<Record<RootCause, IncidentSuggestion[]>> = {
       id: "inspect-ppe-protection",
       title: "Inspect PPE and protective controls",
       reason: "Protection failure was selected as a root cause.",
+      group: "Workplace / Site Controls",
     },
     {
       id: "replace-defective-ppe",
       title: "Replace defective or unsuitable PPE",
       reason: "Workers should not continue with inadequate protection.",
+      group: "Workplace / Site Controls",
     },
   ],
   "Communication Failure": [
@@ -503,11 +560,13 @@ const sourceSuggestionSets: Partial<Record<RootCause, IncidentSuggestion[]>> = {
       id: "conduct-shift-briefing",
       title: "Conduct shift communication briefing",
       reason: "Communication failure contributed to the event.",
+      group: "Procedures & System Controls",
     },
     {
       id: "verify-critical-instructions",
       title: "Verify critical instructions are understood",
       reason: "Operational messages should be confirmed before work resumes.",
+      group: "Procedures & System Controls",
     },
   ],
   "Supervision / Management": [
@@ -515,11 +574,13 @@ const sourceSuggestionSets: Partial<Record<RootCause, IncidentSuggestion[]>> = {
       id: "review-supervision-plan",
       title: "Review supervision and monitoring plan",
       reason: "Supervision or management controls may need strengthening.",
+      group: "Management Review",
     },
     {
       id: "assign-management-follow-up",
       title: "Assign management follow-up",
       reason: "Management review supports sustained corrective action.",
+      group: "Management Review",
     },
   ],
   "Emergency Preparedness": [
@@ -527,11 +588,13 @@ const sourceSuggestionSets: Partial<Record<RootCause, IncidentSuggestion[]>> = {
       id: "review-emergency-response",
       title: "Review emergency response arrangements",
       reason: "Emergency preparedness was identified as a root cause.",
+      group: "Procedures & System Controls",
     },
     {
       id: "conduct-emergency-briefing",
       title: "Conduct emergency response briefing",
       reason: "Teams should understand emergency roles after the event.",
+      group: "Procedures & System Controls",
     },
   ],
 };
@@ -600,28 +663,36 @@ const getSuggestedActions = (incident: IncidentEvent): IncidentSuggestion[] => {
   });
 
   if (incident.severity === "High" || incident.severity === "Critical") {
-    [
+    const highSeveritySuggestions: IncidentSuggestion[] = [
       {
         id: "management-review",
         title: "Assign management review",
         reason: "High severity events require management-level follow-up.",
+        group: "Management Review",
       },
       {
         id: "create-corrective-action",
         title: "Create corrective action",
         reason: "High severity events require formal corrective action tracking.",
+        group: "Management Review",
       },
       {
         id: "review-related-risk-assessment",
         title: "Review related risk assessment",
         reason: "Risk controls should be checked against the incident scenario.",
+        group: "Risk Assessment Review",
       },
       {
         id: "post-incident-toolbox-talk",
         title: "Conduct toolbox talk after investigation",
         reason: "Lessons learned should be communicated to the affected team.",
+        group: "Training & Competency",
       },
-    ].forEach((suggestion) => suggestions.set(suggestion.id, suggestion));
+    ];
+
+    highSeveritySuggestions.forEach((suggestion) =>
+      suggestions.set(suggestion.id, suggestion),
+    );
   }
 
   if (incident.eventType === "Environmental Release" || incident.environmentalImpact === "Yes") {
@@ -629,6 +700,7 @@ const getSuggestedActions = (incident: IncidentEvent): IncidentSuggestion[] => {
       id: "environmental-response-review",
       title: "Review environmental response and cleanup controls",
       reason: "Environmental impact was recorded for this event.",
+      group: "Workplace / Site Controls",
     });
   }
 
@@ -641,6 +713,7 @@ const getSuggestedActions = (incident: IncidentEvent): IncidentSuggestion[] => {
       id: "injury-case-review",
       title: "Complete injury case review and return-to-work controls",
       reason: "Injury-related events require health and recovery follow-up.",
+      group: "Management Review",
     });
   }
 
@@ -649,6 +722,7 @@ const getSuggestedActions = (incident: IncidentEvent): IncidentSuggestion[] => {
       id: "investigation-follow-up",
       title: "Complete incident investigation follow-up",
       reason: "No root cause has been selected yet; create a general follow-up if needed.",
+      group: "Management Review",
     });
   }
 
@@ -806,8 +880,10 @@ export default function IncidentManagementModule({
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<IncidentFilters>(emptyFilters);
   const [showFilters, setShowFilters] = useState(false);
-  const [activeIncidentActionKeys, setActiveIncidentActionKeys] = useState<string[]>([]);
-  const [incidentActionCount, setIncidentActionCount] = useState(0);
+  const [incidentActions, setIncidentActions] = useState<HseAction[]>([]);
+  const [expandedSuggestionGroups, setExpandedSuggestionGroups] = useState<
+    SuggestionGroup[]
+  >(["Management Review"]);
 
   const selectedIncident = useMemo(
     () =>
@@ -822,16 +898,9 @@ export default function IncidentManagementModule({
       const actions = readActionTrackerActions(userId).filter(
         (action) => action.sourceModule === "Incident",
       );
-      const activeKeys = actions
-        .filter((action) => !isClosedAction(action))
-        .map((action) => action.linkedIncidentId)
-        .filter((value): value is string => Boolean(value));
-
-      setIncidentActionCount(actions.length);
-      setActiveIncidentActionKeys(Array.from(new Set(activeKeys)));
+      setIncidentActions(actions);
     } catch {
-      setIncidentActionCount(0);
-      setActiveIncidentActionKeys([]);
+      setIncidentActions([]);
     }
   }, [userId]);
 
@@ -985,24 +1054,101 @@ export default function IncidentManagementModule({
     setNotice("Incident deleted.");
   };
 
+  const getSuggestionAction = (
+    incident: IncidentEvent,
+    suggestion: IncidentSuggestion,
+  ) => {
+    const linkedIncidentId = incidentSuggestionKey(incident.id, suggestion.id);
+
+    return (
+      incidentActions.find(
+        (action) =>
+          action.sourceModule === "Incident" &&
+          action.linkedIncidentId === linkedIncidentId,
+      ) ?? null
+    );
+  };
+
+  const getSuggestionState = (
+    incident: IncidentEvent,
+    suggestion: IncidentSuggestion,
+  ): SuggestionState => {
+    if (incident.completedSuggestionIds.includes(suggestion.id)) {
+      return "Completed";
+    }
+
+    const action = getSuggestionAction(incident, suggestion);
+
+    if (!action) {
+      return "Not Started";
+    }
+
+    return isClosedAction(action) ? "Completed" : "Action Created";
+  };
+
+  const updateIncident = (incident: IncidentEvent, message?: string) => {
+    const updatedIncident = {
+      ...incident,
+      updatedAt: new Date().toISOString(),
+    };
+
+    saveIncidents(
+      incidents.map((item) =>
+        item.id === updatedIncident.id ? updatedIncident : item,
+      ),
+    );
+    setSelectedIncidentId(updatedIncident.id);
+
+    if (message) {
+      setNotice(message);
+    }
+
+    return updatedIncident;
+  };
+
+  const toggleSuggestionComplete = (
+    incident: IncidentEvent,
+    suggestion: IncidentSuggestion,
+  ) => {
+    const action = getSuggestionAction(incident, suggestion);
+
+    if (action && !isClosedAction(action)) {
+      setNotice("Complete the linked Action Tracker item first.");
+      return;
+    }
+
+    if (action && isClosedAction(action)) {
+      setNotice("Linked Action Tracker item is already completed.");
+      return;
+    }
+
+    const isCompleted = incident.completedSuggestionIds.includes(suggestion.id);
+    const nextCompletedSuggestionIds = isCompleted
+      ? incident.completedSuggestionIds.filter((id) => id !== suggestion.id)
+      : [...incident.completedSuggestionIds, suggestion.id];
+
+    updateIncident(
+      {
+        ...incident,
+        completedSuggestionIds: nextCompletedSuggestionIds,
+      },
+      isCompleted ? "Suggestion reopened." : "Suggestion marked completed.",
+    );
+  };
+
   const createIncidentAction = (
     incident: IncidentEvent,
     suggestion: IncidentSuggestion,
   ) => {
     const linkedIncidentId = incidentSuggestionKey(incident.id, suggestion.id);
-    const existingActiveAction = readActionTrackerActions(userId).find(
+    const existingAction = readActionTrackerActions(userId).find(
       (action) =>
         action.sourceModule === "Incident" &&
-        action.linkedIncidentId === linkedIncidentId &&
-        !isClosedAction(action),
+        action.linkedIncidentId === linkedIncidentId,
     );
 
-    if (existingActiveAction) {
-      setActiveIncidentActionKeys((current) =>
-        current.includes(linkedIncidentId)
-          ? current
-          : [...current, linkedIncidentId],
-      );
+    if (existingAction || incident.completedSuggestionIds.includes(suggestion.id)) {
+      refreshIncidentActions();
       setNotice("Action already exists for this incident suggestion.");
       return;
     }
@@ -1035,28 +1181,20 @@ export default function IncidentManagementModule({
       notes: "Created from Incident Management workflow suggestion.",
       createdBy,
       linkedIncidentId,
+      linkedIncidentTitle: incident.title,
     });
 
-    appendActionTrackerAction(userId, action);
-    setActiveIncidentActionKeys((current) =>
-      current.includes(linkedIncidentId)
-        ? current
-        : [...current, linkedIncidentId],
+    const updatedActions = appendActionTrackerAction(userId, action);
+    setIncidentActions(
+      updatedActions.filter((updatedAction) => updatedAction.sourceModule === "Incident"),
     );
-    setIncidentActionCount((current) => current + 1);
 
     if (incident.status === "Reported" || incident.status === "Investigation Open") {
       const updatedIncident = {
         ...incident,
         status: "Actions Assigned" as const,
-        updatedAt: new Date().toISOString(),
       };
-      saveIncidents(
-        incidents.map((item) =>
-          item.id === incident.id ? updatedIncident : item,
-        ),
-      );
-      setSelectedIncidentId(incident.id);
+      updateIncident(updatedIncident);
     }
 
     setNotice("Action created from incident workflow.");
@@ -1181,14 +1319,89 @@ export default function IncidentManagementModule({
         (incident) =>
           incident.severity === "High" || incident.severity === "Critical",
       ).length,
-      actionsCreated: incidentActionCount,
+      actionsCreated: incidentActions.length,
     }),
-    [incidentActionCount, incidents],
+    [incidentActions.length, incidents],
   );
 
   const selectedSuggestions = selectedIncident
     ? getSuggestedActions(selectedIncident)
     : [];
+  const selectedSuggestionRecords = selectedIncident
+    ? selectedSuggestions.map((suggestion) => {
+        const action = getSuggestionAction(selectedIncident, suggestion);
+        const state = getSuggestionState(selectedIncident, suggestion);
+
+        return {
+          suggestion,
+          action,
+          state,
+          linkedIncidentId: incidentSuggestionKey(
+            selectedIncident.id,
+            suggestion.id,
+          ),
+        };
+      })
+    : [];
+  const selectedSuggestionSummary = {
+    total: selectedSuggestionRecords.length,
+    actionsCreated: selectedSuggestionRecords.filter((record) => record.action)
+      .length,
+    completed: selectedSuggestionRecords.filter(
+      (record) => record.state === "Completed",
+    ).length,
+    remaining: selectedSuggestionRecords.filter(
+      (record) => record.state !== "Completed",
+    ).length,
+  };
+  const groupedSuggestionRecords = suggestionGroupOrder
+    .map((group) => ({
+      group,
+      records: selectedSuggestionRecords.filter(
+        (record) => record.suggestion.group === group,
+      ),
+    }))
+    .filter((group) => group.records.length > 0);
+  const hasExpandedVisibleSuggestionGroup = groupedSuggestionRecords.some(
+    (group) => expandedSuggestionGroups.includes(group.group),
+  );
+  const selectedIncidentWorkflow = selectedIncident
+    ? (() => {
+        const hasInvestigationActivity =
+          selectedIncident.rootCauses.length > 0 ||
+          selectedIncident.investigationNotes.trim().length > 0 ||
+          selectedIncident.rootCauseNotes.trim().length > 0 ||
+          selectedIncident.immediateActionTaken.trim().length > 0;
+        const hasIncidentLinkedAction = incidentActions.some((action) =>
+          action.linkedIncidentId?.startsWith(`incident:${selectedIncident.id}:`),
+        );
+        const hasActionCreated = selectedSuggestionRecords.some(
+          (record) => record.state === "Action Created",
+        );
+        const touchedSuggestions = selectedSuggestionRecords.filter(
+          (record) =>
+            record.action ||
+            selectedIncident.completedSuggestionIds.includes(record.suggestion.id),
+        );
+        const hasCompletedSuggestion = selectedSuggestionRecords.some(
+          (record) => record.state === "Completed",
+        );
+        const allTouchedSuggestionsCompleted =
+          touchedSuggestions.length > 0 &&
+          touchedSuggestions.every((record) => record.state === "Completed");
+
+        return {
+          Reported: true,
+          "Investigation Open": hasInvestigationActivity,
+          "Actions Assigned": hasActionCreated || hasIncidentLinkedAction,
+          "Pending Verification":
+            selectedIncident.status !== "Closed" &&
+            hasCompletedSuggestion &&
+            allTouchedSuggestionsCompleted,
+          Closed: selectedIncident.status === "Closed",
+        } satisfies Record<IncidentStatus, boolean>;
+      })()
+    : null;
   const activeFilterCount = [
     filters.eventType !== "All",
     filters.severity !== "All",
@@ -1503,7 +1716,7 @@ export default function IncidentManagementModule({
               {filteredIncidents.map((incident) => {
                 const isSelected = selectedIncident?.id === incident.id;
                 const similarCount = similarEventCount(incident);
-                const actionCount = readActionTrackerActions(userId).filter(
+                const actionCount = incidentActions.filter(
                   (action) =>
                     action.sourceModule === "Incident" &&
                     action.linkedIncidentId?.startsWith(`incident:${incident.id}:`),
@@ -1651,8 +1864,8 @@ export default function IncidentManagementModule({
                     </div>
                     <div className="grid gap-2 sm:grid-cols-5">
                       {statusOptions.map((status, index) => {
-                        const activeIndex = statusOptions.indexOf(selectedIncident.status);
-                        const isComplete = index <= activeIndex;
+                        const isComplete =
+                          selectedIncidentWorkflow?.[status] ?? false;
 
                         return (
                           <div
@@ -1711,52 +1924,170 @@ export default function IncidentManagementModule({
                     <div className={joinClasses("mb-3 text-xs font-bold uppercase tracking-[0.14em]", theme.label)}>
                       Smart Workflow Suggestions
                     </div>
-                    <div className="space-y-3">
-                      {selectedSuggestions.map((suggestion) => {
-                        const key = incidentSuggestionKey(
-                          selectedIncident.id,
-                          suggestion.id,
-                        );
-                        const hasActiveAction =
-                          activeIncidentActionKeys.includes(key);
+                    <div className="grid gap-3 sm:grid-cols-4">
+                      {[
+                        ["Total Suggestions", selectedSuggestionSummary.total],
+                        ["Actions Created", selectedSuggestionSummary.actionsCreated],
+                        ["Completed", selectedSuggestionSummary.completed],
+                        ["Remaining", selectedSuggestionSummary.remaining],
+                      ].map(([label, value]) => (
+                        <div
+                          key={label}
+                          className={joinClasses("rounded-2xl border p-3", theme.panel)}
+                        >
+                          <div className={joinClasses("text-[11px] font-bold uppercase tracking-[0.14em]", theme.label)}>
+                            {label}
+                          </div>
+                          <div className={joinClasses("mt-2 text-xl font-bold", theme.heading)}>
+                            {value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      {groupedSuggestionRecords.map((group, groupIndex) => {
+                        const completedCount = group.records.filter(
+                          (record) => record.state === "Completed",
+                        ).length;
+                        const actionCreatedCount = group.records.filter(
+                          (record) => record.action,
+                        ).length;
+                        const isExpanded =
+                          expandedSuggestionGroups.includes(group.group) ||
+                          (!hasExpandedVisibleSuggestionGroup && groupIndex === 0);
 
                         return (
                           <div
-                            key={suggestion.id}
-                            className={joinClasses(
-                              "rounded-2xl border p-4",
-                              theme.panel,
-                            )}
+                            key={group.group}
+                            className={joinClasses("rounded-2xl border", theme.panel)}
                           >
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedSuggestionGroups((current) =>
+                                  current.includes(group.group)
+                                    ? current.filter((item) => item !== group.group)
+                                    : [...current, group.group],
+                                )
+                              }
+                              className="flex w-full flex-col gap-3 p-4 text-left sm:flex-row sm:items-center sm:justify-between"
+                            >
                               <div>
-                                <h3 className="font-semibold">{suggestion.title}</h3>
-                                <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
-                                  {suggestion.reason}
+                                <h3 className="font-semibold">{group.group}</h3>
+                                <p className={joinClasses("mt-1 text-xs", theme.muted)}>
+                                  {group.records.length} suggestions / {completedCount} completed / {actionCreatedCount} actions created
                                 </p>
                               </div>
-                              <button
-                                type="button"
-                                disabled={hasActiveAction}
-                                onClick={() =>
-                                  hasActiveAction
-                                    ? undefined
-                                    : createIncidentAction(
-                                        selectedIncident,
-                                        suggestion,
-                                      )
-                                }
-                                className={joinClasses(
-                                  "inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition",
-                                  hasActiveAction
-                                    ? `${theme.notice} cursor-not-allowed opacity-85`
-                                    : theme.exportButton,
-                                )}
-                              >
-                                <Plus size={15} aria-hidden />
-                                {hasActiveAction ? "Action Created" : "Create Action"}
-                              </button>
-                            </div>
+                              <span className={joinClasses("text-xs font-bold uppercase tracking-[0.14em]", theme.label)}>
+                                {isExpanded ? "Collapse" : "Expand"}
+                              </span>
+                            </button>
+
+                            {isExpanded ? (
+                              <div className="space-y-2 border-t border-white/10 p-3">
+                                {group.records.map(({ suggestion, action, state }) => {
+                                  const canCreateAction = state === "Not Started";
+                                  const canToggleManualComplete = !action;
+                                  const isManualComplete =
+                                    selectedIncident.completedSuggestionIds.includes(
+                                      suggestion.id,
+                                    );
+
+                                  return (
+                                    <div
+                                      key={suggestion.id}
+                                      className={joinClasses(
+                                        "rounded-xl border p-3",
+                                        theme.card,
+                                      )}
+                                    >
+                                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                        <div className="min-w-0">
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <h4 className="font-semibold">
+                                              {suggestion.title}
+                                            </h4>
+                                            <Badge
+                                              className={suggestionStateTone(
+                                                state,
+                                                darkMode,
+                                              )}
+                                            >
+                                              {state}
+                                            </Badge>
+                                          </div>
+                                          <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
+                                            {suggestion.reason}
+                                          </p>
+                                        </div>
+                                        <div className="flex flex-col gap-2 sm:flex-row lg:shrink-0">
+                                          <button
+                                            type="button"
+                                            disabled={!canCreateAction}
+                                            onClick={() =>
+                                              canCreateAction
+                                                ? createIncidentAction(
+                                                    selectedIncident,
+                                                    suggestion,
+                                                  )
+                                                : setNotice(
+                                                    "Action already exists for this suggestion.",
+                                                  )
+                                            }
+                                            className={joinClasses(
+                                              "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition",
+                                              canCreateAction
+                                                ? theme.exportButton
+                                                : `${theme.notice} cursor-not-allowed opacity-85`,
+                                            )}
+                                          >
+                                            <Plus size={15} aria-hidden />
+                                            {state === "Not Started"
+                                              ? "Create Action"
+                                              : state === "Action Created"
+                                                ? "Action Created"
+                                                : "Completed"}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            disabled={!canToggleManualComplete}
+                                            onClick={() =>
+                                              canToggleManualComplete
+                                                ? toggleSuggestionComplete(
+                                                    selectedIncident,
+                                                    suggestion,
+                                                  )
+                                                : undefined
+                                            }
+                                            className={joinClasses(
+                                              "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition",
+                                              state === "Completed"
+                                                ? suggestionStateTone(
+                                                    "Completed",
+                                                    darkMode,
+                                                  )
+                                                : canToggleManualComplete
+                                                  ? theme.ghostButton
+                                                  : `${theme.ghostButton} cursor-not-allowed opacity-70`,
+                                            )}
+                                          >
+                                            <CheckCircle2 size={15} aria-hidden />
+                                            {state === "Completed"
+                                              ? "Completed"
+                                              : isManualComplete
+                                                ? "Completed"
+                                                : action
+                                                  ? "Complete in Action Tracker"
+                                                  : "Mark Complete"}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
                           </div>
                         );
                       })}

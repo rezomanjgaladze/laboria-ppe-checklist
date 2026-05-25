@@ -58,6 +58,7 @@ type HseAction = {
   linkedInspectionId?: string;
   linkedRiskAssessmentId?: string;
   linkedIncidentId?: string;
+  linkedIncidentTitle?: string;
   linkedTrainingGapKey?: string;
 };
 
@@ -235,6 +236,10 @@ const normalizeAction = (action: Partial<HseAction>): HseAction => {
     linkedIncidentId:
       typeof action.linkedIncidentId === "string"
         ? action.linkedIncidentId
+        : undefined,
+    linkedIncidentTitle:
+      typeof action.linkedIncidentTitle === "string"
+        ? action.linkedIncidentTitle
         : undefined,
     linkedTrainingGapKey:
       typeof action.linkedTrainingGapKey === "string"
@@ -1546,6 +1551,17 @@ export default function ActionTrackerModule({
                 <p className={joinClasses("mt-1 text-sm", theme.muted)}>
                   Last updated {new Date(draftAction.lastUpdated).toLocaleString()}
                 </p>
+                {draftAction.sourceModule === "Incident" &&
+                draftAction.linkedIncidentTitle ? (
+                  <div
+                    className={joinClasses(
+                      "mt-3 inline-flex rounded-xl border px-3 py-2 text-xs font-bold",
+                      sourceTone("Incident", darkMode),
+                    )}
+                  >
+                    Linked incident: {draftAction.linkedIncidentTitle}
+                  </div>
+                ) : null}
               </div>
               <button
                 type="button"

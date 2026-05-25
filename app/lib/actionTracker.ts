@@ -39,6 +39,7 @@ export type HseAction = {
   linkedInspectionId?: string;
   linkedRiskAssessmentId?: string;
   linkedIncidentId?: string;
+  linkedIncidentTitle?: string;
   linkedTrainingGapKey?: string;
 };
 
@@ -56,6 +57,7 @@ export type ActionDraftInput = {
   linkedInspectionId?: string;
   linkedRiskAssessmentId?: string;
   linkedIncidentId?: string;
+  linkedIncidentTitle?: string;
   linkedTrainingGapKey?: string;
 };
 
@@ -146,6 +148,10 @@ export const normalizeAction = (action: Partial<HseAction>): HseAction => {
     linkedIncidentId:
       typeof action.linkedIncidentId === "string"
         ? action.linkedIncidentId
+        : undefined,
+    linkedIncidentTitle:
+      typeof action.linkedIncidentTitle === "string"
+        ? action.linkedIncidentTitle
         : undefined,
     linkedTrainingGapKey:
       typeof action.linkedTrainingGapKey === "string"
@@ -254,6 +260,7 @@ export const createActionFromInput = (input: ActionDraftInput): HseAction => {
     linkedInspectionId: input.linkedInspectionId,
     linkedRiskAssessmentId: input.linkedRiskAssessmentId,
     linkedIncidentId: input.linkedIncidentId,
+    linkedIncidentTitle: input.linkedIncidentTitle,
     linkedTrainingGapKey: input.linkedTrainingGapKey,
   });
 };
