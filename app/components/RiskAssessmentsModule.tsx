@@ -715,6 +715,240 @@ const foodProductionActivityGroups: ActivityGroup[] = [
   },
 ];
 
+const hospitalityActivityGroups: ActivityGroup[] = [
+  {
+    label: "Kitchen & Food Preparation",
+    activities: [
+      "Food preparation",
+      "Cooking operations",
+      "Fryer operation",
+      "Knife handling",
+      "Food cutting and slicing",
+      "Hot surface work",
+      "Dishwasher operation",
+      "Kitchen cleaning",
+      "Waste disposal",
+      "Cold storage access",
+    ],
+  },
+  {
+    label: "Restaurant & Service Operations",
+    activities: [
+      "Table service",
+      "Tray carrying",
+      "Beverage service",
+      "Customer interaction",
+      "Cash handling",
+      "Buffet setup",
+      "Event catering",
+      "Bar operations",
+      "Glass handling",
+      "Spill cleanup in dining area",
+    ],
+  },
+  {
+    label: "Housekeeping & Cleaning",
+    activities: [
+      "Room cleaning",
+      "Laundry operations",
+      "Bathroom sanitation",
+      "Chemical cleaning",
+      "Bed making",
+      "Waste collection",
+      "Vacuum cleaning",
+      "High-touch surface disinfection",
+      "Linen transport",
+      "Sharps handling during cleaning",
+    ],
+  },
+  {
+    label: "Maintenance & Facility Operations",
+    activities: [
+      "Minor maintenance",
+      "Electrical equipment inspection",
+      "HVAC maintenance",
+      "Pool maintenance",
+      "Pest control coordination",
+      "Fire safety inspection",
+      "Emergency evacuation drill",
+      "Contractor work",
+      "Work at height during maintenance",
+      "Manual material handling",
+    ],
+  },
+  {
+    label: "Hotel & Guest Safety",
+    activities: [
+      "Reception operations",
+      "Lone working night shift",
+      "Security incident response",
+      "Aggressive guest management",
+      "Fire emergency response",
+      "Slippery floor management",
+      "Elevator use",
+      "Parking area management",
+      "Deliveries handling",
+      "Public area cleaning",
+    ],
+  },
+];
+
+const retailActivityGroups: ActivityGroup[] = [
+  {
+    label: "Store Operations",
+    activities: [
+      "Shelf stocking",
+      "Cashier operations",
+      "Customer assistance",
+      "Product display setup",
+      "Price labeling",
+      "Manual handling of goods",
+      "Shopping cart collection",
+      "Opening and closing procedures",
+      "Queue management",
+      "Promotional setup",
+    ],
+  },
+  {
+    label: "Storage & Backroom",
+    activities: [
+      "Warehouse storage",
+      "Pallet handling",
+      "Loading/unloading deliveries",
+      "Stockroom organization",
+      "Ladder use",
+      "Waste handling",
+      "Cardboard compactor use",
+      "Forklift operation",
+      "Battery charging",
+      "Delivery inspection",
+    ],
+  },
+  {
+    label: "Cleaning & Maintenance",
+    activities: [
+      "Floor cleaning",
+      "Spill response",
+      "Public restroom cleaning",
+      "Glass cleaning",
+      "Escalator cleaning coordination",
+      "Minor maintenance",
+      "Lighting replacement",
+      "Contractor supervision",
+      "HVAC maintenance",
+      "Waste segregation",
+    ],
+  },
+  {
+    label: "Security & Emergency",
+    activities: [
+      "Security patrol",
+      "Theft prevention",
+      "Aggressive customer management",
+      "Emergency evacuation",
+      "Fire drill",
+      "Lone working",
+      "Incident response",
+      "Parking lot supervision",
+      "Crowd control",
+      "First aid response",
+    ],
+  },
+  {
+    label: "Commercial Facility Operations",
+    activities: [
+      "Shopping mall operations",
+      "Food court cleaning",
+      "Delivery dock operations",
+      "Public area maintenance",
+      "Elevator/escalator use",
+      "Event setup",
+      "Signage installation",
+      "Temporary barricade setup",
+      "External contractor work",
+      "Night cleaning operations",
+    ],
+  },
+];
+
+const educationActivityGroups: ActivityGroup[] = [
+  {
+    label: "Classroom & Teaching Activities",
+    activities: [
+      "Classroom teaching",
+      "Computer lab use",
+      "Science laboratory teaching",
+      "Workshop/practical teaching",
+      "Audio-visual equipment use",
+      "Classroom setup",
+      "Student supervision",
+      "Physical education instruction",
+      "Art and craft activities",
+      "Remote/online teaching",
+    ],
+  },
+  {
+    label: "Student & Public Areas",
+    activities: [
+      "Corridor supervision",
+      "Stairway management",
+      "Playground supervision",
+      "Cafeteria operations",
+      "School transport coordination",
+      "Event management",
+      "Visitor management",
+      "Emergency evacuation drill",
+      "Crowd supervision",
+      "Cleaning coordination",
+    ],
+  },
+  {
+    label: "Laboratories & Workshops",
+    activities: [
+      "Chemical handling in laboratory",
+      "Biological sample handling",
+      "Laboratory equipment use",
+      "Workshop machinery operation",
+      "Welding training",
+      "Electrical training exercises",
+      "Tool handling",
+      "Gas cylinder handling",
+      "Hazardous waste disposal",
+      "PPE management",
+    ],
+  },
+  {
+    label: "Maintenance & Facility Management",
+    activities: [
+      "School maintenance",
+      "Electrical maintenance",
+      "HVAC maintenance",
+      "Cleaning operations",
+      "Waste handling",
+      "Groundskeeping",
+      "Contractor supervision",
+      "Work at height maintenance",
+      "Fire safety inspection",
+      "Manual handling",
+    ],
+  },
+  {
+    label: "Administrative & Support Operations",
+    activities: [
+      "Office work",
+      "Display screen equipment use",
+      "Filing and archive handling",
+      "Printer/copier use",
+      "Reception operations",
+      "Lone working",
+      "Security monitoring",
+      "Stress/workload management",
+      "First aid response",
+      "Documentation handling",
+    ],
+  },
+];
+
 const activityGroupsBySector: Record<string, ActivityGroup[]> = {
   Construction: constructionActivityGroups,
   "Warehouse & Logistics": warehouseActivityGroups,
@@ -724,6 +958,9 @@ const activityGroupsBySector: Record<string, ActivityGroup[]> = {
   "Oil & Gas": oilGasActivityGroups,
   "Mining & Quarrying": miningActivityGroups,
   "Food Production & Processing": foodProductionActivityGroups,
+  "Hospitality & HORECA": hospitalityActivityGroups,
+  "Retail & Commercial Facilities": retailActivityGroups,
+  "Education & Training Facilities": educationActivityGroups,
 };
 
 const sectorOptions = Object.keys(activityGroupsBySector);
@@ -6909,6 +7146,321 @@ const foodProductionCategoryProfiles: Record<
   },
 };
 
+const hospitalityCategoryProfiles: Record<
+  string,
+  SmartSectorCategoryProfile
+> = {
+  "Kitchen & Food Preparation": {
+    people:
+      "Chefs, kitchen assistants, dishwashers, cleaners, supervisors, delivery staff",
+    planningHazard:
+      "can expose workers to hot equipment, sharp tools, fast-paced food preparation, wet floors, and food hygiene pressures",
+    equipmentHazard:
+      "knives, slicers, fryers, ovens, grills, dishwashers, cold rooms, waste bins, and cleaning tools",
+    interfaceHazard:
+      "kitchen staff, cleaners, delivery workers, and supervisors moving through confined hot kitchen areas",
+    exposureHazard:
+      "burns, hot oil splash, cuts, steam, slips, repetitive tasks, manual handling, cold exposure, and biological contamination",
+    emergencyHazard:
+      "fryer fire, serious cut, burn incident, cold room entrapment, food contamination event, or delayed first aid",
+    existingMeasures:
+      "Kitchen procedures, food hygiene rules, PPE, machine guards, cleaning schedules, and supervisor oversight are in place",
+    specificControls:
+      "use cut-resistant controls where needed, keep wet floors controlled, manage hot oil safely, inspect cold room access, and separate clean and dirty workflows",
+    consequence:
+      "Cuts, burns, slips, food contamination, manual handling injury, serious injury",
+  },
+  "Restaurant & Service Operations": {
+    people:
+      "Servers, bartenders, hosts, cashiers, catering staff, customers, supervisors",
+    planningHazard:
+      "can involve high customer traffic, hot food and drink service, manual carrying, glass handling, cash handling, and event pressure",
+    equipmentHazard:
+      "trays, glassware, coffee machines, beverage equipment, buffet tables, cash registers, bar tools, and temporary catering equipment",
+    interfaceHazard:
+      "staff, customers, visitors, event teams, and contractors interacting in dining, bar, buffet, and service areas",
+    exposureHazard:
+      "slips from spills, burns from hot drinks, cuts from glass, repetitive carrying, fatigue, and customer aggression",
+    emergencyHazard:
+      "customer incident, glass breakage, allergic reaction, spill-related fall, cash security incident, or delayed emergency response during events",
+    existingMeasures:
+      "Service procedures, spill response, hygiene rules, supervision, cash handling controls, and customer service escalation routes are available",
+    specificControls:
+      "clean spills promptly, control glass breakage, manage customer conflict, limit tray loads, brief event staff, and keep service routes clear",
+    consequence:
+      "Slips, burns, cuts, strains, stress, customer-related injury",
+  },
+  "Housekeeping & Cleaning": {
+    people:
+      "Housekeepers, cleaners, laundry workers, guests, supervisors, maintenance staff",
+    planningHazard:
+      "can expose workers to room hazards, cleaning chemicals, repetitive bed making, laundry loads, sharps, waste, and biological contamination",
+    equipmentHazard:
+      "cleaning carts, chemicals, vacuum cleaners, laundry machines, linen bags, waste containers, and disinfection supplies",
+    interfaceHazard:
+      "housekeeping teams, guests, maintenance workers, and supervisors moving through rooms, corridors, laundry areas, and service lifts",
+    exposureHazard:
+      "chemical splash, biological exposure, sharps injury, ergonomic strain, slips, trips, dust, and repetitive movement",
+    emergencyHazard:
+      "chemical exposure, sharps injury, aggressive guest encounter, blocked corridor, or delayed reporting of room hazards",
+    existingMeasures:
+      "Cleaning procedures, chemical labels, PPE, linen handling rules, waste controls, and incident reporting routes are in place",
+    specificControls:
+      "segregate chemicals, inspect rooms before cleaning, use safe sharps procedures, rotate repetitive tasks, and keep carts clear of escape routes",
+    consequence:
+      "Chemical irritation, sharps injury, strains, slips, infection exposure, lost time injury",
+  },
+  "Maintenance & Facility Operations": {
+    people:
+      "Maintenance staff, contractors, cleaners, guests, pool attendants, supervisors",
+    planningHazard:
+      "can involve occupied guest areas, electrical systems, HVAC, pool chemicals, work at height, contractors, and emergency equipment checks",
+    equipmentHazard:
+      "hand tools, ladders, electrical equipment, HVAC systems, pool dosing equipment, fire systems, pest control materials, and lifting aids",
+    interfaceHazard:
+      "maintenance staff and contractors working near guests, public routes, housekeeping teams, and occupied hotel facilities",
+    exposureHazard:
+      "electric shock, chemical exposure, falls from height, manual handling, noise, dust, slips, and heat",
+    emergencyHazard:
+      "fire system defect, pool chemical incident, electrical fault, fall from height, contractor incident, or evacuation drill failure",
+    existingMeasures:
+      "Maintenance procedures, contractor controls, fire inspection routines, PPE, permits, and guest area communication are used",
+    specificControls:
+      "segregate work areas, isolate electrical equipment, control pool chemicals, inspect access equipment, brief contractors, and communicate guest restrictions",
+    consequence:
+      "Electric shock, chemical burns, fall injury, fire, guest injury, serious injury",
+  },
+  "Hotel & Guest Safety": {
+    people:
+      "Reception staff, security staff, night workers, guests, visitors, delivery drivers, cleaners",
+    planningHazard:
+      "can involve public access, lone working, aggressive guests, slippery floors, deliveries, parking areas, and emergency evacuation complexity",
+    equipmentHazard:
+      "reception systems, security devices, elevators, parking equipment, cleaning tools, delivery trolleys, and fire alarm systems",
+    interfaceHazard:
+      "guests, staff, delivery drivers, security teams, contractors, and visitors interacting in public areas and entrances",
+    exposureHazard:
+      "stress, fatigue, customer aggression, slips, manual handling, vehicle movement, poor lighting, and lone working risk",
+    emergencyHazard:
+      "fire emergency, security incident, guest medical event, elevator fault, parking incident, or delayed night shift response",
+    existingMeasures:
+      "Guest safety procedures, security escalation, emergency plans, reception controls, cleaning response, and incident reporting are available",
+    specificControls:
+      "maintain public area inspections, support lone workers, manage aggressive behavior, control deliveries, keep exits clear, and verify emergency communication",
+    consequence:
+      "Slips, violence-related injury, stress, fire exposure, vehicle incident, serious injury",
+  },
+};
+
+const retailCategoryProfiles: Record<string, SmartSectorCategoryProfile> = {
+  "Store Operations": {
+    people:
+      "Retail workers, cashiers, supervisors, customers, merchandisers, visitors",
+    planningHazard:
+      "can expose workers and customers to crowded aisles, manual handling, repetitive tasks, customer interaction, and display setup pressures",
+    equipmentHazard:
+      "shelving, display stands, price guns, tills, shopping carts, promotional fixtures, and stock handling tools",
+    interfaceHazard:
+      "staff, customers, merchandisers, cleaners, and supervisors moving through sales floors, queues, and promotional areas",
+    exposureHazard:
+      "slips, trips, strains, repetitive movement, cuts from packaging, fatigue, and customer aggression",
+    emergencyHazard:
+      "customer incident, falling stock, blocked exit, queue crowding, cash security issue, or delayed first aid",
+    existingMeasures:
+      "Store procedures, manual handling guidance, housekeeping routines, supervision, customer service escalation, and first aid arrangements are in place",
+    specificControls:
+      "keep aisles clear, limit manual loads, secure displays, manage queues, report damaged fixtures, and escalate aggressive behavior early",
+    consequence:
+      "Slips, strains, cuts, falling stock injury, stress, lost time injury",
+  },
+  "Storage & Backroom": {
+    people:
+      "Stockroom staff, delivery drivers, forklift operators, supervisors, contractors",
+    planningHazard:
+      "can involve congested stockrooms, unstable pallets, ladder access, delivery pressure, compactors, and battery charging hazards",
+    equipmentHazard:
+      "pallets, ladders, forklifts, pallet trucks, compactors, chargers, racking, delivery cages, and waste handling equipment",
+    interfaceHazard:
+      "stock handlers, delivery drivers, forklift operators, waste contractors, and sales staff sharing backroom and dock areas",
+    exposureHazard:
+      "manual handling, falling goods, ladder falls, crush points, electrical charging hazards, slips, and poor housekeeping",
+    emergencyHazard:
+      "load collapse, compactor incident, battery fire, delivery vehicle incident, blocked stockroom route, or delayed emergency access",
+    existingMeasures:
+      "Backroom rules, delivery procedures, racking controls, manual handling guidance, PPE, and housekeeping inspections are used",
+    specificControls:
+      "segregate pedestrians and equipment, inspect ladders and pallets, control compactor use, keep charging areas ventilated, and maintain clear exits",
+    consequence:
+      "Crush injury, fall injury, strains, fire, electric shock, serious injury",
+  },
+  "Cleaning & Maintenance": {
+    people:
+      "Cleaners, facilities staff, retail workers, contractors, customers, visitors",
+    planningHazard:
+      "can expose public areas to wet floors, cleaning chemicals, maintenance tools, contractor work, and building service defects",
+    equipmentHazard:
+      "cleaning machines, chemicals, ladders, lighting equipment, HVAC systems, tools, restroom supplies, and waste containers",
+    interfaceHazard:
+      "cleaners, customers, contractors, staff, and facilities teams working in occupied retail areas",
+    exposureHazard:
+      "slips on wet floors, chemical contact, dust, electrical exposure, manual handling, poor lighting, and public interaction",
+    emergencyHazard:
+      "chemical spill, fall in public area, lighting failure, contractor incident, escalator cleaning interface, or blocked emergency route",
+    existingMeasures:
+      "Cleaning schedules, wet floor controls, contractor sign-in, maintenance reporting, PPE, and public area inspections are in place",
+    specificControls:
+      "segregate cleaning zones, use correct chemical dilution, schedule maintenance safely, supervise contractors, and close defects promptly",
+    consequence:
+      "Slips, chemical irritation, electric shock, cuts, customer injury, lost time injury",
+  },
+  "Security & Emergency": {
+    people:
+      "Retail workers, security officers, customers, visitors, first aiders, emergency responders",
+    planningHazard:
+      "can involve theft prevention, aggressive customers, lone working, crowd movement, emergency evacuation, and incident response pressure",
+    equipmentHazard:
+      "radios, CCTV systems, alarms, barriers, first aid kits, fire equipment, security doors, and parking controls",
+    interfaceHazard:
+      "security staff, customers, store teams, emergency responders, and public crowds interacting during incidents",
+    exposureHazard:
+      "violence, stress, fatigue, slips during evacuation, crowd pressure, poor visibility, and vehicle movement in parking areas",
+    emergencyHazard:
+      "fire alarm, violence incident, medical event, crowd surge, parking lot incident, or delayed emergency communication",
+    existingMeasures:
+      "Emergency plans, security procedures, first aid cover, fire drills, incident reporting, and communication systems are available",
+    specificControls:
+      "avoid unsafe confrontation, call support early, keep exits clear, brief staff on evacuation roles, manage crowds, and document incidents",
+    consequence:
+      "Violence-related injury, stress, crowd injury, fire exposure, serious injury",
+  },
+  "Commercial Facility Operations": {
+    people:
+      "Facilities staff, tenants, cleaners, contractors, customers, delivery drivers, event teams",
+    planningHazard:
+      "can involve multi-tenant public areas, delivery docks, escalators, events, temporary barricades, signage work, and night cleaning",
+    equipmentHazard:
+      "elevators, escalators, barriers, signs, cleaning machines, dock equipment, event fixtures, tools, and access equipment",
+    interfaceHazard:
+      "public users, tenants, contractors, delivery drivers, cleaners, and event teams sharing commercial facility spaces",
+    exposureHazard:
+      "slips, trips, falls, manual handling, electrical hazards, cleaning chemical exposure, crowding, and vehicle interface",
+    emergencyHazard:
+      "escalator incident, public area fire, dock collision, event crowd issue, contractor incident, or night cleaning emergency",
+    existingMeasures:
+      "Facility procedures, contractor controls, public area inspections, emergency plans, signage, and tenant communication are in place",
+    specificControls:
+      "coordinate tenant and contractor work, inspect public routes, control event setups, segregate docks, maintain barricades, and verify night worker communication",
+    consequence:
+      "Public injury, slips, collision, fire, contractor injury, serious injury",
+  },
+};
+
+const educationCategoryProfiles: Record<
+  string,
+  SmartSectorCategoryProfile
+> = {
+  "Classroom & Teaching Activities": {
+    people:
+      "Teachers, students, teaching assistants, trainers, visitors, support staff",
+    planningHazard:
+      "can involve student supervision, classroom setup, equipment use, practical demonstrations, screen-based teaching, and changing classroom conditions",
+    equipmentHazard:
+      "computers, audio-visual equipment, classroom furniture, art tools, PE equipment, practical teaching aids, and electrical leads",
+    interfaceHazard:
+      "students, teachers, assistants, visitors, and support staff interacting in classrooms, labs, workshops, and online teaching environments",
+    exposureHazard:
+      "slips, trips, ergonomic strain, eye strain, student behavior risks, minor cuts, noise, and stress",
+    emergencyHazard:
+      "student injury, equipment fault, behavior escalation, fire alarm disruption, or delayed emergency communication",
+    existingMeasures:
+      "Classroom rules, supervision procedures, equipment checks, safeguarding arrangements, first aid routes, and teaching plans are in place",
+    specificControls:
+      "brief students, keep routes clear, inspect teaching equipment, supervise practical work closely, manage behavior early, and report defects",
+    consequence:
+      "Slips, minor injury, stress, ergonomic discomfort, student injury, lost time injury",
+  },
+  "Student & Public Areas": {
+    people:
+      "Students, teachers, visitors, cleaners, cafeteria staff, transport coordinators",
+    planningHazard:
+      "can expose people to crowded movement, stair use, playground activities, transport interface, events, visitors, and emergency drill conditions",
+    equipmentHazard:
+      "stairs, playground equipment, cafeteria equipment, transport barriers, event fixtures, cleaning tools, and visitor management systems",
+    interfaceHazard:
+      "students, staff, visitors, transport providers, cleaners, and event teams sharing public and circulation areas",
+    exposureHazard:
+      "slips, trips, falls, crowding, student behavior, food service burns, vehicle movement, and poor weather",
+    emergencyHazard:
+      "evacuation delay, playground injury, transport incident, crowd surge, visitor security issue, or delayed first aid",
+    existingMeasures:
+      "Supervision plans, visitor controls, transport procedures, cleaning coordination, emergency drills, and first aid arrangements are used",
+    specificControls:
+      "position supervisors visibly, keep corridors clear, control stairs and crossings, inspect playgrounds, brief visitors, and maintain evacuation routes",
+    consequence:
+      "Falls, crowd injury, vehicle incident, burns, student injury, serious injury",
+  },
+  "Laboratories & Workshops": {
+    people:
+      "Students, teachers, laboratory technicians, workshop instructors, maintenance staff",
+    planningHazard:
+      "can involve chemicals, biological materials, workshop machinery, welding, electrical training, gas cylinders, tools, and PPE compliance",
+    equipmentHazard:
+      "laboratory glassware, chemicals, biological samples, workshop machines, welding sets, electrical training boards, tools, and gas cylinders",
+    interfaceHazard:
+      "students, teachers, technicians, and support staff working closely during practical experiments and workshop demonstrations",
+    exposureHazard:
+      "chemical contact, biological exposure, cuts, burns, electric shock, fumes, noise, dust, and eye injury",
+    emergencyHazard:
+      "chemical spill, fire, gas leak, tool injury, electrical incident, PPE failure, or delayed first aid during practical sessions",
+    existingMeasures:
+      "Risk assessments, supervision ratios, PPE rules, safety data sheets, machine guards, and emergency equipment are available",
+    specificControls:
+      "pre-brief practical tasks, control hazardous substances, inspect tools and guards, supervise high-risk activities, and segregate waste correctly",
+    consequence:
+      "Chemical burns, cuts, electric shock, fire, biological exposure, serious injury",
+  },
+  "Maintenance & Facility Management": {
+    people:
+      "Facilities staff, cleaners, contractors, teachers, students, visitors",
+    planningHazard:
+      "can involve occupied buildings, electrical work, HVAC, cleaning, groundskeeping, contractor activity, work at height, and manual handling",
+    equipmentHazard:
+      "tools, ladders, electrical panels, HVAC units, cleaning machines, groundskeeping equipment, waste containers, and fire systems",
+    interfaceHazard:
+      "facilities staff and contractors working near students, teachers, visitors, public routes, and active learning areas",
+    exposureHazard:
+      "electric shock, slips, dust, noise, manual handling, work at height, cleaning chemicals, and vehicle or groundskeeping equipment interaction",
+    emergencyHazard:
+      "contractor incident, blocked exit, fire system defect, fall from height, equipment failure, or delayed defect reporting",
+    existingMeasures:
+      "Facilities procedures, contractor supervision, permits where required, PPE, fire inspections, and maintenance reporting systems are used",
+    specificControls:
+      "segregate work areas from students, schedule disruptive work safely, inspect access equipment, supervise contractors, and keep emergency routes available",
+    consequence:
+      "Falls, electric shock, strains, contractor injury, fire risk, serious injury",
+  },
+  "Administrative & Support Operations": {
+    people:
+      "Administrative staff, reception staff, teachers, support workers, visitors, first aiders",
+    planningHazard:
+      "can involve office ergonomics, reception interactions, lone working, security monitoring, workload pressure, first aid response, and document handling",
+    equipmentHazard:
+      "display screens, printers, copiers, filing cabinets, reception systems, security monitors, first aid kits, and office furniture",
+    interfaceHazard:
+      "staff, students, parents, visitors, security personnel, and first aiders interacting through reception and support areas",
+    exposureHazard:
+      "ergonomic strain, eye strain, stress, manual handling, paper cuts, toner exposure, lone working, and difficult public interactions",
+    emergencyHazard:
+      "visitor security concern, first aid incident, workload stress escalation, lone worker emergency, or documentation failure during an incident",
+    existingMeasures:
+      "Office procedures, DSE guidance, visitor management, first aid arrangements, security protocols, and workload reporting routes are available",
+    specificControls:
+      "complete workstation checks, manage visitor access, support lone workers, escalate stress concerns, store documents safely, and verify first aid readiness",
+    consequence:
+      "Musculoskeletal discomfort, stress, security incident, manual handling injury, delayed first aid",
+  },
+};
+
 const createSmartSectorRiskAssessmentLibrary = (
   sector: string,
   groups: ActivityGroup[],
@@ -6972,6 +7524,25 @@ const foodProductionRiskAssessmentLibrary =
     foodProductionCategoryProfiles,
   );
 
+const hospitalityRiskAssessmentLibrary =
+  createSmartSectorRiskAssessmentLibrary(
+    "Hospitality & HORECA",
+    hospitalityActivityGroups,
+    hospitalityCategoryProfiles,
+  );
+
+const retailRiskAssessmentLibrary = createSmartSectorRiskAssessmentLibrary(
+  "Retail & Commercial Facilities",
+  retailActivityGroups,
+  retailCategoryProfiles,
+);
+
+const educationRiskAssessmentLibrary = createSmartSectorRiskAssessmentLibrary(
+  "Education & Training Facilities",
+  educationActivityGroups,
+  educationCategoryProfiles,
+);
+
 const riskAssessmentLibraryBySector: Record<
   string,
   Record<string, { title: string; createHazards: () => HazardRow[] }>
@@ -6984,6 +7555,9 @@ const riskAssessmentLibraryBySector: Record<
   "Oil & Gas": oilGasRiskAssessmentLibrary,
   "Mining & Quarrying": miningRiskAssessmentLibrary,
   "Food Production & Processing": foodProductionRiskAssessmentLibrary,
+  "Hospitality & HORECA": hospitalityRiskAssessmentLibrary,
+  "Retail & Commercial Facilities": retailRiskAssessmentLibrary,
+  "Education & Training Facilities": educationRiskAssessmentLibrary,
 };
 
 const toRiskValue = (value: string): RiskValue => Number(value) as RiskValue;
