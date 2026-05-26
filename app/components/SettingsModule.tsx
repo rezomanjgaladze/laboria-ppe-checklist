@@ -13,7 +13,6 @@ import {
   Download,
   FileText,
   GraduationCap,
-  Lock,
   Moon,
   Save,
   Settings,
@@ -146,7 +145,7 @@ const settingsSections: SettingsSection[] = [
   {
     id: "billing-subscription",
     label: "Billing & Subscription",
-    description: "Plan overview and future upgrade paths.",
+    description: "Orbit plans and AI credit options.",
     icon: CreditCard,
   },
   {
@@ -190,37 +189,85 @@ const incidentStatusOptions = [
 
 const planCards = [
   {
-    name: "Starter",
-    badge: "Current foundation",
-    tone: "from-slate-500/15 to-slate-400/5",
-    description: "Essential digital inspection workflows for smaller teams.",
-    features: ["Basic inspections", "Limited records", "Limited employees"],
+    name: "Orbit Starter",
+    price: "FREE",
+    badge: "Current Plan",
+    tone: "from-slate-500/18 to-slate-400/6",
+    description: "Core HSE operations for small teams getting started with Laboria Orbit.",
+    features: [
+      "Full Action Tracker",
+      "3 Inspection Templates: General, PPE, Fire",
+      "1 Risk Assessment",
+      "Training Management up to 5 Employees",
+      "1 Incident Investigation per Month",
+      "Full HSE Analytics Access",
+      "0 AI Credits Included",
+      "AI Top-Up available: 50 Credits for $7",
+    ],
+    buttonLabel: "Current Plan",
+    current: true,
   },
   {
-    name: "Professional",
-    badge: "Operational platform",
-    tone: "from-[#1E90FF]/25 to-[#4DEBFF]/10",
-    description: "Full HSE workspace for day-to-day operational control.",
+    name: "Orbit Plus",
+    price: "$19",
+    period: "/ month",
+    badge: "Most Popular",
+    tone: "from-[#1E90FF]/34 to-[#4DEBFF]/16",
+    description: "Unlimited operational workflows for active HSE teams.",
     features: [
-      "Full operational platform",
-      "Incidents and training",
-      "Analytics workspace",
-      "Unlimited workflows",
+      "Full Action Tracker",
+      "Unlimited Inspections",
+      "Unlimited Risk Assessments",
+      "Unlimited Training Management",
+      "Unlimited Incident Workflows",
+      "Full HSE Analytics",
+      "100 AI Credits / Month Included",
+      "Discounted AI Top-Ups: 100 Credits for $8",
     ],
+    buttonLabel: "Upgrade to Plus",
+    popular: true,
   },
   {
-    name: "Enterprise AI",
-    badge: "Coming soon",
-    tone: "from-violet-500/25 to-[#4DEBFF]/10",
-    description: "Future intelligent layer for proactive HSE management.",
+    name: "Orbit Pro",
+    price: "$49",
+    period: "/ month",
+    badge: "AI Powered",
+    tone: "from-violet-500/30 via-[#1E90FF]/18 to-[#4DEBFF]/12",
+    description: "Advanced AI operations and enterprise intelligence for mature HSE programs.",
     features: [
-      "AI toolbox talks",
-      "AI incident assistant",
-      "AI corrective action recommendations",
-      "AI risk assessment helper",
-      "AI trend detection",
-      "AI compliance assistant",
+      "Everything in Orbit Plus",
+      "300 AI Credits / Month Included",
+      "Advanced AI Operations",
+      "Predictive AI Features",
+      "Enterprise Intelligence",
+      "Priority AI Processing",
+      "Best AI Credit Pricing: 100 Credits for $5",
     ],
+    buttonLabel: "Upgrade to Pro",
+    premium: true,
+  },
+];
+
+const aiCreditPacks = [
+  {
+    name: "Starter Top-Up",
+    credits: "50 AI Credits",
+    price: "$7",
+    tone: "from-slate-500/16 to-slate-400/5",
+  },
+  {
+    name: "Orbit Plus Discount Pack",
+    credits: "100 AI Credits",
+    price: "$8",
+    tone: "from-[#1E90FF]/24 to-[#4DEBFF]/10",
+    badge: "Plus",
+  },
+  {
+    name: "Orbit Pro Best Value Pack",
+    credits: "100 AI Credits",
+    price: "$5",
+    tone: "from-violet-500/26 to-[#4DEBFF]/12",
+    badge: "Best Value",
   },
 ];
 
@@ -1029,21 +1076,99 @@ export default function SettingsModule({
   const renderBilling = () => (
     <SettingsCard
       title="Billing & Subscription"
-      description="Future subscription architecture for scaling Laboria from teams to enterprise AI."
+      description="Choose the Orbit plan that fits your health and safety operations, AI usage, and team size."
       icon={CreditCard}
       theme={theme}
     >
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
+        <div
+          className={joinClasses(
+            "relative overflow-hidden rounded-3xl border p-5",
+            darkMode
+              ? "border-[#4DEBFF]/20 bg-[#061124]/84 shadow-[0_18px_60px_rgba(77,235,255,0.08)]"
+              : "border-[#1E90FF]/20 bg-white shadow-[0_18px_50px_rgba(30,144,255,0.09)]",
+          )}
+        >
+          <div className="absolute right-[-3rem] top-[-3rem] h-36 w-36 rounded-full bg-[#4DEBFF]/14 blur-3xl" />
+          <div className="relative">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div
+                  className={joinClasses(
+                    "text-xs font-bold uppercase tracking-[0.18em]",
+                    theme.label,
+                  )}
+                >
+                  Current AI Credits
+                </div>
+                <div className={joinClasses("mt-3 text-4xl font-bold", theme.heading)}>
+                  0
+                </div>
+                <div className={joinClasses("mt-1 text-sm font-semibold", theme.soft)}>
+                  Credits Available
+                </div>
+              </div>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#4DEBFF]/25 bg-[#1E90FF]/15 text-[#4DEBFF]">
+                <Sparkles size={22} aria-hidden />
+              </span>
+            </div>
+            <div className={joinClasses("mt-5 rounded-2xl border p-4", theme.panelSoft)}>
+              <div className={joinClasses("text-xs font-bold uppercase tracking-[0.16em]", theme.label)}>
+                Current Plan
+              </div>
+              <div className={joinClasses("mt-2 text-lg font-bold", theme.heading)}>
+                Orbit Starter
+              </div>
+              <p className={joinClasses("mt-2 text-sm leading-6", theme.muted)}>
+                Billing actions are UI-only for now. Payment processing and
+                live credit accounting will be connected later.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className={joinClasses("rounded-3xl border p-5", theme.panelSoft)}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className={joinClasses("text-lg font-bold", theme.heading)}>
+                Laboria Orbit SaaS Plans
+              </div>
+              <p className={joinClasses("mt-2 max-w-2xl text-sm leading-6", theme.muted)}>
+                Start with operational HSE tools, then scale into monthly AI
+                credits and advanced intelligence features as usage grows.
+              </p>
+            </div>
+            <span
+              className={joinClasses(
+                "inline-flex w-fit rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.14em]",
+                theme.badge,
+              )}
+            >
+              Payments not connected
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4 xl:grid-cols-3">
         {planCards.map((plan) => (
           <div
             key={plan.name}
             className={joinClasses(
-              "relative overflow-hidden rounded-3xl border p-5",
+              "relative overflow-hidden rounded-3xl border p-5 transition hover:-translate-y-0.5",
               theme.panel,
+              plan.popular &&
+                (darkMode
+                  ? "border-[#4DEBFF]/40 shadow-[0_22px_80px_rgba(77,235,255,0.12)]"
+                  : "border-[#1E90FF]/35 shadow-[0_22px_70px_rgba(30,144,255,0.14)]"),
+              plan.premium &&
+                (darkMode
+                  ? "border-violet-300/30 shadow-[0_22px_80px_rgba(139,92,246,0.12)]"
+                  : "border-violet-300/45 shadow-[0_22px_70px_rgba(139,92,246,0.12)]"),
             )}
           >
             <div
-              className={`absolute inset-x-0 top-0 h-28 bg-gradient-to-br ${plan.tone}`}
+              className={`absolute inset-x-0 top-0 h-36 bg-gradient-to-br ${plan.tone}`}
             />
             <div className="relative">
               <div className="flex items-start justify-between gap-3">
@@ -1060,10 +1185,31 @@ export default function SettingsModule({
                     {plan.badge}
                   </div>
                 </div>
-                {plan.name === "Enterprise AI" ? (
-                  <Lock size={20} className="text-[#4DEBFF]" aria-hidden />
+                {plan.premium ? (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-violet-300/30 bg-violet-500/12 text-violet-300">
+                    <Cpu size={19} aria-hidden />
+                  </span>
+                ) : plan.popular ? (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#4DEBFF]/28 bg-[#1E90FF]/16 text-[#4DEBFF]">
+                    <Sparkles size={19} aria-hidden />
+                  </span>
                 ) : null}
               </div>
+              <div className="mt-5 flex items-end gap-2">
+                <span className={joinClasses("text-4xl font-bold tracking-tight", theme.heading)}>
+                  {plan.price}
+                </span>
+                {plan.period ? (
+                  <span className={joinClasses("pb-1 text-sm font-semibold", theme.muted)}>
+                    {plan.period}
+                  </span>
+                ) : null}
+              </div>
+              {plan.premium ? (
+                <div className="mt-3 inline-flex rounded-full border border-violet-300/30 bg-violet-500/10 px-3 py-1 text-xs font-bold text-violet-300">
+                  Best for advanced operations
+                </div>
+              ) : null}
               <p className={joinClasses("mt-4 min-h-12 text-sm leading-6", theme.muted)}>
                 {plan.description}
               </p>
@@ -1084,39 +1230,95 @@ export default function SettingsModule({
               </div>
               <button
                 type="button"
-                onClick={() => setNotice("Subscription upgrades are not connected yet.")}
+                onClick={() =>
+                  setNotice(
+                    plan.current
+                      ? "Orbit Starter is the current plan."
+                      : "Plan upgrades are UI-only for now. Payments are not connected yet.",
+                  )
+                }
                 className={joinClasses(
                   "mt-6 w-full rounded-xl border px-4 py-3 text-sm font-semibold transition",
-                  plan.name === "Professional"
+                  plan.popular
                     ? "border-[#1E90FF] bg-[#1E90FF] text-white hover:bg-[#1878d6]"
+                    : plan.premium
+                      ? "border-violet-400/45 bg-violet-500/18 text-violet-100 hover:bg-violet-500/24"
                     : theme.buttonGhost,
                 )}
               >
-                {plan.name === "Starter" ? "Current Plan" : "View Upgrade Path"}
+                {plan.buttonLabel}
               </button>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-3">
-        {[
-          ["Records", "Usage placeholder"],
-          ["Employees", "Plan capacity placeholder"],
-          ["AI Credits", "Enterprise AI coming soon"],
-        ].map(([label, value]) => (
+      <div className="mt-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h3 className={joinClasses("text-xl font-bold", theme.heading)}>
+              AI Credit Packs
+            </h3>
+            <p className={joinClasses("mt-2 max-w-3xl text-sm leading-6", theme.muted)}>
+              AI credits are used for AI toolbox talks, risk assessment
+              generation, incident assistance, corrective action recommendations,
+              inspection analysis, and document generation.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          {aiCreditPacks.map((pack) => (
           <div
-            key={label}
-            className={joinClasses("rounded-2xl border p-4", theme.panelSoft)}
+            key={pack.name}
+            className={joinClasses("relative overflow-hidden rounded-3xl border p-5", theme.panel)}
           >
-            <div className={joinClasses("text-xs font-bold uppercase tracking-[0.16em]", theme.label)}>
-              {label}
-            </div>
-            <div className={joinClasses("mt-2 text-sm font-semibold", theme.heading)}>
-              {value}
+            <div
+              className={`absolute inset-x-0 top-0 h-24 bg-gradient-to-br ${pack.tone}`}
+            />
+            <div className="relative">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className={joinClasses("text-base font-bold", theme.heading)}>
+                    {pack.name}
+                  </div>
+                  {pack.badge ? (
+                    <div
+                      className={joinClasses(
+                        "mt-2 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]",
+                        theme.badge,
+                      )}
+                    >
+                      {pack.badge}
+                    </div>
+                  ) : null}
+                </div>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#4DEBFF]/25 bg-[#1E90FF]/12 text-[#4DEBFF]">
+                  <CreditCard size={18} aria-hidden />
+                </span>
+              </div>
+              <div className={joinClasses("mt-5 text-2xl font-bold", theme.heading)}>
+                {pack.credits}
+              </div>
+              <div className={joinClasses("mt-1 text-lg font-semibold", theme.soft)}>
+                {pack.price}
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setNotice("AI credit purchases are UI-only for now. Payments are not connected yet.")
+                }
+                className={joinClasses(
+                  "mt-5 w-full rounded-xl border px-4 py-3 text-sm font-semibold transition",
+                  theme.buttonGhost,
+                )}
+              >
+                Buy Credits
+              </button>
             </div>
           </div>
-        ))}
+          ))}
+        </div>
       </div>
     </SettingsCard>
   );
