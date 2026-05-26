@@ -143,6 +143,10 @@ body {
   max-width: 17rem;
 }
 
+.laboria-auth-capability-card {
+  animation: laboria-auth-card-float 7.5s ease-in-out infinite;
+}
+
 .laboria-auth-panel-sheen {
   background:
     linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.08) 18%, transparent 36%),
@@ -251,6 +255,16 @@ body {
   }
 }
 
+@keyframes laboria-auth-card-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .laboria-auth-blueprint,
   .laboria-auth-scan,
@@ -259,6 +273,7 @@ body {
   .laboria-auth-coordinate,
   .laboria-auth-map,
   .laboria-auth-ring,
+  .laboria-auth-capability-card,
   .laboria-auth-logo-light,
   .laboria-auth-panel-sheen {
     animation: none;

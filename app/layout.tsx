@@ -18,9 +18,9 @@ const notoGeorgian = Noto_Sans_Georgian({
 });
 
 export const metadata: Metadata = {
-  title: "Laboria Safety Checklists",
+  title: "Laboria HSE Workspace",
   description:
-    "Digital health and safety inspection checklists for modern workplaces.",
+    "Enterprise HSE operational workspace for inspections, incidents, training, analytics, and AI-driven safety workflows.",
 };
 
 export default function RootLayout({
