@@ -18,9 +18,9 @@ const notoGeorgian = Noto_Sans_Georgian({
 });
 
 export const metadata: Metadata = {
-  title: "Laboria HSE Workspace",
+  title: "Laboria Orbit",
   description:
-    "Enterprise HSE operational workspace for inspections, incidents, training, analytics, and AI-driven safety workflows.",
+    "AI-Powered Health & Safety Workspace for inspections, risk assessments, actions, training, incidents, and analytics.",
 };
 
 export default function RootLayout({

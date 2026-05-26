@@ -7,7 +7,6 @@ import {
   Activity,
   ArrowRight,
   BarChart3,
-  BrainCircuit,
   ClipboardCheck,
   Fingerprint,
   Gauge,
@@ -43,9 +42,9 @@ const providerOptions: Record<
 const PRODUCTION_SITE_URL = "https://laboria-ppe-checklist.vercel.app";
 
 const systemReadouts = [
-  { label: "Workspace Core", value: "Operational", icon: Activity },
-  { label: "Access Layer", value: "Protected", icon: LockKeyhole },
-  { label: "Intelligence Layer", value: "Preparing", icon: BrainCircuit },
+  { label: "Orbit Core", value: "Operational", icon: Activity },
+  { label: "Secure Access", value: "Protected", icon: LockKeyhole },
+  { label: "Safety Workspace", value: "Connected", icon: ShieldCheck },
 ];
 
 const capabilityPreviews = [
@@ -56,13 +55,13 @@ const capabilityPreviews = [
     accent: "text-emerald-300",
   },
   {
-    label: "Incident Workflow Engine",
+    label: "Incident Workflows",
     value: "Active",
     icon: TriangleAlert,
     accent: "text-amber-200",
   },
   {
-    label: "Risk Assessment Monitoring",
+    label: "Risk Assessments",
     value: "Active",
     icon: ShieldCheck,
     accent: "text-[#4DEBFF]",
@@ -78,12 +77,6 @@ const capabilityPreviews = [
     value: "Active",
     icon: BarChart3,
     accent: "text-cyan-200",
-  },
-  {
-    label: "AI Intelligence Layer",
-    value: "Coming Soon",
-    icon: BrainCircuit,
-    accent: "text-violet-200",
   },
 ];
 
@@ -218,7 +211,7 @@ export default function LoginPage() {
 
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#4DEBFF]/18 bg-[#F5F7FA]/[0.055] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#BFF8FF] shadow-[0_0_40px_rgba(77,235,255,0.08)] backdrop-blur-xl">
             <ScanLine size={14} aria-hidden />
-            Operational HSE platform access
+            Laboria Orbit secure access
           </div>
 
           <div className="relative flex items-center justify-center">
@@ -235,7 +228,7 @@ export default function LoginPage() {
               className="laboria-auth-ring laboria-auth-ring-slow absolute h-[min(62vw,22rem)] w-[min(62vw,22rem)] rounded-full border border-[#1E90FF]/18"
             />
 
-            <div className="relative flex h-[min(58vw,15rem)] w-[min(58vw,15rem)] items-center justify-center rounded-full border border-white/10 bg-[#F5F7FA]/[0.075] p-7 shadow-[0_38px_120px_rgba(0,0,0,0.46),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl sm:h-60 sm:w-60 sm:p-8 lg:h-64 lg:w-64 lg:p-9">
+            <div className="relative flex h-[min(58vw,15rem)] w-[min(58vw,15rem)] items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#F5F7FA]/[0.075] p-7 shadow-[0_38px_120px_rgba(0,0,0,0.46),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl sm:h-60 sm:w-60 sm:p-8 lg:h-64 lg:w-64 lg:p-9">
               <div
                 aria-hidden
                 className="absolute inset-4 rounded-full border border-[#4DEBFF]/12"
@@ -244,30 +237,31 @@ export default function LoginPage() {
                 aria-hidden
                 className="laboria-auth-logo-light absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(77,235,255,0.24),transparent_58%)]"
               />
-              <div className="relative z-10 rounded-2xl border border-white/60 bg-white px-5 py-4 shadow-[0_22px_70px_rgba(77,235,255,0.22)] sm:px-6 sm:py-5">
-                <Image
-                  src="/laboria-logo.png"
-                  alt="Laboria"
-                  width={520}
-                  height={170}
-                  className="h-auto w-full max-w-[190px] object-contain sm:max-w-[215px] lg:max-w-[230px]"
-                  priority
-                />
-              </div>
+              <div
+                aria-hidden
+                className="absolute h-36 w-36 rounded-full bg-[#F5F7FA]/10 blur-2xl sm:h-44 sm:w-44"
+              />
+              <Image
+                src="/laboria-logo.png"
+                alt="Laboria"
+                width={520}
+                height={170}
+                className="relative z-10 h-auto w-[min(95vw,26rem)] max-w-none object-contain brightness-110 contrast-110 saturate-125 drop-shadow-[0_0_30px_rgba(77,235,255,0.38)]"
+                priority
+              />
             </div>
           </div>
 
           <div className="mt-5 max-w-4xl text-center sm:mt-6">
             <h1 className="text-balance text-4xl font-semibold leading-[1.02] text-[#F5F7FA] sm:text-5xl lg:text-6xl">
-              Laboria HSE Workspace
+              Laboria Orbit
             </h1>
             <h2 className="mx-auto mt-3 max-w-3xl text-pretty text-xl font-medium leading-tight text-[#BFF8FF] sm:text-2xl">
-              Enterprise HSE operational workspace for inspections, incidents,
-              training, analytics, and AI-driven safety workflows.
+              AI-Powered Health & Safety Workspace
             </h2>
             <p className="mx-auto mt-3 max-w-3xl text-pretty text-base leading-7 text-slate-300">
-              Integrated industrial safety, risk, incident, training, and
-              operational intelligence workspace for modern industrial teams.
+              Connect inspections, risk assessments, actions, training,
+              incidents, and analytics in one intelligent safety workspace.
             </p>
           </div>
 
@@ -302,11 +296,6 @@ export default function LoginPage() {
                 </div>
               );
             })}
-          </div>
-
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-violet-300/18 bg-violet-400/[0.07] px-4 py-2 text-xs font-semibold text-violet-100 shadow-[0_0_48px_rgba(139,92,246,0.12)] backdrop-blur-xl">
-            <BrainCircuit size={14} aria-hidden />
-            Future AI-powered HSE intelligence layer
           </div>
 
           <div className="relative mt-5 w-full max-w-[31rem] sm:mt-6">
@@ -385,7 +374,7 @@ export default function LoginPage() {
                     aria-hidden
                   />
                   <span>
-                    Secure access for authorized industrial safety and
+                    Secure access for authorized health, safety, and
                     operational teams.
                   </span>
                 </div>
@@ -439,6 +428,15 @@ export default function LoginPage() {
                 </div>
               );
             })}
+          </div>
+
+          <div className="mt-8 text-center text-xs text-slate-400 sm:mt-10">
+            <p className="font-semibold tracking-[0.2em] text-[#F5F7FA]/80">
+              Powered by Laboria
+            </p>
+            <p className="mt-1 uppercase tracking-[0.3em] text-[#4DEBFF]/75">
+              Global HSE Solutions
+            </p>
           </div>
         </div>
       </section>
