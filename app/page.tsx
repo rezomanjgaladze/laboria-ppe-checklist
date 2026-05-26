@@ -35,6 +35,7 @@ import RiskAssessmentsModule from "./components/RiskAssessmentsModule";
 import TrainingManagementModule from "./components/TrainingManagementModule";
 import IncidentManagementModule from "./components/IncidentManagementModule";
 import HseAnalyticsModule from "./components/HseAnalyticsModule";
+import SettingsModule from "./components/SettingsModule";
 import { createClient } from "@/lib/supabase/client";
 import {
   appendActionTrackerAction,
@@ -43,6 +44,14 @@ import {
   getDateInputDaysFromNow,
   type ActionPriority,
 } from "@/app/lib/actionTracker";
+import {
+  defaultWorkspaceSettings,
+  hasCompanyBranding,
+  readWorkspaceSettings,
+  workspaceSettingsUpdatedEvent,
+  writeWorkspaceSettings,
+  type WorkspaceSettings,
+} from "@/app/lib/workspaceSettings";
 import type { User } from "@supabase/supabase-js";
 
 type InspectionResult = {
@@ -279,8 +288,8 @@ const WORKSPACE_MODULES: WorkspaceModule[] = [
     id: "settings",
     label: "Settings",
     description:
-      "Workspace preferences, organization details, and configuration will be managed here.",
-    status: "Coming Soon",
+      "Configure company branding, preferences, workflow settings, exports, subscription, and AI readiness.",
+    status: "Active",
     icon: Settings,
   },
 ];
@@ -586,6 +595,8 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [authProfile, setAuthProfile] = useState<AuthProfile | null>(null);
+  const [workspaceSettings, setWorkspaceSettings] =
+    useState<WorkspaceSettings>(defaultWorkspaceSettings);
   const [history, setHistory] = useState<SavedInspection[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [historyNotice, setHistoryNotice] = useState<HistoryNotice | null>(
@@ -640,6 +651,54 @@ export default function Home() {
   }, [supabase]);
 
   useEffect(() => {
+    const loadWorkspaceSettings = (applyDefaultModule = false) => {
+      const storedSettings = readWorkspaceSettings(authUserId);
+      setWorkspaceSettings(storedSettings);
+      setDarkMode(storedSettings.preferences.themeMode === "dark");
+      setLang(storedSettings.preferences.language);
+
+      if (applyDefaultModule) {
+        setActiveWorkspaceModule(storedSettings.preferences.defaultDashboardPage);
+      }
+    };
+
+    loadWorkspaceSettings(true);
+
+    const handleSettingsUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<WorkspaceSettings>;
+
+      if (customEvent.detail) {
+        setWorkspaceSettings(customEvent.detail);
+        setDarkMode(customEvent.detail.preferences.themeMode === "dark");
+        setLang(customEvent.detail.preferences.language);
+        return;
+      }
+
+      loadWorkspaceSettings();
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (!event.key || event.key.includes("workspace_settings")) {
+        loadWorkspaceSettings();
+      }
+    };
+
+    window.addEventListener(
+      workspaceSettingsUpdatedEvent,
+      handleSettingsUpdate,
+    );
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        workspaceSettingsUpdatedEvent,
+        handleSettingsUpdate,
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [authUserId]);
+
+  useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       try {
         setHistory(loadHistoryForChecklist(activeChecklistId, authUserId));
@@ -660,8 +719,9 @@ export default function Home() {
     skipNextAutosaveRef.current = true;
 
     const draft = readDraftForChecklist(activeChecklistId, authUserId);
-    const nextCompany = draft?.company ?? "";
-    const nextSite = draft?.site ?? "";
+    const profileDefaults = readWorkspaceSettings(authUserId).companyProfile;
+    const nextCompany = draft?.company ?? profileDefaults.companyName ?? "";
+    const nextSite = draft?.site ?? profileDefaults.mainSiteLocation ?? "";
     const nextInspector = draft?.inspector ?? "";
     const nextInspectionDate =
       draft?.inspectionDate || new Date().toISOString().split("T")[0];
@@ -1324,6 +1384,38 @@ export default function Home() {
     }
   };
 
+  const persistWorkspaceSettings = (nextSettings: WorkspaceSettings) => {
+    setWorkspaceSettings(nextSettings);
+    writeWorkspaceSettings(authUserId, nextSettings);
+  };
+
+  const toggleWorkspaceTheme = () => {
+    const nextDarkMode = !darkMode;
+    const nextSettings: WorkspaceSettings = {
+      ...workspaceSettings,
+      preferences: {
+        ...workspaceSettings.preferences,
+        themeMode: nextDarkMode ? "dark" : "light",
+      },
+    };
+
+    setDarkMode(nextDarkMode);
+    persistWorkspaceSettings(nextSettings);
+  };
+
+  const updateWorkspaceLanguage = (nextLanguage: Lang) => {
+    const nextSettings: WorkspaceSettings = {
+      ...workspaceSettings,
+      preferences: {
+        ...workspaceSettings.preferences,
+        language: nextLanguage,
+      },
+    };
+
+    setLang(nextLanguage);
+    persistWorkspaceSettings(nextSettings);
+  };
+
   const handleLogout = async () => {
     setShowWorkspaceMenu(false);
     await supabase.auth.signOut();
@@ -1334,6 +1426,16 @@ export default function Home() {
   const activeWorkspaceModuleConfig =
     WORKSPACE_MODULES.find((module) => module.id === activeWorkspaceModule) ??
     WORKSPACE_MODULES[0];
+  const workspaceCompanyProfile = workspaceSettings.companyProfile;
+  const workspaceCompanyName = workspaceCompanyProfile.companyName.trim();
+  const workspaceCompanyDetails = [
+    workspaceCompanyProfile.industrySector,
+    workspaceCompanyProfile.mainSiteLocation,
+    workspaceCompanyProfile.contactEmail,
+    workspaceCompanyProfile.phone,
+    workspaceCompanyProfile.address,
+  ].filter((value) => value.trim().length > 0);
+  const hasWorkspaceCompanyBranding = hasCompanyBranding(workspaceSettings);
 
   const selectWorkspaceModule = (moduleId: WorkspaceModuleId) => {
     setActiveWorkspaceModule(moduleId);
@@ -1367,6 +1469,43 @@ export default function Home() {
           <div className="mt-1 text-xs leading-5 text-slate-400">
             Industrial health, safety, and environment operations.
           </div>
+          {hasWorkspaceCompanyBranding ? (
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <div className="flex items-center gap-3">
+                {workspaceCompanyProfile.logoDataUrl ? (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1.5">
+                    <Image
+                      src={workspaceCompanyProfile.logoDataUrl}
+                      alt={`${workspaceCompanyName || "Company"} logo`}
+                      width={64}
+                      height={40}
+                      unoptimized
+                      className="max-h-8 w-auto object-contain"
+                    />
+                  </span>
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1E90FF]/15 text-xs font-bold text-[#4DEBFF] ring-1 ring-[#4DEBFF]/25">
+                    {workspaceCompanyName
+                      .split(/\s+/)
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((part) => part.charAt(0).toUpperCase())
+                      .join("") || "CO"}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold text-white">
+                    {workspaceCompanyName || "Company workspace"}
+                  </div>
+                  <div className="truncate text-xs text-slate-400">
+                    {workspaceCompanyProfile.industrySector ||
+                      workspaceCompanyProfile.mainSiteLocation ||
+                      "Client configuration"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {isMobile ? (
@@ -1561,7 +1700,9 @@ export default function Home() {
               Laboria HSE Workspace
             </div>
             <div className="truncate text-xs text-slate-400">
-              {activeWorkspaceModuleConfig.label}
+              {workspaceCompanyName
+                ? `${workspaceCompanyName} - ${activeWorkspaceModuleConfig.label}`
+                : activeWorkspaceModuleConfig.label}
             </div>
           </div>
           <Image
@@ -1609,8 +1750,8 @@ export default function Home() {
         >
           {/* LANGUAGE SWITCH */}
           <div className="flex justify-end gap-2 mb-2">
-            <button onClick={() => setLang("EN")}>EN</button>
-            <button onClick={() => setLang("KA")}>KA</button>
+            <button onClick={() => updateWorkspaceLanguage("EN")}>EN</button>
+            <button onClick={() => updateWorkspaceLanguage("KA")}>KA</button>
           </div>
 
           {/* CHECKLIST SWITCHER */}
@@ -1711,7 +1852,7 @@ export default function Home() {
                     </button>
 
                     <button
-                      onClick={() => setDarkMode(!darkMode)}
+                      onClick={toggleWorkspaceTheme}
                       className="w-10 h-10 rounded-xl flex items-center justify-center
                  border border-slate-500/30
                  hover:bg-slate-700/20
@@ -2320,35 +2461,44 @@ export default function Home() {
           <ActionTrackerModule
             userId={authUserId}
             darkMode={darkMode}
-            onToggleTheme={() => setDarkMode((current) => !current)}
+            onToggleTheme={toggleWorkspaceTheme}
             createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
           />
         ) : activeWorkspaceModule === "risk-assessments" ? (
           <RiskAssessmentsModule
             userId={authUserId}
             darkMode={darkMode}
-            onToggleTheme={() => setDarkMode((current) => !current)}
+            onToggleTheme={toggleWorkspaceTheme}
             createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
           />
         ) : activeWorkspaceModule === "training-management" ? (
           <TrainingManagementModule
             userId={authUserId}
             darkMode={darkMode}
-            onToggleTheme={() => setDarkMode((current) => !current)}
+            onToggleTheme={toggleWorkspaceTheme}
             createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
           />
         ) : activeWorkspaceModule === "incident-management" ? (
           <IncidentManagementModule
             userId={authUserId}
             darkMode={darkMode}
-            onToggleTheme={() => setDarkMode((current) => !current)}
+            onToggleTheme={toggleWorkspaceTheme}
             createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
           />
         ) : activeWorkspaceModule === "hse-analytics" ? (
           <HseAnalyticsModule
             userId={authUserId}
             darkMode={darkMode}
-            onToggleTheme={() => setDarkMode((current) => !current)}
+            onToggleTheme={toggleWorkspaceTheme}
+          />
+        ) : activeWorkspaceModule === "settings" ? (
+          <SettingsModule
+            userId={authUserId}
+            darkMode={darkMode}
+            onToggleTheme={toggleWorkspaceTheme}
+            language={lang}
+            onLanguageChange={updateWorkspaceLanguage}
+            onSettingsChange={setWorkspaceSettings}
           />
         ) : (
           renderComingSoonModule()
@@ -2476,6 +2626,90 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {hasWorkspaceCompanyBranding ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "18px",
+              background: "#FFFFFF",
+              border: "1px solid #D8E7F7",
+              borderRadius: "18px",
+              padding: "16px 18px",
+              marginBottom: "22px",
+              boxShadow: "0 12px 28px rgba(15,23,42,0.06)",
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  color: "#64748B",
+                  fontSize: "10px",
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  marginBottom: "6px",
+                }}
+              >
+                Client workspace
+              </div>
+              <div
+                style={{
+                  color: "#071225",
+                  fontSize: "18px",
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {workspaceCompanyName || company || "Company not provided"}
+              </div>
+              {workspaceCompanyDetails.length > 0 ? (
+                <div
+                  style={{
+                    marginTop: "6px",
+                    color: "#475569",
+                    fontSize: "11px",
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {workspaceCompanyDetails.join(" | ")}
+                </div>
+              ) : null}
+            </div>
+            {workspaceCompanyProfile.logoDataUrl ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "132px",
+                  minHeight: "62px",
+                  borderRadius: "14px",
+                  border: "1px solid #E2E8F0",
+                  background: "#FFFFFF",
+                  padding: "10px",
+                }}
+              >
+                <Image
+                  src={workspaceCompanyProfile.logoDataUrl}
+                  alt={`${workspaceCompanyName || "Company"} logo`}
+                  width={120}
+                  height={58}
+                  unoptimized
+                  style={{
+                    maxWidth: "112px",
+                    maxHeight: "50px",
+                    width: "auto",
+                    height: "auto",
+                    objectFit: "contain",
+                  }}
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <div
           style={{

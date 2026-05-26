@@ -21,6 +21,13 @@ import {
   getDateInputDaysFromNow,
   type ActionPriority,
 } from "@/app/lib/actionTracker";
+import {
+  defaultWorkspaceSettings,
+  hasCompanyBranding,
+  readWorkspaceSettings,
+  workspaceSettingsUpdatedEvent,
+  type WorkspaceSettings,
+} from "@/app/lib/workspaceSettings";
 
 type RiskValue = 1 | 2 | 3 | 4 | 5;
 type RiskLevel = "Low" | "Medium" | "High";
@@ -8823,6 +8830,8 @@ export default function RiskAssessmentsModule({
   const [customSectorMode, setCustomSectorMode] = useState(false);
   const [customActivityMode, setCustomActivityMode] = useState(false);
   const [createdActionLinks, setCreatedActionLinks] = useState<string[]>([]);
+  const [workspaceSettings, setWorkspaceSettings] =
+    useState<WorkspaceSettings>(defaultWorkspaceSettings);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -8839,6 +8848,45 @@ export default function RiskAssessmentsModule({
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
+  }, [userId]);
+
+  useEffect(() => {
+    const loadWorkspaceSettings = () => {
+      setWorkspaceSettings(readWorkspaceSettings(userId));
+    };
+
+    loadWorkspaceSettings();
+
+    const handleSettingsUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<WorkspaceSettings>;
+
+      if (customEvent.detail) {
+        setWorkspaceSettings(customEvent.detail);
+        return;
+      }
+
+      loadWorkspaceSettings();
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (!event.key || event.key.includes("workspace_settings")) {
+        loadWorkspaceSettings();
+      }
+    };
+
+    window.addEventListener(
+      workspaceSettingsUpdatedEvent,
+      handleSettingsUpdate,
+    );
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        workspaceSettingsUpdatedEvent,
+        handleSettingsUpdate,
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
   }, [userId]);
 
   useEffect(() => {
@@ -9157,7 +9205,12 @@ export default function RiskAssessmentsModule({
   };
 
   const newAssessment = () => {
-    setHeader(createEmptyHeader());
+    setHeader({
+      ...createEmptyHeader(),
+      company: workspaceCompanyProfile.companyName,
+      site: workspaceCompanyProfile.mainSiteLocation,
+      sector: workspaceCompanyProfile.industrySector,
+    });
     setHazards([createEmptyHazard()]);
     setCurrentAssessmentId(null);
     setCustomSectorMode(false);
@@ -9332,6 +9385,16 @@ export default function RiskAssessmentsModule({
       tone: darkMode ? "text-cyan-200" : "text-[#0759A8]",
     },
   ];
+  const workspaceCompanyProfile = workspaceSettings.companyProfile;
+  const workspaceCompanyName = workspaceCompanyProfile.companyName.trim();
+  const workspaceCompanyDetails = [
+    workspaceCompanyProfile.industrySector,
+    workspaceCompanyProfile.mainSiteLocation,
+    workspaceCompanyProfile.contactEmail,
+    workspaceCompanyProfile.phone,
+    workspaceCompanyProfile.address,
+  ].filter((value) => value.trim().length > 0);
+  const hasWorkspaceCompanyBranding = hasCompanyBranding(workspaceSettings);
 
   return (
     <div
@@ -10282,6 +10345,89 @@ export default function RiskAssessmentsModule({
             </div>
           </div>
         </div>
+
+        {hasWorkspaceCompanyBranding ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "18px",
+              background: "#FFFFFF",
+              border: "1px solid #D8E7F7",
+              borderRadius: "18px",
+              padding: "16px 18px",
+              marginBottom: "20px",
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  color: "#64748B",
+                  fontSize: "10px",
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  marginBottom: "6px",
+                }}
+              >
+                Client workspace
+              </div>
+              <div
+                style={{
+                  color: "#071225",
+                  fontSize: "18px",
+                  fontWeight: 900,
+                  lineHeight: 1.25,
+                }}
+              >
+                {workspaceCompanyName || header.company || "Company not provided"}
+              </div>
+              {workspaceCompanyDetails.length > 0 ? (
+                <div
+                  style={{
+                    marginTop: "6px",
+                    color: "#475569",
+                    fontSize: "11px",
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {workspaceCompanyDetails.join(" | ")}
+                </div>
+              ) : null}
+            </div>
+            {workspaceCompanyProfile.logoDataUrl ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "132px",
+                  minHeight: "62px",
+                  borderRadius: "14px",
+                  border: "1px solid #E2E8F0",
+                  background: "#FFFFFF",
+                  padding: "10px",
+                }}
+              >
+                <Image
+                  src={workspaceCompanyProfile.logoDataUrl}
+                  alt={`${workspaceCompanyName || "Company"} logo`}
+                  width={120}
+                  height={58}
+                  unoptimized
+                  style={{
+                    maxWidth: "112px",
+                    maxHeight: "50px",
+                    width: "auto",
+                    height: "auto",
+                    objectFit: "contain",
+                  }}
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <div
           style={{
