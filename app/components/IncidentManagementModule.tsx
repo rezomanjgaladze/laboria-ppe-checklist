@@ -1938,16 +1938,16 @@ export default function IncidentManagementModule({
                         </div>
                         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                           {[
-                            ["Total Suggestions", selectedSuggestionSummary.total],
-                            ["Actions Created", selectedSuggestionSummary.actionsCreated],
+                            ["Total", selectedSuggestionSummary.total],
+                            ["Created", selectedSuggestionSummary.actionsCreated],
                             ["Completed", selectedSuggestionSummary.completed],
                             ["Remaining", selectedSuggestionSummary.remaining],
                           ].map(([label, value]) => (
                             <div
                               key={label}
-                              className={joinClasses("rounded-xl border p-3", theme.panel)}
+                              className={joinClasses("min-w-0 rounded-xl border p-2.5 sm:p-3", theme.panel)}
                             >
-                              <div className={joinClasses("text-[10px] font-bold uppercase tracking-[0.12em]", theme.label)}>
+                              <div className={joinClasses("break-words text-[10px] font-bold uppercase leading-tight tracking-[0.06em]", theme.label)}>
                                 {label}
                               </div>
                               <div className={joinClasses("mt-1 text-lg font-bold", theme.heading)}>
@@ -1967,19 +1967,19 @@ export default function IncidentManagementModule({
                             ["Open", selectedLinkedActionSummary.open],
                             ["In Progress", selectedLinkedActionSummary.inProgress],
                             [
-                              "Pending Verification",
+                              "Pending",
                               selectedLinkedActionSummary.pendingVerification,
                             ],
                             [
-                              "Completed / Closed",
+                              "Done",
                               selectedLinkedActionSummary.completedClosed,
                             ],
                           ].map(([label, value]) => (
                             <div
                               key={label}
-                              className={joinClasses("rounded-xl border p-3", theme.panel)}
+                              className={joinClasses("min-w-0 rounded-xl border p-2.5 sm:p-3", theme.panel)}
                             >
-                              <div className={joinClasses("text-[10px] font-bold uppercase tracking-[0.12em]", theme.label)}>
+                              <div className={joinClasses("break-words text-[10px] font-bold uppercase leading-tight tracking-[0.06em]", theme.label)}>
                                 {label}
                               </div>
                               <div className={joinClasses("mt-1 text-lg font-bold", theme.heading)}>
