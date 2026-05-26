@@ -228,7 +228,7 @@ export default function LoginPage() {
               className="laboria-auth-ring laboria-auth-ring-slow absolute h-[min(62vw,22rem)] w-[min(62vw,22rem)] rounded-full border border-[#1E90FF]/18"
             />
 
-            <div className="relative flex h-[min(58vw,15rem)] w-[min(58vw,15rem)] items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#F5F7FA]/[0.075] p-4 shadow-[0_38px_120px_rgba(0,0,0,0.46),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl sm:h-60 sm:w-60 sm:p-5 lg:h-64 lg:w-64 lg:p-6">
+            <div className="relative flex h-[min(58vw,15rem)] w-[min(58vw,15rem)] items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#F5F7FA]/[0.075] p-2 shadow-[0_38px_120px_rgba(0,0,0,0.46),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl sm:h-60 sm:w-60 sm:p-2.5 lg:h-64 lg:w-64 lg:p-3">
               <div
                 aria-hidden
                 className="absolute inset-4 rounded-full border border-[#4DEBFF]/12"
@@ -246,7 +246,7 @@ export default function LoginPage() {
                 alt="Laboria"
                 width={520}
                 height={170}
-                className="relative z-10 h-auto max-h-[8rem] w-full max-w-[13rem] object-contain brightness-110 contrast-110 saturate-125 drop-shadow-[0_0_30px_rgba(77,235,255,0.38)] sm:max-h-[8.25rem] sm:max-w-[13.5rem] lg:max-h-[8.5rem] lg:max-w-[14rem]"
+                className="relative z-10 h-auto max-h-[8.75rem] w-full max-w-[14.25rem] object-contain brightness-110 contrast-110 saturate-125 drop-shadow-[0_0_30px_rgba(77,235,255,0.38)] sm:max-h-[9rem] sm:max-w-[14.75rem] lg:max-h-[9.25rem] lg:max-w-[15.25rem]"
                 priority
               />
             </div>
