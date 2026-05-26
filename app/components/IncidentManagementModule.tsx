@@ -1365,16 +1365,30 @@ export default function IncidentManagementModule({
   const hasExpandedVisibleSuggestionGroup = groupedSuggestionRecords.some(
     (group) => expandedSuggestionGroups.includes(group.group),
   );
-  const selectedIncidentWorkflow = selectedIncident
+  const selectedIncidentLinkedActions = selectedIncident
+    ? incidentActions.filter((action) =>
+        action.linkedIncidentId?.startsWith(`incident:${selectedIncident.id}:`),
+      )
+    : [];
+  const selectedLinkedActionSummary = {
+    open: selectedIncidentLinkedActions.filter(
+      (action) => action.status === "Open",
+    ).length,
+    inProgress: selectedIncidentLinkedActions.filter(
+      (action) => action.status === "In Progress",
+    ).length,
+    pendingVerification: selectedIncidentLinkedActions.filter(
+      (action) => action.status === "Pending Verification",
+    ).length,
+    completedClosed: selectedIncidentLinkedActions.filter(isClosedAction).length,
+  };
+  const selectedInvestigationStatus = selectedIncident
     ? (() => {
         const hasInvestigationActivity =
           selectedIncident.rootCauses.length > 0 ||
           selectedIncident.investigationNotes.trim().length > 0 ||
           selectedIncident.rootCauseNotes.trim().length > 0 ||
           selectedIncident.immediateActionTaken.trim().length > 0;
-        const hasIncidentLinkedAction = incidentActions.some((action) =>
-          action.linkedIncidentId?.startsWith(`incident:${selectedIncident.id}:`),
-        );
         const hasActionCreated = selectedSuggestionRecords.some(
           (record) => record.state === "Action Created",
         );
@@ -1383,25 +1397,54 @@ export default function IncidentManagementModule({
             record.action ||
             selectedIncident.completedSuggestionIds.includes(record.suggestion.id),
         );
-        const hasCompletedSuggestion = selectedSuggestionRecords.some(
+        const hasCompletedSuggestion = touchedSuggestions.some(
           (record) => record.state === "Completed",
         );
         const allTouchedSuggestionsCompleted =
           touchedSuggestions.length > 0 &&
           touchedSuggestions.every((record) => record.state === "Completed");
+        const allLinkedActionsCompleted =
+          selectedIncidentLinkedActions.length > 0 &&
+          selectedIncidentLinkedActions.every(isClosedAction);
+        const hasAssignedAction =
+          hasActionCreated || selectedIncidentLinkedActions.length > 0;
+        const isPendingVerification =
+          selectedIncident.status !== "Closed" &&
+          (hasCompletedSuggestion || allLinkedActionsCompleted) &&
+          (touchedSuggestions.length > 0 || selectedIncidentLinkedActions.length > 0) &&
+          (touchedSuggestions.length === 0 || allTouchedSuggestionsCompleted) &&
+          (selectedIncidentLinkedActions.length === 0 || allLinkedActionsCompleted);
 
-        return {
-          Reported: true,
-          "Investigation Open": hasInvestigationActivity,
-          "Actions Assigned": hasActionCreated || hasIncidentLinkedAction,
-          "Pending Verification":
-            selectedIncident.status !== "Closed" &&
-            hasCompletedSuggestion &&
-            allTouchedSuggestionsCompleted,
-          Closed: selectedIncident.status === "Closed",
-        } satisfies Record<IncidentStatus, boolean>;
+        if (selectedIncident.status === "Closed") {
+          return "Closed";
+        }
+
+        if (isPendingVerification) {
+          return "Pending Verification";
+        }
+
+        if (hasAssignedAction) {
+          return "Actions Assigned";
+        }
+
+        if (hasInvestigationActivity) {
+          return "Investigation Open";
+        }
+
+        return "Reported";
       })()
     : null;
+  const closureReadiness = selectedInvestigationStatus
+    ? selectedInvestigationStatus === "Closed"
+      ? "Incident closed"
+      : selectedInvestigationStatus === "Pending Verification"
+        ? "All actions completed - ready for verification"
+        : selectedInvestigationStatus === "Actions Assigned"
+          ? "Actions assigned"
+          : "Investigation in progress"
+    : "";
+  const selectedStatusForPanel: IncidentStatus =
+    selectedInvestigationStatus ?? selectedIncident?.status ?? "Reported";
   const activeFilterCount = [
     filters.eventType !== "All",
     filters.severity !== "All",
@@ -1858,66 +1901,119 @@ export default function IncidentManagementModule({
                     </div>
                   </div>
 
-                  <div className="mt-5">
-                    <div className={joinClasses("mb-3 text-xs font-bold uppercase tracking-[0.14em]", theme.label)}>
-                      Investigation Timeline
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-5">
-                      {statusOptions.map((status, index) => {
-                        const isComplete =
-                          selectedIncidentWorkflow?.[status] ?? false;
-
-                        return (
-                          <div
-                            key={status}
-                            className={joinClasses(
-                              "rounded-2xl border p-3 text-xs font-semibold transition",
-                              isComplete
-                                ? "border-[#4DEBFF]/35 bg-[#1E90FF]/12 text-[#4DEBFF]"
-                                : theme.ghostButton,
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={joinClasses(
-                                  "flex h-6 w-6 items-center justify-center rounded-full border text-[11px]",
-                                  isComplete
-                                    ? "border-[#4DEBFF]/40 bg-[#1E90FF]/20"
-                                    : "border-current/20",
-                                )}
-                              >
-                                {index + 1}
-                              </span>
-                              {status}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="mt-5">
-                    <div className={joinClasses("mb-3 text-xs font-bold uppercase tracking-[0.14em]", theme.label)}>
-                      Root Cause Builder
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedIncident.rootCauses.length > 0 ? (
-                        selectedIncident.rootCauses.map((rootCause) => (
-                          <Badge key={rootCause} className={theme.notice}>
-                            {rootCause}
+                  <div className={joinClasses("mt-5 rounded-2xl border p-4", theme.panel)}>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className={joinClasses("text-xs font-bold uppercase tracking-[0.14em]", theme.label)}>
+                          Investigation Status
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className={joinClasses("text-sm", theme.muted)}>
+                            Status:
+                          </span>
+                          <Badge className={statusTone(selectedStatusForPanel, darkMode)}>
+                            {selectedStatusForPanel}
                           </Badge>
-                        ))
-                      ) : (
-                        <span className={joinClasses("text-sm", theme.muted)}>
-                          No root causes selected yet.
-                        </span>
-                      )}
+                        </div>
+                      </div>
+                      <div
+                        className={joinClasses(
+                          "rounded-xl border px-3 py-2 text-sm font-semibold",
+                          selectedStatusForPanel === "Closed" ||
+                            selectedStatusForPanel === "Pending Verification"
+                            ? suggestionStateTone("Completed", darkMode)
+                            : selectedStatusForPanel === "Actions Assigned"
+                              ? suggestionStateTone("Action Created", darkMode)
+                              : statusTone("Investigation Open", darkMode),
+                        )}
+                      >
+                        {closureReadiness}
+                      </div>
                     </div>
-                    {selectedIncident.rootCauseNotes ? (
-                      <p className={joinClasses("mt-3 text-sm leading-6", theme.muted)}>
-                        {selectedIncident.rootCauseNotes}
-                      </p>
-                    ) : null}
+
+                    <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                      <div className={joinClasses("rounded-2xl border p-3", theme.card)}>
+                        <div className={joinClasses("text-[11px] font-bold uppercase tracking-[0.14em]", theme.label)}>
+                          Smart Workflow Suggestions
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                          {[
+                            ["Total Suggestions", selectedSuggestionSummary.total],
+                            ["Actions Created", selectedSuggestionSummary.actionsCreated],
+                            ["Completed", selectedSuggestionSummary.completed],
+                            ["Remaining", selectedSuggestionSummary.remaining],
+                          ].map(([label, value]) => (
+                            <div
+                              key={label}
+                              className={joinClasses("rounded-xl border p-3", theme.panel)}
+                            >
+                              <div className={joinClasses("text-[10px] font-bold uppercase tracking-[0.12em]", theme.label)}>
+                                {label}
+                              </div>
+                              <div className={joinClasses("mt-1 text-lg font-bold", theme.heading)}>
+                                {value}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className={joinClasses("rounded-2xl border p-3", theme.card)}>
+                        <div className={joinClasses("text-[11px] font-bold uppercase tracking-[0.14em]", theme.label)}>
+                          Linked Actions Summary
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                          {[
+                            ["Open", selectedLinkedActionSummary.open],
+                            ["In Progress", selectedLinkedActionSummary.inProgress],
+                            [
+                              "Pending Verification",
+                              selectedLinkedActionSummary.pendingVerification,
+                            ],
+                            [
+                              "Completed / Closed",
+                              selectedLinkedActionSummary.completedClosed,
+                            ],
+                          ].map(([label, value]) => (
+                            <div
+                              key={label}
+                              className={joinClasses("rounded-xl border p-3", theme.panel)}
+                            >
+                              <div className={joinClasses("text-[10px] font-bold uppercase tracking-[0.12em]", theme.label)}>
+                                {label}
+                              </div>
+                              <div className={joinClasses("mt-1 text-lg font-bold", theme.heading)}>
+                                {value}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <div className={joinClasses("text-[11px] font-bold uppercase tracking-[0.14em]", theme.label)}>
+                        Root Causes Selected
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {selectedIncident.rootCauses.length > 0 ? (
+                          selectedIncident.rootCauses.map((rootCause) => (
+                            <Badge key={rootCause} className={theme.notice}>
+                              {rootCause}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className={joinClasses("text-sm", theme.muted)}>
+                            No root causes selected yet.
+                          </span>
+                        )}
+                      </div>
+                      {selectedIncident.rootCauseNotes ? (
+                        <p className={joinClasses("mt-3 text-sm leading-6", theme.muted)}>
+                          {selectedIncident.rootCauseNotes}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="mt-5">
