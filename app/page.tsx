@@ -31,6 +31,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { ALL_CHECKLISTS } from "./data/checklists";
 import ActionTrackerModule from "./components/ActionTrackerModule";
+import OrbitCommandCenterModule from "./components/OrbitCommandCenterModule";
 import RiskAssessmentsModule from "./components/RiskAssessmentsModule";
 import TrainingManagementModule from "./components/TrainingManagementModule";
 import IncidentManagementModule from "./components/IncidentManagementModule";
@@ -85,6 +86,7 @@ type WorkflowWarning = {
 type AutosaveStatus = "dirty" | "saving" | "saved";
 
 type WorkspaceModuleId =
+  | "command-center"
   | "inspections"
   | "risk-assessments"
   | "action-tracker"
@@ -236,6 +238,14 @@ const ICON_MAP: Record<string, LucideIcon> = {
 };
 
 const WORKSPACE_MODULES: WorkspaceModule[] = [
+  {
+    id: "command-center",
+    label: "Command Center",
+    description:
+      "Laboria Orbit's master operational intelligence dashboard for actions, inspections, risks, incidents, training, analytics, AI credits, and workspace signals.",
+    status: "Active",
+    icon: Cpu,
+  },
   {
     id: "action-tracker",
     label: "Action Tracker",
@@ -568,7 +578,7 @@ export default function Home() {
   const supabase = useMemo(() => createClient(), []);
   const [activeChecklistId, setActiveChecklistId] = useState("ppe");
   const [activeWorkspaceModule, setActiveWorkspaceModule] =
-    useState<WorkspaceModuleId>("action-tracker");
+    useState<WorkspaceModuleId>("command-center");
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
 
   const activeChecklist =
@@ -658,6 +668,30 @@ export default function Home() {
       setLang(storedSettings.preferences.language);
 
       if (applyDefaultModule) {
+        const commandCenterMigrationKey = authUserId
+          ? `laboria_${encodeURIComponent(authUserId)}_command_center_default_migrated`
+          : "laboria_command_center_default_migrated";
+
+        if (
+          storedSettings.preferences.defaultDashboardPage === "action-tracker" &&
+          window.localStorage.getItem(commandCenterMigrationKey) !== "true"
+        ) {
+          const migratedSettings: WorkspaceSettings = {
+            ...storedSettings,
+            preferences: {
+              ...storedSettings.preferences,
+              defaultDashboardPage: "command-center",
+            },
+            updatedAt: new Date().toISOString(),
+          };
+
+          window.localStorage.setItem(commandCenterMigrationKey, "true");
+          writeWorkspaceSettings(authUserId, migratedSettings);
+          setWorkspaceSettings(migratedSettings);
+          setActiveWorkspaceModule("command-center");
+          return;
+        }
+
         setActiveWorkspaceModule(storedSettings.preferences.defaultDashboardPage);
       }
     };
@@ -1627,14 +1661,14 @@ export default function Home() {
             </p>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">
               This module is reserved for a future Laboria HSE workflow. For now,
-              Action Tracker is the primary workspace entry point.
+              Command Center is the primary workspace entry point.
             </p>
             <button
               type="button"
-              onClick={() => selectWorkspaceModule("action-tracker")}
+              onClick={() => selectWorkspaceModule("command-center")}
               className="mt-7 rounded-xl bg-[#1E90FF] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(30,144,255,0.25)] transition hover:bg-[#1878d6]"
             >
-              Open Action Tracker
+              Open Command Center
             </button>
           </div>
         </div>
@@ -2457,7 +2491,14 @@ export default function Home() {
         </div>
       </div>
       ) : (
-        activeWorkspaceModule === "action-tracker" ? (
+        activeWorkspaceModule === "command-center" ? (
+          <OrbitCommandCenterModule
+            userId={authUserId}
+            darkMode={darkMode}
+            workspaceSettings={workspaceSettings}
+            onNavigate={selectWorkspaceModule}
+          />
+        ) : activeWorkspaceModule === "action-tracker" ? (
           <ActionTrackerModule
             userId={authUserId}
             darkMode={darkMode}

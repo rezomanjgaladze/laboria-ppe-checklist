@@ -1,6 +1,7 @@
 export type WorkspaceLanguage = "EN" | "KA";
 
 export type WorkspaceModulePreference =
+  | "command-center"
   | "action-tracker"
   | "inspections"
   | "risk-assessments"
@@ -75,6 +76,7 @@ export const workspaceModulePreferenceOptions: Array<{
   value: WorkspaceModulePreference;
   label: string;
 }> = [
+  { value: "command-center", label: "Command Center" },
   { value: "action-tracker", label: "Action Tracker" },
   { value: "inspections", label: "Inspections" },
   { value: "risk-assessments", label: "Risk Assessments" },
@@ -99,7 +101,7 @@ export const defaultWorkspaceSettings: WorkspaceSettings = {
     language: "EN",
     dateFormat: "YYYY-MM-DD",
     timeFormat: "24-hour",
-    defaultDashboardPage: "action-tracker",
+    defaultDashboardPage: "command-center",
     sidebarCollapsedByDefault: false,
   },
   riskSettings: {
@@ -161,7 +163,7 @@ const normalizeDashboardPage = (value: unknown): WorkspaceModulePreference => {
     (item) => item.value === value,
   );
 
-  return option?.value ?? "action-tracker";
+  return option?.value ?? "command-center";
 };
 
 export const normalizeWorkspaceSettings = (
