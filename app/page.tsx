@@ -34,6 +34,7 @@ import ActionTrackerModule from "./components/ActionTrackerModule";
 import RiskAssessmentsModule from "./components/RiskAssessmentsModule";
 import TrainingManagementModule from "./components/TrainingManagementModule";
 import IncidentManagementModule from "./components/IncidentManagementModule";
+import HseAnalyticsModule from "./components/HseAnalyticsModule";
 import { createClient } from "@/lib/supabase/client";
 import {
   appendActionTrackerAction,
@@ -270,8 +271,8 @@ const WORKSPACE_MODULES: WorkspaceModule[] = [
     id: "hse-analytics",
     label: "HSE Analytics",
     description:
-      "Review inspection trends, risk patterns, and HSE performance insights.",
-    status: "Coming Soon",
+      "Monitor operational risks, incidents, actions, training compliance, and inspection performance.",
+    status: "Active",
     icon: BarChart3,
   },
   {
@@ -2342,6 +2343,12 @@ export default function Home() {
             darkMode={darkMode}
             onToggleTheme={() => setDarkMode((current) => !current)}
             createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
+          />
+        ) : activeWorkspaceModule === "hse-analytics" ? (
+          <HseAnalyticsModule
+            userId={authUserId}
+            darkMode={darkMode}
+            onToggleTheme={() => setDarkMode((current) => !current)}
           />
         ) : (
           renderComingSoonModule()
