@@ -148,11 +148,82 @@ type KpiCardData = {
   sparkline: number[];
 };
 
+type TimePeriod = "Last 7 days" | "Last 30 days" | "This month" | "All time";
+
+type SourceFilter =
+  | "All sources"
+  | "Action Tracker"
+  | "Risk Assessments"
+  | "Incident Management"
+  | "Training Management"
+  | "Inspections";
+
+type AnalyticsFilters = {
+  timePeriod: TimePeriod;
+  site: string;
+  department: string;
+  source: SourceFilter;
+};
+
+type AttentionAlert = {
+  title: string;
+  source: SourceFilter;
+  severity: "good" | "info" | "warning" | "critical";
+  count: number;
+  detail: string;
+};
+
+type OperationalProblem = {
+  label: string;
+  source: SourceFilter;
+  value: number;
+  severity: "info" | "warning" | "critical";
+};
+
+type ActivityFeedItem = {
+  id: string;
+  label: string;
+  source: SourceFilter;
+  date: string;
+  tone: "info" | "success" | "warning" | "critical";
+};
+
+type HeatmapRow = {
+  label: string;
+  cells: Array<{
+    label: string;
+    value: number;
+  }>;
+};
+
 const emptyTrainingData: TrainingData = {
   employees: [],
   trainingTypes: [],
   records: [],
 };
+
+const defaultFilters: AnalyticsFilters = {
+  timePeriod: "All time",
+  site: "All sites",
+  department: "All departments",
+  source: "All sources",
+};
+
+const timePeriodOptions: TimePeriod[] = [
+  "Last 7 days",
+  "Last 30 days",
+  "This month",
+  "All time",
+];
+
+const sourceFilterOptions: SourceFilter[] = [
+  "All sources",
+  "Action Tracker",
+  "Risk Assessments",
+  "Incident Management",
+  "Training Management",
+  "Inspections",
+];
 
 const attentionActivityMatchers = [
   {
@@ -266,6 +337,55 @@ const toDate = (value: string) => {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date : null;
 };
+
+const getPrimaryActionDate = (action: HseAction) =>
+  action.createdDate || action.lastUpdated || action.dueDate;
+
+const getPrimaryIncidentDate = (incident: IncidentEvent) =>
+  incident.dateTime || incident.createdAt || incident.updatedAt;
+
+const getPrimaryRiskDate = (assessment: RiskAssessment) =>
+  assessment.header.assessmentDate || assessment.savedAt;
+
+const getPrimaryInspectionDate = (inspection: SavedInspection) =>
+  inspection.inspectionDate || inspection.savedAt;
+
+const isWithinTimePeriod = (value: string, period: TimePeriod) => {
+  if (period === "All time") {
+    return true;
+  }
+
+  const date = toDate(value);
+
+  if (!date) {
+    return false;
+  }
+
+  const now = new Date();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+
+  if (period === "Last 7 days") {
+    const start = new Date(startOfToday);
+    start.setDate(start.getDate() - 6);
+    return date >= start;
+  }
+
+  if (period === "Last 30 days") {
+    const start = new Date(startOfToday);
+    start.setDate(start.getDate() - 29);
+    return date >= start;
+  }
+
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  return date >= monthStart;
+};
+
+const matchesFilterValue = (value: string, selected: string, allLabel: string) =>
+  selected === allLabel || value === selected;
 
 const isClosedAction = (action: HseAction) =>
   action.status === "Completed" || action.status === "Closed";
@@ -544,6 +664,159 @@ const loadAnalyticsData = (userId: string | null): AnalyticsData => ({
   inspections: readInspections(userId),
 });
 
+const getFilterOptions = (data: AnalyticsData) => {
+  const sites = new Set<string>();
+  const departments = new Set<string>();
+
+  data.actions.forEach((action) => {
+    if (action.siteLocation) {
+      sites.add(action.siteLocation);
+    }
+
+    if (action.department) {
+      departments.add(action.department);
+    }
+  });
+
+  data.incidents.forEach((incident) => {
+    if (incident.siteLocation) {
+      sites.add(incident.siteLocation);
+    }
+
+    if (incident.department) {
+      departments.add(incident.department);
+    }
+  });
+
+  data.risks.forEach((assessment) => {
+    if (assessment.header.site) {
+      sites.add(assessment.header.site);
+    }
+
+    if (assessment.header.department) {
+      departments.add(assessment.header.department);
+    }
+  });
+
+  data.training.employees.forEach((employee) => {
+    if (employee.siteLocation) {
+      sites.add(employee.siteLocation);
+    }
+
+    if (employee.department) {
+      departments.add(employee.department);
+    }
+  });
+
+  data.inspections.forEach((inspection) => {
+    if (inspection.site) {
+      sites.add(inspection.site);
+    }
+  });
+
+  return {
+    sites: Array.from(sites).sort((a, b) => a.localeCompare(b)),
+    departments: Array.from(departments).sort((a, b) => a.localeCompare(b)),
+  };
+};
+
+const sourceEnabled = (selected: SourceFilter, source: SourceFilter) =>
+  selected === "All sources" || selected === source;
+
+const filterAnalyticsData = (
+  data: AnalyticsData,
+  filters: AnalyticsFilters,
+): AnalyticsData => {
+  const actions = sourceEnabled(filters.source, "Action Tracker")
+    ? data.actions.filter(
+        (action) =>
+          isWithinTimePeriod(getPrimaryActionDate(action), filters.timePeriod) &&
+          matchesFilterValue(action.siteLocation, filters.site, "All sites") &&
+          matchesFilterValue(
+            action.department,
+            filters.department,
+            "All departments",
+          ),
+      )
+    : [];
+  const incidents = sourceEnabled(filters.source, "Incident Management")
+    ? data.incidents.filter(
+        (incident) =>
+          isWithinTimePeriod(
+            getPrimaryIncidentDate(incident),
+            filters.timePeriod,
+          ) &&
+          matchesFilterValue(
+            incident.siteLocation,
+            filters.site,
+            "All sites",
+          ) &&
+          matchesFilterValue(
+            incident.department,
+            filters.department,
+            "All departments",
+          ),
+      )
+    : [];
+  const risks = sourceEnabled(filters.source, "Risk Assessments")
+    ? data.risks.filter(
+        (assessment) =>
+          isWithinTimePeriod(getPrimaryRiskDate(assessment), filters.timePeriod) &&
+          matchesFilterValue(assessment.header.site, filters.site, "All sites") &&
+          matchesFilterValue(
+            assessment.header.department,
+            filters.department,
+            "All departments",
+          ),
+      )
+    : [];
+  const trainingEmployees = sourceEnabled(filters.source, "Training Management")
+    ? data.training.employees.filter(
+        (employee) =>
+          matchesFilterValue(employee.siteLocation, filters.site, "All sites") &&
+          matchesFilterValue(
+            employee.department,
+            filters.department,
+            "All departments",
+          ),
+      )
+    : [];
+  const trainingRecords = sourceEnabled(filters.source, "Training Management")
+    ? data.training.records.filter((record) =>
+        isWithinTimePeriod(
+          record.completedDate || record.expiryDate,
+          filters.timePeriod,
+        ),
+      )
+    : [];
+  const inspections = sourceEnabled(filters.source, "Inspections")
+    ? data.inspections.filter(
+        (inspection) =>
+          isWithinTimePeriod(
+            getPrimaryInspectionDate(inspection),
+            filters.timePeriod,
+          ) && matchesFilterValue(inspection.site, filters.site, "All sites"),
+      )
+    : [];
+
+  return {
+    actions,
+    incidents,
+    risks,
+    inspections:
+      filters.department === "All departments" ? inspections : [],
+    training: {
+      employees: trainingEmployees,
+      trainingTypes: sourceEnabled(filters.source, "Training Management")
+        ? data.training.trainingTypes
+        : [],
+      records: trainingRecords.filter((record) =>
+        trainingEmployees.some((employee) => employee.id === record.employeeId),
+      ),
+    },
+  };
+};
+
 const monthLabel = (date: Date) =>
   date.toLocaleString(undefined, { month: "short" });
 
@@ -725,23 +998,35 @@ const buildTrainingCompliance = (training: TrainingData) =>
         employee.department.toLowerCase().includes(department.toLowerCase()),
     );
     const total = employees.length * training.trainingTypes.length;
-    const valid = employees.reduce((count, employee) => {
-      const employeeValid = training.trainingTypes.filter((trainingType) => {
+    let valid = 0;
+    let expired = 0;
+    let expiringSoon = 0;
+
+    employees.forEach((employee) => {
+      training.trainingTypes.forEach((trainingType) => {
         const record = getLatestRecord(
           training.records,
           employee.id,
           trainingType.id,
         );
-        return record ? getTrainingStatus(record.expiryDate) === "Valid" : false;
-      }).length;
+        const status = record ? getTrainingStatus(record.expiryDate) : "Missing";
 
-      return count + employeeValid;
-    }, 0);
+        if (status === "Valid") {
+          valid += 1;
+        } else if (status === "Expired") {
+          expired += 1;
+        } else if (status === "Expiring Soon") {
+          expiringSoon += 1;
+        }
+      });
+    });
 
     return {
       label: department,
       value: percentage(valid, total),
       total,
+      expired,
+      expiringSoon,
     };
   });
 
@@ -812,39 +1097,78 @@ const deriveProblemCounts = (data: AnalyticsData) => {
     0,
   );
 
-  return [
+  const highRiskWorkAtHeight = data.risks.reduce(
+    (count, assessment) =>
+      count +
+      assessment.hazards.filter(
+        (hazard) =>
+          hazardResidualLevel(hazard) === "High" &&
+          /height|roof|scaffold|ladder|fall/i.test(
+            `${assessment.header.activity} ${hazard.workplaceActivity} ${hazard.hazardDescription}`,
+          ),
+      ).length,
+    0,
+  );
+  const overdueActions = data.actions.filter(isOverdueAction).length;
+
+  const problems: OperationalProblem[] = [
     {
       label: "PPE non-compliance",
+      source: "Inspections",
       value:
         failedInspectionItems +
         (textPool.match(/\bppe\b|personal protective|helmet|glove|goggles/g)
           ?.length ?? 0),
+      severity: failedInspectionItems > 5 ? "critical" : "warning",
     },
     {
       label: "Training gaps",
+      source: "Training Management" as const,
       value: trainingGaps.expired + trainingGaps.missing,
+      severity: trainingGaps.expired > 0 ? "critical" : "warning",
     },
     {
       label: "Unsafe access",
+      source: "Risk Assessments" as const,
       value:
         textPool.match(/access|ladder|scaffold|walkway|height|roof/g)?.length ?? 0,
+      severity: "warning",
     },
     {
       label: "Procedure deviation",
+      source: "Incident Management" as const,
       value:
         data.incidents.filter((incident) =>
           incident.rootCauses.includes("Procedure / System Failure"),
         ).length +
         (textPool.match(/procedure|permit|system failure|deviation/g)?.length ??
           0),
+      severity: "warning",
     },
     {
       label: "Housekeeping failures",
+      source: "Inspections" as const,
       value: textPool.match(/housekeeping|waste|clutter|spill|trip/g)?.length ?? 0,
+      severity: "info",
     },
-  ]
+    {
+      label: "Working at height risk",
+      source: "Risk Assessments" as const,
+      value: highRiskWorkAtHeight,
+      severity: "critical",
+    },
+    {
+      label: "Overdue actions",
+      source: "Action Tracker" as const,
+      value: overdueActions,
+      severity: overdueActions > 0 ? "critical" : "info",
+    },
+  ];
+
+  return problems
     .filter((item) => item.value > 0)
-    .sort((a, b) => b.value - a.value);
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6);
 };
 
 const buildRecurringFactors = (incidents: IncidentEvent[]) => {
@@ -865,76 +1189,88 @@ const buildRecurringFactors = (incidents: IncidentEvent[]) => {
     .slice(0, 8);
 };
 
-const buildRiskHeatmap = (data: AnalyticsData) => {
-  const departments = new Set<string>();
-  const sites = new Set<string>();
-  const cellScores = new Map<string, number>();
-  const addScore = (department: string, site: string, score: number) => {
-    const row = department || "General";
-    const column = site || "Unassigned";
-    departments.add(row);
-    sites.add(column);
-    cellScores.set(`${row}__${column}`, (cellScores.get(`${row}__${column}`) ?? 0) + score);
-  };
+const buildRiskHeatmap = (data: AnalyticsData): HeatmapRow[] => {
+  const trainingGaps = getTrainingGapCounts(data.training);
+  const highRisks = data.risks.reduce(
+    (count, assessment) =>
+      count +
+      assessment.hazards.filter((hazard) => hazardResidualLevel(hazard) === "High")
+        .length,
+    0,
+  );
+  const inspectionFindings = data.inspections.reduce(
+    (count, inspection) =>
+      count +
+      Object.values(inspection.answers).filter((answer) => answer === "no").length,
+    0,
+  );
+  const openActionRisk = data.actions.filter((action) => !isClosedAction(action)).length;
+  const incidentRisk = data.incidents.filter(
+    (incident) => incident.status !== "Closed",
+  ).length;
 
-  data.actions.forEach((action) => {
-    if (isClosedAction(action)) {
-      return;
-    }
-
-    addScore(
-      action.department,
-      action.siteLocation,
-      action.priority === "Critical" ? 5 : action.priority === "High" ? 4 : 2,
-    );
-  });
-
-  data.incidents.forEach((incident) => {
-    addScore(
-      incident.department,
-      incident.siteLocation,
-      incident.severity === "Critical" ? 5 : incident.severity === "High" ? 4 : 2,
-    );
-  });
-
-  data.risks.forEach((assessment) => {
-    const highHazards = assessment.hazards.filter(
-      (hazard) => hazardResidualLevel(hazard) === "High",
-    ).length;
-
-    if (highHazards > 0) {
-      addScore(assessment.header.department, assessment.header.site, highHazards * 3);
-    }
-  });
-
-  data.inspections.forEach((inspection) => {
-    const failed = Object.values(inspection.answers).filter(
-      (answer) => answer === "no",
-    ).length;
-
-    if (failed > 0) {
-      addScore("Inspections", inspection.site, failed);
-    }
-  });
-
-  const rows = Array.from(departments).slice(0, 5);
-  const columns = Array.from(sites).slice(0, 5);
-
-  return rows.map((row) => ({
-    label: row,
-    cells: columns.map((column) => ({
-      label: column,
-      value: cellScores.get(`${row}__${column}`) ?? 0,
-    })),
-  }));
+  return [
+    {
+      label: "Action Tracker",
+      cells: [
+        { label: "Actions", value: openActionRisk },
+        { label: "Incidents", value: 0 },
+        { label: "Risks", value: 0 },
+        { label: "Training gaps", value: 0 },
+        { label: "Findings", value: 0 },
+      ],
+    },
+    {
+      label: "Incident Management",
+      cells: [
+        { label: "Actions", value: data.actions.filter((action) => action.sourceModule === "Incident" && !isClosedAction(action)).length },
+        { label: "Incidents", value: incidentRisk },
+        { label: "Risks", value: 0 },
+        { label: "Training gaps", value: 0 },
+        { label: "Findings", value: 0 },
+      ],
+    },
+    {
+      label: "Risk Assessments",
+      cells: [
+        { label: "Actions", value: data.actions.filter((action) => action.sourceModule === "Risk Assessment" && !isClosedAction(action)).length },
+        { label: "Incidents", value: 0 },
+        { label: "Risks", value: highRisks },
+        { label: "Training gaps", value: 0 },
+        { label: "Findings", value: 0 },
+      ],
+    },
+    {
+      label: "Training Management",
+      cells: [
+        { label: "Actions", value: data.actions.filter((action) => action.sourceModule === "Training" && !isClosedAction(action)).length },
+        { label: "Incidents", value: 0 },
+        { label: "Risks", value: 0 },
+        {
+          label: "Training gaps",
+          value: trainingGaps.expired + trainingGaps.missing,
+        },
+        { label: "Findings", value: 0 },
+      ],
+    },
+    {
+      label: "Inspections",
+      cells: [
+        { label: "Actions", value: data.actions.filter((action) => action.sourceModule === "Inspection" && !isClosedAction(action)).length },
+        { label: "Incidents", value: 0 },
+        { label: "Risks", value: 0 },
+        { label: "Training gaps", value: 0 },
+        { label: "Findings", value: inspectionFindings },
+      ],
+    },
+  ];
 };
 
-const makeNeedsAttention = (data: AnalyticsData) => {
+const makeNeedsAttention = (data: AnalyticsData): AttentionAlert[] => {
   const trainingGaps = getTrainingGapCounts(data.training);
   const overdueCritical = data.actions.filter(
     (action) => action.priority === "Critical" && isOverdueAction(action),
   ).length;
-  const overdueActions = data.actions.filter(isOverdueAction).length;
   const highResidualRisks = data.risks.reduce(
     (count, assessment) =>
       count +
@@ -942,52 +1278,166 @@ const makeNeedsAttention = (data: AnalyticsData) => {
         .length,
     0,
   );
-  const forkliftIncidents = data.incidents.filter((incident) =>
-    /forklift|reach truck|pallet truck/i.test(
-      `${incident.title} ${incident.description}`,
-    ),
+  const highSeverityIncidents = data.incidents.filter(
+    (incident) =>
+      incident.status !== "Closed" &&
+      (incident.severity === "High" || incident.severity === "Critical"),
   ).length;
-  const unresolvedActions = data.actions.filter((action) => !isClosedAction(action))
-    .length;
+  const rootCauseCounts = buildRecurringFactors(data.incidents);
+  const repeatedRootCauses = rootCauseCounts.filter((item) => item.value >= 2).length;
+  const lowComplianceInspections = data.inspections.filter(
+    (inspection) => (inspection.result?.percent ?? 0) > 0 && (inspection.result?.percent ?? 0) < 80,
+  ).length;
 
-  return [
+  const alerts: AttentionAlert[] = [
     {
       title: "Overdue critical actions",
-      value: overdueCritical,
+      source: "Action Tracker",
+      severity: "critical",
+      count: overdueCritical,
       detail: `${overdueCritical} critical actions are past due`,
-      tone: "critical",
     },
     {
       title: "Expired trainings",
-      value: trainingGaps.expired,
+      source: "Training Management",
+      severity: "critical",
+      count: trainingGaps.expired,
       detail: `${trainingGaps.expired} employee training records are expired`,
-      tone: "warning",
     },
     {
-      title: "Repeated forklift incidents",
-      value: forkliftIncidents >= 2 ? forkliftIncidents : 0,
-      detail: `${forkliftIncidents} forklift-related incident records detected`,
-      tone: "warning",
+      title: "Missing training records",
+      source: "Training Management",
+      severity: "warning",
+      count: trainingGaps.missing,
+      detail: `${trainingGaps.missing} required training assignments are missing`,
     },
     {
       title: "High residual risk detected",
-      value: highResidualRisks,
+      source: "Risk Assessments",
+      severity: "critical",
+      count: highResidualRisks,
       detail: `${highResidualRisks} high residual risk hazards remain in assessments`,
-      tone: "critical",
     },
     {
-      title: "Unresolved corrective actions",
-      value: unresolvedActions,
-      detail: `${unresolvedActions} actions remain open across workflows`,
-      tone: "info",
+      title: "Open high severity incidents",
+      source: "Incident Management",
+      severity: "critical",
+      count: highSeverityIncidents,
+      detail: `${highSeverityIncidents} high or critical incidents remain open`,
     },
     {
-      title: "Overdue actions",
-      value: overdueActions,
-      detail: `${overdueActions} actions are past due`,
-      tone: "warning",
+      title: "Repeated incident/root cause patterns",
+      source: "Incident Management",
+      severity: "warning",
+      count: repeatedRootCauses,
+      detail: `${repeatedRootCauses} recurring factors appear more than once`,
     },
-  ].filter((item) => item.value > 0);
+    {
+      title: "Low inspection compliance",
+      source: "Inspections",
+      severity: "warning",
+      count: lowComplianceInspections,
+      detail: `${lowComplianceInspections} inspections are below 80% compliance`,
+    },
+  ];
+
+  return alerts.filter((item) => item.count > 0);
+};
+
+const buildActionPriorityCounts = (actions: HseAction[]) =>
+  ["Low", "Medium", "High", "Critical"].map((label) => ({
+    label,
+    value: actions.filter((action) => action.priority === label).length,
+  }));
+
+const buildRecentActivity = (data: AnalyticsData): ActivityFeedItem[] => {
+  const actionItems = data.actions.flatMap((action) => {
+    const items: ActivityFeedItem[] = [
+      {
+        id: `action-created-${action.id}`,
+        label: `Action created: ${action.title || "Untitled action"}`,
+        source: "Action Tracker",
+        date: action.createdDate,
+        tone:
+          action.priority === "Critical"
+            ? "critical"
+            : action.priority === "High"
+              ? "warning"
+              : "info",
+      },
+    ];
+
+    if (isClosedAction(action)) {
+      items.push({
+        id: `action-closed-${action.id}`,
+        label: `Action completed: ${action.title || "Untitled action"}`,
+        source: "Action Tracker",
+        date: action.lastUpdated,
+        tone: "success",
+      });
+    }
+
+    return items;
+  });
+  const incidentItems = data.incidents.map((incident) => ({
+    id: `incident-${incident.id}`,
+    label: `Incident recorded: ${incident.title || incident.eventType}`,
+    source: "Incident Management" as const,
+    date: getPrimaryIncidentDate(incident),
+    tone:
+      incident.severity === "Critical" || incident.severity === "High"
+        ? ("critical" as const)
+        : ("warning" as const),
+  }));
+  const riskItems = data.risks.map((assessment) => ({
+    id: `risk-${assessment.id}`,
+    label: `Risk assessment saved: ${assessment.header.title || assessment.header.activity || "Untitled assessment"}`,
+    source: "Risk Assessments" as const,
+    date: getPrimaryRiskDate(assessment),
+    tone: assessment.hazards.some((hazard) => hazardResidualLevel(hazard) === "High")
+      ? ("critical" as const)
+      : ("info" as const),
+  }));
+  const trainingItems = data.training.records.map((record) => {
+    const employee = data.training.employees.find(
+      (item) => item.id === record.employeeId,
+    );
+    const trainingType = data.training.trainingTypes.find(
+      (item) => item.id === record.trainingTypeId,
+    );
+
+    return {
+      id: `training-${record.id}`,
+      label: `Training record added: ${employee?.name || "Employee"} - ${trainingType?.name || "Training"}`,
+      source: "Training Management" as const,
+      date: record.completedDate || record.expiryDate,
+      tone: getTrainingStatus(record.expiryDate) === "Expired"
+        ? ("warning" as const)
+        : ("success" as const),
+    };
+  });
+  const inspectionItems = data.inspections.map((inspection) => ({
+    id: `inspection-${inspection.id}`,
+    label: `Inspection saved: ${inspection.site || inspection.company || "Inspection"}`,
+    source: "Inspections" as const,
+    date: getPrimaryInspectionDate(inspection),
+    tone: (inspection.result?.percent ?? 0) < 80 ? ("warning" as const) : ("success" as const),
+  }));
+
+  return [
+    ...actionItems,
+    ...incidentItems,
+    ...riskItems,
+    ...trainingItems,
+    ...inspectionItems,
+  ]
+    .filter((item) => Boolean(item.date))
+    .sort((a, b) => {
+      const aTime = toDate(a.date)?.getTime() ?? 0;
+      const bTime = toDate(b.date)?.getTime() ?? 0;
+      return bTime - aTime;
+    })
+    .slice(0, 8);
 };
 
 const buildCompliancePercent = (data: AnalyticsData) => {
@@ -1417,13 +1867,16 @@ function HorizontalBars({
   emptyLabel,
   color = "#4DEBFF",
   darkMode,
+  showPercent = false,
 }: {
   data: Array<{ label: string; value: number }>;
   emptyLabel: string;
   color?: string;
   darkMode: boolean;
+  showPercent?: boolean;
 }) {
   const maxValue = Math.max(1, ...data.map((item) => item.value));
+  const totalValue = data.reduce((sum, item) => sum + item.value, 0);
   const visibleData = data.filter((item) => item.value > 0);
 
   if (visibleData.length === 0) {
@@ -1436,7 +1889,12 @@ function HorizontalBars({
         <div key={item.label}>
           <div className="mb-1 flex items-center justify-between gap-3 text-sm">
             <span className="min-w-0 truncate">{item.label}</span>
-            <span className="font-semibold">{item.value}</span>
+            <span className="shrink-0 font-semibold">
+              {item.value}
+              {showPercent && totalValue > 0
+                ? ` (${percentage(item.value, totalValue)}%)`
+                : ""}
+            </span>
           </div>
           <div
             className={joinClasses(
@@ -1462,7 +1920,13 @@ function RadialProgress({
   item,
   darkMode,
 }: {
-  item: { label: string; value: number; total: number };
+  item: {
+    label: string;
+    value: number;
+    total: number;
+    expired?: number;
+    expiringSoon?: number;
+  };
   darkMode: boolean;
 }) {
   const circumference = 2 * Math.PI * 38;
@@ -1504,6 +1968,30 @@ function RadialProgress({
       <div className={joinClasses("mt-1 text-xs", darkMode ? "text-slate-400" : "text-slate-600")}>
         {hasData ? `${item.total} requirements` : "No employee data"}
       </div>
+      {hasData ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-semibold">
+          <div
+            className={joinClasses(
+              "rounded-lg border px-2 py-1",
+              darkMode
+                ? "border-amber-400/20 bg-amber-400/10 text-amber-100"
+                : "border-amber-200 bg-amber-50 text-amber-800",
+            )}
+          >
+            Soon {item.expiringSoon ?? 0}
+          </div>
+          <div
+            className={joinClasses(
+              "rounded-lg border px-2 py-1",
+              darkMode
+                ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
+                : "border-rose-200 bg-rose-50 text-rose-700",
+            )}
+          >
+            Expired {item.expired ?? 0}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1645,16 +2133,29 @@ const heatTone = (value: number, darkMode: boolean) => {
 function RiskHeatmap({
   data,
   darkMode,
+  hasData,
 }: {
-  data: ReturnType<typeof buildRiskHeatmap>;
+  data: HeatmapRow[];
   darkMode: boolean;
+  hasData: boolean;
 }) {
-  if (data.length === 0) {
-    return <EmptyState label="No site or department risk exposure data yet." />;
-  }
+  const hasSignals = data.some((row) =>
+    row.cells.some((cell) => cell.value > 0),
+  );
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      {!hasData ? (
+        <div className="mb-4 rounded-2xl border border-dashed border-current/15 p-4 text-sm opacity-75">
+          No data available yet. Create actions, incidents, trainings, risk
+          assessments, or inspections to populate this risk heatmap.
+        </div>
+      ) : !hasSignals ? (
+        <div className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm font-semibold text-emerald-500">
+          No active exposure signals detected in the selected filters.
+        </div>
+      ) : null}
+      <div className="overflow-x-auto">
       <div className="min-w-[520px] space-y-2">
         {data.map((row) => (
           <div key={row.label} className="grid grid-cols-[140px_1fr] gap-2">
@@ -1672,12 +2173,13 @@ function RiskHeatmap({
                   title={`${row.label} / ${cell.label}: ${cell.value}`}
                 >
                   <div className="truncate">{cell.label}</div>
-                  <div className="mt-1 text-lg">{cell.value}</div>
+                  <div className="mt-1 text-lg">{hasData ? cell.value : "-"}</div>
                 </div>
               ))}
             </div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );
@@ -1726,6 +2228,407 @@ function BubbleFactors({
   );
 }
 
+const severityTone = (
+  severity: "good" | "success" | "info" | "warning" | "critical",
+  darkMode: boolean,
+) => {
+  if (severity === "critical") {
+    return darkMode
+      ? "border-rose-400/30 bg-rose-500/12 text-rose-100"
+      : "border-rose-200 bg-rose-50 text-rose-700";
+  }
+
+  if (severity === "warning") {
+    return darkMode
+      ? "border-amber-400/30 bg-amber-400/12 text-amber-100"
+      : "border-amber-200 bg-amber-50 text-amber-800";
+  }
+
+  if (severity === "good" || severity === "success") {
+    return darkMode
+      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-100"
+      : "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  return darkMode
+    ? "border-[#4DEBFF]/25 bg-[#4DEBFF]/10 text-[#DDFBFF]"
+    : "border-[#1E90FF]/20 bg-[#1E90FF]/10 text-[#0759A8]";
+};
+
+const sourceIcon = (source: SourceFilter): LucideIcon => {
+  if (source === "Action Tracker") {
+    return CheckCircle2;
+  }
+
+  if (source === "Risk Assessments") {
+    return TriangleAlert;
+  }
+
+  if (source === "Incident Management") {
+    return HeartPulse;
+  }
+
+  if (source === "Training Management") {
+    return GraduationCap;
+  }
+
+  if (source === "Inspections") {
+    return ClipboardCheck;
+  }
+
+  return Radar;
+};
+
+const formatActivityDate = (value: string) => {
+  const date = toDate(value);
+
+  if (!date) {
+    return "No date";
+  }
+
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+function FilterBar({
+  filters,
+  options,
+  onChange,
+  darkMode,
+}: {
+  filters: AnalyticsFilters;
+  options: ReturnType<typeof getFilterOptions>;
+  onChange: <Key extends keyof AnalyticsFilters>(
+    key: Key,
+    value: AnalyticsFilters[Key],
+  ) => void;
+  darkMode: boolean;
+}) {
+  const fieldClass = joinClasses(
+    "h-11 w-full rounded-xl border px-3 text-sm font-semibold outline-none transition",
+    darkMode
+      ? "border-white/10 bg-[#071225] text-white focus:border-[#4DEBFF]/45"
+      : "border-slate-200 bg-white text-slate-900 focus:border-[#1E90FF] focus:ring-4 focus:ring-[#1E90FF]/10",
+  );
+  const labelClass = joinClasses(
+    "text-[11px] font-bold uppercase tracking-[0.12em]",
+    darkMode ? "text-slate-400" : "text-slate-600",
+  );
+
+  return (
+    <div className="relative border-b border-white/10 px-5 py-4 sm:px-7">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <label className="min-w-0">
+          <span className={labelClass}>Time period</span>
+          <select
+            className={joinClasses(fieldClass, "mt-2")}
+            value={filters.timePeriod}
+            onChange={(event) =>
+              onChange("timePeriod", event.target.value as TimePeriod)
+            }
+          >
+            {timePeriodOptions.map((option) => (
+              <option key={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+        <label className="min-w-0">
+          <span className={labelClass}>Site / Location</span>
+          <select
+            className={joinClasses(fieldClass, "mt-2")}
+            value={filters.site}
+            onChange={(event) => onChange("site", event.target.value)}
+          >
+            <option>All sites</option>
+            {options.sites.map((site) => (
+              <option key={site}>{site}</option>
+            ))}
+          </select>
+        </label>
+        <label className="min-w-0">
+          <span className={labelClass}>Department</span>
+          <select
+            className={joinClasses(fieldClass, "mt-2")}
+            value={filters.department}
+            onChange={(event) => onChange("department", event.target.value)}
+          >
+            <option>All departments</option>
+            {options.departments.map((department) => (
+              <option key={department}>{department}</option>
+            ))}
+          </select>
+        </label>
+        <label className="min-w-0">
+          <span className={labelClass}>Source module</span>
+          <select
+            className={joinClasses(fieldClass, "mt-2")}
+            value={filters.source}
+            onChange={(event) =>
+              onChange("source", event.target.value as SourceFilter)
+            }
+          >
+            {sourceFilterOptions.map((option) => (
+              <option key={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function NeedsAttentionPanel({
+  alerts,
+  darkMode,
+}: {
+  alerts: AttentionAlert[];
+  darkMode: boolean;
+}) {
+  return (
+    <section
+      className={joinClasses(
+        "relative min-w-0 overflow-hidden rounded-3xl border p-5",
+        darkMode
+          ? "border-rose-400/20 bg-rose-500/[0.045] shadow-[0_24px_80px_rgba(0,0,0,0.24)]"
+          : "border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)]",
+      )}
+    >
+      <div className="absolute right-0 top-0 h-32 w-32 rounded-bl-full bg-rose-500/10 blur-2xl" />
+      <div className="relative flex items-start justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-rose-400/25 bg-rose-500/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-rose-300">
+            <AlertTriangle size={14} aria-hidden />
+            Needs Attention
+          </div>
+          <h2 className="mt-3 text-xl font-semibold tracking-tight">
+            Operational alert queue
+          </h2>
+        </div>
+        <div className="rounded-2xl border border-current/15 px-3 py-2 text-2xl font-bold">
+          {alerts.length}
+        </div>
+      </div>
+      <div className="relative mt-5 space-y-3">
+        {alerts.length > 0 ? (
+          alerts.map((alert) => {
+            const Icon = sourceIcon(alert.source);
+
+            return (
+              <div
+                key={`${alert.source}-${alert.title}`}
+                className={joinClasses(
+                  "rounded-2xl border p-4 transition hover:-translate-y-0.5",
+                  severityTone(alert.severity, darkMode),
+                )}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Icon size={15} aria-hidden />
+                      <h3 className="font-semibold">{alert.title}</h3>
+                      <span className="rounded-full border border-current/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]">
+                        {alert.source}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm opacity-85">{alert.detail}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <div className="rounded-xl border border-current/20 px-3 py-1 text-lg font-bold">
+                      {alert.count}
+                    </div>
+                    <button
+                      type="button"
+                      className="rounded-xl border border-current/20 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] opacity-90 transition hover:opacity-100"
+                    >
+                      View
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div
+            className={joinClasses(
+              "rounded-2xl border p-5 text-sm font-semibold",
+              severityTone("good", darkMode),
+            )}
+          >
+            All critical indicators are under control.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PriorityBreakdown({
+  data,
+  darkMode,
+}: {
+  data: Array<{ label: string; value: number }>;
+  darkMode: boolean;
+}) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const colors: Record<string, string> = {
+    Low: "#22C55E",
+    Medium: "#F59E0B",
+    High: "#F97316",
+    Critical: "#EF4444",
+  };
+
+  if (total === 0) {
+    return <EmptyState label="No Action Tracker priority data available yet." />;
+  }
+
+  return (
+    <div>
+      <div
+        className={joinClasses(
+          "flex h-8 overflow-hidden rounded-full border",
+          darkMode ? "border-white/10 bg-white/10" : "border-slate-200 bg-slate-100",
+        )}
+      >
+        {data.map((item) => (
+          <div
+            key={item.label}
+            className="h-full transition-all duration-700"
+            style={{
+              width: `${(item.value / total) * 100}%`,
+              background: colors[item.label],
+            }}
+            title={`${item.label}: ${item.value}`}
+          />
+        ))}
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {data.map((item) => (
+          <div
+            key={item.label}
+            className={joinClasses(
+              "rounded-2xl border p-3",
+              darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-slate-50",
+            )}
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: colors[item.label] }}
+              />
+              {item.label}
+            </div>
+            <div className="mt-2 text-2xl font-bold">{item.value}</div>
+            <div className={joinClasses("mt-1 text-xs", darkMode ? "text-slate-400" : "text-slate-600")}>
+              {percentage(item.value, total)}% of actions
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function OperationalProblemsRanking({
+  data,
+  darkMode,
+}: {
+  data: OperationalProblem[];
+  darkMode: boolean;
+}) {
+  if (data.length === 0) {
+    return (
+      <EmptyState label="No data available yet. Create actions/incidents/trainings to populate this chart." />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {data.map((item, index) => (
+        <div
+          key={item.label}
+          className={joinClasses(
+            "rounded-2xl border p-4",
+            darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-slate-50",
+          )}
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full border border-current/20 text-xs font-bold">
+                  {index + 1}
+                </span>
+                <h3 className="font-semibold">{item.label}</h3>
+                <span
+                  className={joinClasses(
+                    "rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]",
+                    severityTone(item.severity, darkMode),
+                  )}
+                >
+                  {item.severity}
+                </span>
+              </div>
+              <div className={joinClasses("mt-2 text-xs font-semibold uppercase tracking-[0.12em]", darkMode ? "text-slate-400" : "text-slate-600")}>
+                {item.source}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-current/15 px-4 py-2 text-2xl font-bold">
+              {item.value}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RecentActivityFeed({
+  data,
+  darkMode,
+}: {
+  data: ActivityFeedItem[];
+  darkMode: boolean;
+}) {
+  if (data.length === 0) {
+    return (
+      <EmptyState label="No data available yet. New actions, incidents, trainings, risk assessments, and inspections will appear here." />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {data.map((item) => {
+        const Icon = sourceIcon(item.source);
+
+        return (
+          <div
+            key={item.id}
+            className={joinClasses(
+              "flex items-start gap-3 rounded-2xl border p-3",
+              darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-slate-50",
+            )}
+          >
+            <div className={joinClasses("rounded-xl border p-2", severityTone(item.tone, darkMode))}>
+              <Icon size={15} aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="break-words text-sm font-semibold">{item.label}</div>
+              <div className={joinClasses("mt-1 flex flex-wrap gap-2 text-xs", darkMode ? "text-slate-400" : "text-slate-600")}>
+                <span>{item.source}</span>
+                <span aria-hidden>•</span>
+                <span>{formatActivityDate(item.date)}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function HseAnalyticsModule({
   userId,
   darkMode,
@@ -1739,6 +2642,7 @@ export default function HseAnalyticsModule({
     risks: [],
     inspections: [],
   }));
+  const [filters, setFilters] = useState<AnalyticsFilters>(defaultFilters);
 
   useEffect(() => {
     const load = () => setData(loadAnalyticsData(userId));
@@ -1754,19 +2658,33 @@ export default function HseAnalyticsModule({
     };
   }, [userId]);
 
+  const filterOptions = useMemo(() => getFilterOptions(data), [data]);
+  const filteredData = useMemo(
+    () => filterAnalyticsData(data, filters),
+    [data, filters],
+  );
+  const updateFilter = <Key extends keyof AnalyticsFilters>(
+    key: Key,
+    value: AnalyticsFilters[Key],
+  ) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+  };
+
   const analytics = useMemo(() => {
-    const actionTrend = buildActionTrend(data.actions);
-    const incidentTypeCounts = buildIncidentTypeCounts(data.incidents);
-    const rootCauseCounts = buildRootCauseCounts(data.incidents);
-    const trainingGaps = getTrainingGapCounts(data.training);
-    const trainingCompliance = buildTrainingCompliance(data.training);
-    const highRiskActivities = buildHighRiskActivities(data.risks);
-    const inspectionTrend = buildInspectionTrend(data.inspections);
-    const riskHeatmap = buildRiskHeatmap(data);
-    const topProblems = deriveProblemCounts(data);
-    const recurringFactors = buildRecurringFactors(data.incidents);
-    const needsAttention = makeNeedsAttention(data);
-    const highResidualRisks = data.risks.reduce(
+    const actionTrend = buildActionTrend(filteredData.actions);
+    const incidentTypeCounts = buildIncidentTypeCounts(filteredData.incidents);
+    const rootCauseCounts = buildRootCauseCounts(filteredData.incidents);
+    const trainingGaps = getTrainingGapCounts(filteredData.training);
+    const trainingCompliance = buildTrainingCompliance(filteredData.training);
+    const highRiskActivities = buildHighRiskActivities(filteredData.risks);
+    const inspectionTrend = buildInspectionTrend(filteredData.inspections);
+    const riskHeatmap = buildRiskHeatmap(filteredData);
+    const topProblems = deriveProblemCounts(filteredData);
+    const recurringFactors = buildRecurringFactors(filteredData.incidents);
+    const needsAttention = makeNeedsAttention(filteredData);
+    const actionPriorityCounts = buildActionPriorityCounts(filteredData.actions);
+    const recentActivity = buildRecentActivity(filteredData);
+    const highResidualRisks = filteredData.risks.reduce(
       (count, assessment) =>
         count +
         assessment.hazards.filter(
@@ -1775,10 +2693,10 @@ export default function HseAnalyticsModule({
         ).length,
       0,
     );
-    const openIncidents = data.incidents.filter(
+    const openIncidents = filteredData.incidents.filter(
       (incident) => incident.status !== "Closed",
     ).length;
-    const overallCompliance = buildCompliancePercent(data);
+    const overallCompliance = buildCompliancePercent(filteredData);
     const actionSparkline = actionTrend.map((item) => item.open + item.completed);
     const inspectionSparkline =
       inspectionTrend.length > 0 ? inspectionTrend.map((item) => item.score) : [0, 0, 0];
@@ -1795,14 +2713,16 @@ export default function HseAnalyticsModule({
       topProblems,
       recurringFactors,
       needsAttention,
+      actionPriorityCounts,
+      recentActivity,
       kpis: [
         {
           label: "Open Actions",
-          value: data.actions.filter((action) => !isClosedAction(action)).length,
+          value: filteredData.actions.filter((action) => !isClosedAction(action)).length,
           icon: CheckCircle2,
           accent: "#4DEBFF",
           trend: trendForLast30Days(
-            data.actions
+            filteredData.actions
               .filter((action) => !isClosedAction(action))
               .map((action) => action.createdDate),
           ),
@@ -1810,11 +2730,11 @@ export default function HseAnalyticsModule({
         },
         {
           label: "Overdue Actions",
-          value: data.actions.filter(isOverdueAction).length,
+          value: filteredData.actions.filter(isOverdueAction).length,
           icon: AlertTriangle,
           accent: "#F97316",
           trend: trendForLast30Days(
-            data.actions.filter(isOverdueAction).map((action) => action.dueDate),
+            filteredData.actions.filter(isOverdueAction).map((action) => action.dueDate),
           ),
           sparkline: actionSparkline,
         },
@@ -1823,7 +2743,7 @@ export default function HseAnalyticsModule({
           value: highResidualRisks,
           icon: ShieldAlert,
           accent: "#EF4444",
-          trend: trendForLast30Days(data.risks.map((risk) => risk.savedAt)),
+          trend: trendForLast30Days(filteredData.risks.map((risk) => risk.savedAt)),
           sparkline: highRiskActivities.map((item) => item.value),
         },
         {
@@ -1832,7 +2752,7 @@ export default function HseAnalyticsModule({
           icon: HeartPulse,
           accent: "#8B5CF6",
           trend: trendForLast30Days(
-            data.incidents
+            filteredData.incidents
               .filter((incident) => incident.status !== "Closed")
               .map((incident) => incident.dateTime || incident.createdAt),
           ),
@@ -1865,7 +2785,7 @@ export default function HseAnalyticsModule({
         },
       ] satisfies KpiCardData[],
     };
-  }, [data]);
+  }, [filteredData]);
 
   const hasAnyData =
     data.actions.length +
@@ -1874,6 +2794,14 @@ export default function HseAnalyticsModule({
       data.inspections.length +
       data.training.employees.length +
       data.training.records.length >
+    0;
+  const hasFilteredData =
+    filteredData.actions.length +
+      filteredData.incidents.length +
+      filteredData.risks.length +
+      filteredData.inspections.length +
+      filteredData.training.employees.length +
+      filteredData.training.records.length >
     0;
 
   return (
@@ -1926,6 +2854,13 @@ export default function HseAnalyticsModule({
             </button>
           </div>
 
+          <FilterBar
+            filters={filters}
+            options={filterOptions}
+            onChange={updateFilter}
+            darkMode={darkMode}
+          />
+
           <div className="relative grid gap-4 p-5 sm:p-7 md:grid-cols-2 xl:grid-cols-6">
             {analytics.kpis.map((card) => (
               <KpiCard key={card.label} card={card} darkMode={darkMode} />
@@ -1946,6 +2881,40 @@ export default function HseAnalyticsModule({
             are stored yet.
           </div>
         ) : null}
+
+        {hasAnyData && !hasFilteredData ? (
+          <div
+            className={joinClasses(
+              "rounded-3xl border p-6 text-sm leading-6",
+              theme.panel,
+              theme.muted,
+            )}
+          >
+            No data is available for the selected analytics filters. Adjust the
+            period, site, department, or source module to widen the command view.
+          </div>
+        ) : null}
+
+        <div className="grid gap-5 xl:grid-cols-12">
+          <div className="xl:col-span-7">
+            <NeedsAttentionPanel
+              alerts={analytics.needsAttention}
+              darkMode={darkMode}
+            />
+          </div>
+          <ChartCard
+            title="Action Priority Breakdown"
+            subtitle="Low, medium, high, and critical actions"
+            icon={ShieldAlert}
+            className="xl:col-span-5"
+            darkMode={darkMode}
+          >
+            <PriorityBreakdown
+              data={analytics.actionPriorityCounts}
+              darkMode={darkMode}
+            />
+          </ChartCard>
+        </div>
 
         <div className="grid gap-5 xl:grid-cols-12">
           <ChartCard
@@ -1979,6 +2948,7 @@ export default function HseAnalyticsModule({
               data={analytics.rootCauseCounts}
               emptyLabel="No incident root causes selected yet."
               darkMode={darkMode}
+              showPercent
             />
           </ChartCard>
 
@@ -2025,53 +2995,24 @@ export default function HseAnalyticsModule({
             className="xl:col-span-7"
             darkMode={darkMode}
           >
-            <RiskHeatmap data={analytics.riskHeatmap} darkMode={darkMode} />
+            <RiskHeatmap
+              data={analytics.riskHeatmap}
+              darkMode={darkMode}
+              hasData={hasFilteredData}
+            />
           </ChartCard>
 
           <ChartCard
-            title="Needs Attention"
-            subtitle="Operational signals requiring follow-up"
-            icon={AlertTriangle}
+            title="Recent Operational Activity"
+            subtitle="Latest saved records across Laboria workflows"
+            icon={LineChart}
             className="xl:col-span-5"
             darkMode={darkMode}
           >
-            {analytics.needsAttention.length > 0 ? (
-              <div className="space-y-3">
-                {analytics.needsAttention.map((item) => (
-                  <div
-                    key={item.title}
-                    className={joinClasses(
-                      "rounded-2xl border p-4",
-                      item.tone === "critical"
-                        ? darkMode
-                          ? "border-rose-400/25 bg-rose-500/10"
-                          : "border-rose-200 bg-rose-50"
-                        : item.tone === "warning"
-                          ? darkMode
-                            ? "border-amber-400/25 bg-amber-400/10"
-                            : "border-amber-200 bg-amber-50"
-                          : darkMode
-                            ? "border-[#4DEBFF]/20 bg-[#4DEBFF]/10"
-                            : "border-[#1E90FF]/20 bg-[#1E90FF]/10",
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="font-semibold">{item.title}</h3>
-                        <p className={joinClasses("mt-1 text-sm", theme.muted)}>
-                          {item.detail}
-                        </p>
-                      </div>
-                      <div className="rounded-xl border border-current/20 px-3 py-1 text-lg font-bold">
-                        {item.value}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState label="No urgent attention items detected from current records." />
-            )}
+            <RecentActivityFeed
+              data={analytics.recentActivity}
+              darkMode={darkMode}
+            />
           </ChartCard>
 
           <ChartCard
@@ -2081,10 +3022,8 @@ export default function HseAnalyticsModule({
             className="xl:col-span-6"
             darkMode={darkMode}
           >
-            <HorizontalBars
+            <OperationalProblemsRanking
               data={analytics.topProblems}
-              emptyLabel="No recurring operational problem patterns found yet."
-              color="#F97316"
               darkMode={darkMode}
             />
           </ChartCard>
