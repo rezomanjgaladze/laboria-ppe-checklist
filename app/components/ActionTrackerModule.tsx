@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
+import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
 
 const sourceModuleOptions = [
   "Manual",
@@ -1073,6 +1074,20 @@ export default function ActionTrackerModule({
                   )}
                 </button>
               </div>
+            </div>
+
+            <div className="mt-4">
+              <OrbitAiToolStrip
+                darkMode={darkMode}
+                compact
+                title="Action AI"
+                sourceModule="Action Tracker"
+                toolIds={[
+                  "corrective-actions",
+                  "prioritize-actions",
+                  "suggest-deadlines",
+                ]}
+              />
             </div>
 
             {notice ? (

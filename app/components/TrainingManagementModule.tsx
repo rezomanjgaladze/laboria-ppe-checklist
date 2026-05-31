@@ -27,6 +27,7 @@ import {
   type HseAction,
 } from "@/app/lib/actionTracker";
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
+import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
 
 const employeeStatusOptions = ["Active", "Inactive"] as const;
 const trainingRiskOptions = ["Low", "Medium", "High"] as const;
@@ -1658,6 +1659,20 @@ export default function TrainingManagementModule({
                   )}
                 </button>
               </div>
+            </div>
+
+            <div className="mt-4">
+              <OrbitAiToolStrip
+                darkMode={darkMode}
+                compact
+                title="Training AI"
+                sourceModule="Training Management"
+                toolIds={[
+                  "toolbox-talk",
+                  "training-material",
+                  "toolbox-talk-quiz",
+                ]}
+              />
             </div>
 
             {notice ? (

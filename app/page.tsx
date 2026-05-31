@@ -40,6 +40,7 @@ import IncidentManagementModule from "./components/IncidentManagementModule";
 import HseAnalyticsModule from "./components/HseAnalyticsModule";
 import SettingsModule from "./components/SettingsModule";
 import NotificationCenterDrawer from "./components/NotificationCenterDrawer";
+import OrbitAiToolStrip from "./components/OrbitAiToolStrip";
 import { createClient } from "@/lib/supabase/client";
 import {
   appendActionTrackerAction,
@@ -68,6 +69,7 @@ import {
   syncOrbitNotifications,
   type OrbitNotification,
 } from "@/app/lib/notificationCenter";
+import { orbitAiNavigationEvent } from "@/app/lib/orbitAi";
 import type { User } from "@supabase/supabase-js";
 
 type InspectionResult = {
@@ -740,6 +742,27 @@ export default function Home() {
       window.removeEventListener("storage", handleStorage);
     };
   }, [authUserId]);
+
+  useEffect(() => {
+    const handleAiNavigation = (event: Event) => {
+      const customEvent = event as CustomEvent<"billing" | "ai-intelligence">;
+      const intent = createWorkspaceNavigationIntent({
+        moduleId: "settings",
+        action: customEvent.detail === "ai-intelligence" ? "ai-intelligence" : "billing",
+      });
+
+      setWorkspaceNavigationIntent(intent);
+      setActiveWorkspaceModule("settings");
+      setShowWorkspaceMenu(false);
+      setShowHistory(false);
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    };
+
+    window.addEventListener(orbitAiNavigationEvent, handleAiNavigation);
+    return () => window.removeEventListener(orbitAiNavigationEvent, handleAiNavigation);
+  }, []);
 
   useEffect(() => {
     const refreshNotifications = () => {
@@ -2087,6 +2110,23 @@ export default function Home() {
                       PDF
                     </button>
                   </div>
+                </div>
+
+                <div className="mt-4">
+                  <OrbitAiToolStrip
+                    darkMode={darkMode}
+                    compact
+                    title="Inspection AI"
+                    sourceModule="Inspections"
+                    context={{
+                      inspectionItemCount: Object.keys(answers).length,
+                    }}
+                    toolIds={[
+                      "inspection-analysis",
+                      "inspection-summary",
+                      "inspection-actions",
+                    ]}
+                  />
                 </div>
 
                 <div

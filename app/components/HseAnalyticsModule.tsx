@@ -27,6 +27,7 @@ import {
   readActionTrackerActions,
   type HseAction,
 } from "@/app/lib/actionTracker";
+import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
 
 type AnalyticsModuleProps = {
   userId: string | null;
@@ -2860,6 +2861,21 @@ export default function HseAnalyticsModule({
             onChange={updateFilter}
             darkMode={darkMode}
           />
+
+          <div className="relative px-5 pt-5 sm:px-7">
+            <OrbitAiToolStrip
+              darkMode={darkMode}
+              compact
+              title="Analytics AI"
+              sourceModule="HSE Analytics"
+              toolIds={[
+                "workspace-analysis",
+                "risk-trends",
+                "executive-summary",
+                "predictive-warning",
+              ]}
+            />
+          </div>
 
           <div className="relative grid gap-4 p-5 sm:p-7 md:grid-cols-2 xl:grid-cols-6">
             {analytics.kpis.map((card) => (

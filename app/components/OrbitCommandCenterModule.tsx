@@ -30,6 +30,11 @@ import {
 } from "lucide-react";
 import { ALL_CHECKLISTS } from "@/app/data/checklists";
 import type { OrbitNotification } from "@/app/lib/notificationCenter";
+import OrbitAiModal from "@/app/components/OrbitAiModal";
+import {
+  getOrbitAiTool,
+  type OrbitAiToolId,
+} from "@/app/lib/orbitAi";
 import {
   readActionTrackerActions,
   type HseAction,
@@ -1342,7 +1347,7 @@ export default function OrbitCommandCenterModule({
     likelihood: number;
     severity: number;
   } | null>(null);
-  const [aiPreviewTitle, setAiPreviewTitle] = useState<string | null>(null);
+  const [aiPreviewToolId, setAiPreviewToolId] = useState<OrbitAiToolId | null>(null);
   const riskOverviewRef = useRef<HTMLDivElement | null>(null);
 
   const navigate = (request: WorkspaceNavigationRequest) => {
@@ -1784,13 +1789,13 @@ export default function OrbitCommandCenterModule({
         <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
           <AiIntelligenceCenter
             darkMode={darkMode}
-            onPreview={setAiPreviewTitle}
+            onPreview={setAiPreviewToolId}
           />
           <div className="space-y-5">
             <QuickActionPanel
               darkMode={darkMode}
               onNavigate={navigate}
-              onAiPreview={() => setAiPreviewTitle("AI Toolbox Talk Generator")}
+              onAiPreview={() => setAiPreviewToolId("toolbox-talk")}
             />
             <NotificationSummaryPanel
               darkMode={darkMode}
@@ -1817,16 +1822,11 @@ export default function OrbitCommandCenterModule({
           onNavigate={navigate}
         />
       ) : null}
-      {aiPreviewTitle ? (
-        <AiPreviewModal
-          title={aiPreviewTitle}
-          darkMode={darkMode}
-          onClose={() => setAiPreviewTitle(null)}
-          onOpenSettings={() =>
-            navigate({ moduleId: "settings", action: "ai-intelligence" })
-          }
-        />
-      ) : null}
+      <OrbitAiModal
+        darkMode={darkMode}
+        toolId={aiPreviewToolId}
+        onClose={() => setAiPreviewToolId(null)}
+      />
     </section>
   );
 }
@@ -2821,114 +2821,37 @@ function HeatmapRiskPanel({
   );
 }
 
-function AiPreviewModal({
-  title,
-  darkMode,
-  onClose,
-  onOpenSettings,
-}: {
-  title: string;
-  darkMode: boolean;
-  onClose: () => void;
-  onOpenSettings: () => void;
-}) {
-  const theme = getTheme(darkMode);
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center px-4 py-6">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        aria-label="Close AI feature preview"
-        onClick={onClose}
-      />
-      <div
-        className={joinClasses(
-          "relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border p-6 shadow-[0_30px_100px_rgba(0,0,0,0.38)]",
-          darkMode
-            ? "border-[#4DEBFF]/20 bg-[#071225] text-white"
-            : "border-[#1E90FF]/20 bg-white text-slate-950",
-        )}
-      >
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#4DEBFF] to-transparent" />
-        <div className="flex items-start justify-between gap-4">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl border border-[#4DEBFF]/25 bg-[#4DEBFF]/10 text-[#4DEBFF]">
-            <Sparkles size={22} aria-hidden />
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className={joinClasses(
-              "rounded-xl border p-2 transition hover:border-[#4DEBFF]/45",
-              darkMode ? "border-white/10 bg-white/[0.05]" : "border-slate-200 bg-slate-50",
-            )}
-            aria-label="Close AI feature preview"
-          >
-            <X size={18} aria-hidden />
-          </button>
-        </div>
-        <div className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-[#4DEBFF]">
-          Enterprise AI Feature
-        </div>
-        <h3 className={joinClasses("mt-2 text-2xl font-semibold", theme.heading)}>
-          {title}
-        </h3>
-        <p className={joinClasses("mt-3 text-sm leading-6", theme.muted)}>
-          Enterprise AI feature coming soon. Orbit AI will extend the workspace
-          with controlled operational intelligence while keeping HSE teams in
-          charge of every decision.
-        </p>
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className={joinClasses(
-              "rounded-xl border px-4 py-3 text-sm font-semibold transition",
-              darkMode ? "border-white/10 bg-white/[0.05]" : "border-slate-200 bg-slate-50",
-            )}
-          >
-            Close
-          </button>
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className="rounded-xl bg-[#1E90FF] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1878d6]"
-          >
-            Open AI Intelligence
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function AiIntelligenceCenter({
   darkMode,
   onPreview,
 }: {
   darkMode: boolean;
-  onPreview: (title: string) => void;
+  onPreview: (toolId: OrbitAiToolId) => void;
 }) {
   const theme = getTheme(darkMode);
   const insights = [
     {
-      title: "Repeated PPE non-compliance trend detected",
-      detail: "Future AI will scan inspection comments and failed findings for recurring compliance patterns.",
+      toolId: "workspace-analysis" as const,
+      title: "AI Workspace Analysis",
+      detail: "Review actions, incidents, risks, inspections, and training signals in one controlled analysis.",
       icon: ShieldCheck,
     },
     {
-      title: "3 similar incidents identified",
-      detail: "Future AI will cluster incident narratives, root causes, and follow-up actions.",
+      toolId: "risk-trends" as const,
+      title: "AI Risk Trends",
+      detail: "Surface recurring risk patterns and operational movement across workflows.",
       icon: HeartPulse,
     },
     {
-      title: "Electrical risks increasing this month",
-      detail: "Future AI will surface risk movement across activities, departments, and residual scores.",
+      toolId: "executive-summary" as const,
+      title: "AI Executive Summary",
+      detail: "Prepare a management-ready monthly operational HSE summary.",
       icon: Zap,
     },
     {
-      title: "Training gaps detected in warehouse team",
-      detail: "Future AI will recommend action priorities from role, risk, and expiry context.",
+      toolId: "predictive-warning" as const,
+      title: "AI Predictive Warning",
+      detail: "Preview department-level early warning intelligence for HSE teams.",
       icon: GraduationCap,
     },
   ];
@@ -2967,7 +2890,7 @@ function AiIntelligenceCenter({
               <button
                 type="button"
                 key={insight.title}
-                onClick={() => onPreview(insight.title)}
+                onClick={() => onPreview(insight.toolId)}
                 className={joinClasses(
                   "cursor-pointer rounded-2xl border p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#4DEBFF]/45 hover:shadow-[0_14px_42px_rgba(77,235,255,0.10)] focus:outline-none focus:ring-2 focus:ring-[#4DEBFF]/50",
                   darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white/75",
@@ -2989,6 +2912,9 @@ function AiIntelligenceCenter({
                     </div>
                     <p className={joinClasses("mt-2 text-xs leading-5", theme.muted)}>
                       {insight.detail}
+                    </p>
+                    <p className="mt-3 inline-flex items-center gap-1 rounded-full border border-[#4DEBFF]/20 bg-[#4DEBFF]/10 px-2 py-1 text-[10px] font-semibold text-[#4DEBFF]">
+                      {getOrbitAiTool(insight.toolId).creditLabel} / Locked
                     </p>
                   </div>
                 </div>
@@ -3078,7 +3004,7 @@ function QuickActionPanel({
                 {action.label}
                 {action.aiPreview ? (
                   <span className="mt-1 block text-xs font-medium text-[#4DEBFF]">
-                    Coming Soon
+                    {getOrbitAiTool("toolbox-talk").creditLabel} / Locked
                   </span>
                 ) : null}
               </span>

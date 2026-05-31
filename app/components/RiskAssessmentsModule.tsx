@@ -29,6 +29,7 @@ import {
   type WorkspaceSettings,
 } from "@/app/lib/workspaceSettings";
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
+import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
 
 type RiskValue = 1 | 2 | 3 | 4 | 5;
 type RiskLevel = "Low" | "Medium" | "High";
@@ -9550,6 +9551,22 @@ export default function RiskAssessmentsModule({
                   Export PDF
                 </button>
               </div>
+            </div>
+
+            <div className="mt-4">
+              <OrbitAiToolStrip
+                darkMode={darkMode}
+                compact
+                title="Risk Assessment AI"
+                sourceModule="Risk Assessments"
+                context={{ hazardCount: hazards.length }}
+                toolIds={[
+                  "risk-assessment-basic",
+                  "suggest-hazards",
+                  "recommend-controls",
+                  "risk-review-advanced",
+                ]}
+              />
             </div>
 
             {notice ? (

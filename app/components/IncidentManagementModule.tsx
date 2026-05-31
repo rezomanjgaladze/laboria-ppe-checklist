@@ -25,6 +25,7 @@ import {
   type HseAction,
 } from "@/app/lib/actionTracker";
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
+import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
 
 const eventTypeOptions = [
   "Incident",
@@ -1605,6 +1606,21 @@ export default function IncidentManagementModule({
                   )}
                 </button>
               </div>
+            </div>
+
+            <div className="mt-4">
+              <OrbitAiToolStrip
+                darkMode={darkMode}
+                compact
+                title="Incident AI"
+                sourceModule="Incident Management"
+                toolIds={[
+                  "incident-investigation",
+                  "incident-root-causes",
+                  "corrective-actions",
+                  "incident-report",
+                ]}
+              />
             </div>
 
             {notice ? (

@@ -37,6 +37,11 @@ import {
   type WorkspaceSettings,
 } from "@/app/lib/workspaceSettings";
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
+import OrbitAiModal from "@/app/components/OrbitAiModal";
+import {
+  getOrbitAiTool,
+  type OrbitAiToolId,
+} from "@/app/lib/orbitAi";
 
 type SettingsSectionId =
   | "company-profile"
@@ -154,7 +159,7 @@ const settingsSections: SettingsSection[] = [
   {
     id: "ai-intelligence",
     label: "AI Intelligence",
-    description: "Future Enterprise AI capabilities.",
+    description: "Preview Orbit AI tools and credit requirements.",
     icon: Sparkles,
   },
 ];
@@ -276,46 +281,55 @@ const aiCreditPacks = [
 
 const aiCards = [
   {
+    toolId: "toolbox-talk" as const,
     title: "AI Toolbox Talks",
     description: "Generate targeted toolbox talk drafts from operational risks.",
     icon: FileText,
   },
   {
+    toolId: "incident-investigation" as const,
     title: "AI Incident Investigation Assistant",
     description: "Guide investigation notes, cause analysis, and follow-up quality.",
     icon: TriangleAlert,
   },
   {
+    toolId: "corrective-actions" as const,
     title: "AI Corrective Action Recommendations",
     description: "Suggest practical corrective and preventive action structures.",
     icon: CheckCircle2,
   },
   {
+    toolId: "risk-assessment-basic" as const,
     title: "AI Risk Assessment Helper",
     description: "Support hazard identification and control hierarchy selection.",
     icon: ShieldCheck,
   },
   {
+    toolId: "inspection-analysis" as const,
     title: "AI Inspection Analysis",
     description: "Summarize recurring checklist findings and weak controls.",
     icon: BarChart3,
   },
   {
+    toolId: "risk-trends" as const,
     title: "AI Trend Detection",
     description: "Identify emerging risk patterns across modules.",
     icon: Cpu,
   },
   {
+    toolId: "predictive-warning" as const,
     title: "AI Predictive Risk Warnings",
     description: "Surface early warning indicators before escalation.",
     icon: Sparkles,
   },
   {
+    toolId: "document-generation" as const,
     title: "AI Document Generation",
     description: "Prepare professional HSE documents from verified workspace data.",
     icon: FileText,
   },
   {
+    toolId: "compliance-assistant" as const,
     title: "AI Compliance Assistant",
     description: "Future compliance support for policy and evidence workflows.",
     icon: Bot,
@@ -405,6 +419,7 @@ export default function SettingsModule({
   );
   const [notice, setNotice] = useState("Settings are ready.");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [activeAiToolId, setActiveAiToolId] = useState<OrbitAiToolId | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const theme = getTheme(darkMode);
 
@@ -1348,7 +1363,7 @@ export default function SettingsModule({
   const renderAiIntelligence = () => (
     <SettingsCard
       title="AI Intelligence"
-      description="Visual architecture for future Enterprise AI capabilities. No AI functionality is active yet."
+      description="Preview Orbit AI tools, workflow inputs, and credit requirements. Generation remains intentionally disabled until the AI service is activated."
       icon={Sparkles}
       theme={theme}
     >
@@ -1357,10 +1372,12 @@ export default function SettingsModule({
           const Icon = card.icon;
 
           return (
-            <div
+            <button
+              type="button"
               key={card.title}
+              onClick={() => setActiveAiToolId(card.toolId)}
               className={joinClasses(
-                "group relative overflow-hidden rounded-3xl border p-5 transition hover:-translate-y-0.5",
+                "group relative overflow-hidden rounded-3xl border p-5 text-left transition hover:-translate-y-0.5",
                 darkMode
                   ? "border-[#4DEBFF]/18 bg-[#061124]/82 shadow-[0_18px_60px_rgba(77,235,255,0.06)]"
                   : "border-[#1E90FF]/20 bg-white shadow-[0_18px_50px_rgba(30,144,255,0.09)]",
@@ -1388,10 +1405,10 @@ export default function SettingsModule({
                     theme.badge,
                   )}
                 >
-                  Coming Soon
+                  {getOrbitAiTool(card.toolId).creditLabel} / Locked / Coming Soon
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -1567,6 +1584,11 @@ export default function SettingsModule({
           </div>
         </div>
       ) : null}
+      <OrbitAiModal
+        darkMode={darkMode}
+        toolId={activeAiToolId}
+        onClose={() => setActiveAiToolId(null)}
+      />
     </div>
   );
 
