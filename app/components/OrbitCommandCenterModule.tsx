@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Activity,
   ArrowUpRight,
@@ -23,6 +23,7 @@ import {
   Sparkles,
   Target,
   TriangleAlert,
+  X,
   Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -32,21 +33,17 @@ import {
   type HseAction,
 } from "@/app/lib/actionTracker";
 import type { WorkspaceSettings } from "@/app/lib/workspaceSettings";
-
-type DashboardModuleTarget =
-  | "action-tracker"
-  | "inspections"
-  | "risk-assessments"
-  | "training-management"
-  | "incident-management"
-  | "hse-analytics"
-  | "settings";
+import {
+  createWorkspaceNavigationIntent,
+  type WorkspaceNavigationIntent,
+  type WorkspaceNavigationRequest,
+} from "@/app/lib/workspaceNavigation";
 
 type OrbitCommandCenterModuleProps = {
   userId: string | null;
   darkMode: boolean;
   workspaceSettings: WorkspaceSettings;
-  onNavigate: (moduleId: DashboardModuleTarget) => void;
+  onNavigate: (intent: WorkspaceNavigationIntent) => void;
 };
 
 type TimePeriod = "Last 7 days" | "Last 30 days" | "This month" | "All time";
@@ -110,6 +107,7 @@ type HazardRow = {
   initialSeverity: number;
   residualProbability: number;
   residualSeverity: number;
+  responsiblePerson: string;
   status: string;
   comments: string;
 };
@@ -159,6 +157,7 @@ type FeedItem = {
   source: string;
   tone: "info" | "success" | "warning" | "critical";
   icon: LucideIcon;
+  navigation?: WorkspaceNavigationRequest;
 };
 
 type KpiCard = {
@@ -170,6 +169,8 @@ type KpiCard = {
   sparkline: number[];
   icon: LucideIcon;
   tone: "blue" | "green" | "yellow" | "red" | "cyan";
+  navigation?: WorkspaceNavigationRequest;
+  action?: "scroll-risk-overview";
 };
 
 type ChartDatum = {
@@ -573,6 +574,7 @@ const readRiskAssessments = (userId: string | null): RiskAssessment[] => {
                   1,
                   5,
                 ),
+                responsiblePerson: getString(hazard.responsiblePerson),
                 status: getString(hazard.status) || "Open",
                 comments: getString(hazard.comments),
               }))
@@ -1053,6 +1055,11 @@ const buildFeedItems = (data: DashboardData): FeedItem[] => {
           ? "warning"
           : "info",
     icon: CheckCircle2,
+    navigation: {
+      moduleId: "action-tracker",
+      action: "open-record",
+      recordId: action.id,
+    },
   }));
   const incidentItems: FeedItem[] = data.incidents.map((incident) => ({
     id: `incident-${incident.id}`,
@@ -1067,6 +1074,11 @@ const buildFeedItems = (data: DashboardData): FeedItem[] => {
         ? "critical"
         : "warning",
     icon: HeartPulse,
+    navigation: {
+      moduleId: "incident-management",
+      action: "open-record",
+      recordId: incident.id,
+    },
   }));
   const riskItems: FeedItem[] = data.risks.map((assessment) => ({
     id: `risk-${assessment.id}`,
@@ -1082,6 +1094,11 @@ const buildFeedItems = (data: DashboardData): FeedItem[] => {
       ? "critical"
       : "info",
     icon: TriangleAlert,
+    navigation: {
+      moduleId: "risk-assessments",
+      action: "open-record",
+      recordId: String(assessment.id),
+    },
   }));
   const inspectionItems: FeedItem[] = data.inspections.map((inspection) => ({
     id: `inspection-${inspection.id}`,
@@ -1093,6 +1110,11 @@ const buildFeedItems = (data: DashboardData): FeedItem[] => {
     source: "Inspections",
     tone: inspection.result.percent >= 80 ? "success" : "warning",
     icon: ClipboardCheck,
+    navigation: {
+      moduleId: "inspections",
+      action: "history",
+      recordId: String(inspection.id),
+    },
   }));
   const trainingItems: FeedItem[] = data.training.records.map((record) => {
     const employee = data.training.employees.find(
@@ -1121,6 +1143,10 @@ const buildFeedItems = (data: DashboardData): FeedItem[] => {
             ? "warning"
             : "success",
       icon: GraduationCap,
+      navigation: {
+        moduleId: "training-management",
+        action: "compliance",
+      },
     } satisfies FeedItem;
   });
 
@@ -1304,6 +1330,16 @@ export default function OrbitCommandCenterModule({
   const [data, setData] = useState<DashboardData>(() => loadDashboardData(userId));
   const [filters, setFilters] = useState<DashboardFilters>(defaultFilters);
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [selectedHeatmapCell, setSelectedHeatmapCell] = useState<{
+    likelihood: number;
+    severity: number;
+  } | null>(null);
+  const [aiPreviewTitle, setAiPreviewTitle] = useState<string | null>(null);
+  const riskOverviewRef = useRef<HTMLDivElement | null>(null);
+
+  const navigate = (request: WorkspaceNavigationRequest) => {
+    onNavigate(createWorkspaceNavigationIntent(request));
+  };
 
   useEffect(() => {
     const load = () => setData(loadDashboardData(userId));
@@ -1400,6 +1436,7 @@ export default function OrbitCommandCenterModule({
       sparkline: metrics.actionSeries.map((item) => item.value),
       icon: CheckCircle2,
       tone: metrics.overdueActions.length > 0 ? "yellow" : "blue",
+      navigation: { moduleId: "action-tracker", action: "filter-open" },
     },
     {
       label: "Overdue Actions",
@@ -1409,6 +1446,7 @@ export default function OrbitCommandCenterModule({
       sparkline: makeSparkline(metrics.overdueActions.length, true),
       icon: Clock,
       tone: metrics.overdueActions.length > 0 ? "red" : "green",
+      navigation: { moduleId: "action-tracker", action: "filter-overdue" },
     },
     {
       label: "High Risks",
@@ -1418,6 +1456,7 @@ export default function OrbitCommandCenterModule({
       sparkline: metrics.highRiskSeries.map((item) => item.value),
       icon: TriangleAlert,
       tone: metrics.riskCounts.high > 0 ? "red" : "green",
+      navigation: { moduleId: "risk-assessments", action: "filter-high" },
     },
     {
       label: "Active Incidents",
@@ -1427,6 +1466,7 @@ export default function OrbitCommandCenterModule({
       sparkline: metrics.incidentSeries.map((item) => item.value),
       icon: HeartPulse,
       tone: metrics.activeIncidents.length > 0 ? "yellow" : "green",
+      navigation: { moduleId: "incident-management", action: "filter-active" },
     },
     {
       label: "Training Compliance",
@@ -1442,6 +1482,7 @@ export default function OrbitCommandCenterModule({
           : metrics.training.percent >= 65
             ? "yellow"
             : "red",
+      navigation: { moduleId: "training-management", action: "compliance" },
     },
     {
       label: "Inspection Pass Rate",
@@ -1457,6 +1498,7 @@ export default function OrbitCommandCenterModule({
           : metrics.inspectionPassRate >= 70
             ? "yellow"
             : "red",
+      navigation: { moduleId: "inspections", action: "history" },
     },
     {
       label: "AI Credits Remaining",
@@ -1466,6 +1508,7 @@ export default function OrbitCommandCenterModule({
       sparkline: [0, 0, 0, 0, 0, 0],
       icon: Bot,
       tone: "cyan",
+      navigation: { moduleId: "settings", action: "billing" },
     },
     {
       label: "Overall Safety Score",
@@ -1481,6 +1524,7 @@ export default function OrbitCommandCenterModule({
           : metrics.safetyScore >= 70
             ? "yellow"
             : "red",
+      action: "scroll-risk-overview",
     },
   ];
 
@@ -1640,16 +1684,44 @@ export default function OrbitCommandCenterModule({
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {kpis.map((item) => (
-            <KpiCard key={item.label} item={item} darkMode={darkMode} />
+            <KpiCard
+              key={item.label}
+              item={item}
+              darkMode={darkMode}
+              onClick={() => {
+                if (item.navigation) {
+                  navigate(item.navigation);
+                  return;
+                }
+
+                riskOverviewRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }}
+            />
           ))}
         </div>
 
         <div className="grid gap-5 xl:grid-cols-[1.35fr_0.9fr]">
-          <RiskHeatmap risks={filteredData.risks} darkMode={darkMode} />
-          <ActivityFeed items={feedItems} darkMode={darkMode} />
+          <RiskHeatmap
+            risks={filteredData.risks}
+            darkMode={darkMode}
+            onSelectCell={(likelihood, severity) =>
+              setSelectedHeatmapCell({ likelihood, severity })
+            }
+          />
+          <ActivityFeed
+            items={feedItems}
+            darkMode={darkMode}
+            onNavigate={navigate}
+          />
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+        <div
+          ref={riskOverviewRef}
+          className="scroll-mt-6 grid gap-5 xl:grid-cols-[0.85fr_1.15fr]"
+        >
           <SafetyScorePanel
             score={metrics.safetyScore}
             attentionItems={attentionItems}
@@ -1702,9 +1774,16 @@ export default function OrbitCommandCenterModule({
         </div>
 
         <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-          <AiIntelligenceCenter darkMode={darkMode} />
+          <AiIntelligenceCenter
+            darkMode={darkMode}
+            onPreview={setAiPreviewTitle}
+          />
           <div className="space-y-5">
-            <QuickActionPanel darkMode={darkMode} onNavigate={onNavigate} />
+            <QuickActionPanel
+              darkMode={darkMode}
+              onNavigate={navigate}
+              onAiPreview={() => setAiPreviewTitle("AI Toolbox Talk Generator")}
+            />
             <ChartCard
               title="Recurring Incident Factors"
               subtitle="Root cause patterns from incident history"
@@ -1715,6 +1794,25 @@ export default function OrbitCommandCenterModule({
           </div>
         </div>
       </div>
+      {selectedHeatmapCell ? (
+        <HeatmapRiskPanel
+          cell={selectedHeatmapCell}
+          risks={filteredData.risks}
+          darkMode={darkMode}
+          onClose={() => setSelectedHeatmapCell(null)}
+          onNavigate={navigate}
+        />
+      ) : null}
+      {aiPreviewTitle ? (
+        <AiPreviewModal
+          title={aiPreviewTitle}
+          darkMode={darkMode}
+          onClose={() => setAiPreviewTitle(null)}
+          onOpenSettings={() =>
+            navigate({ moduleId: "settings", action: "ai-intelligence" })
+          }
+        />
+      ) : null}
     </section>
   );
 }
@@ -1885,15 +1983,26 @@ function SelectField({
   );
 }
 
-function KpiCard({ item, darkMode }: { item: KpiCard; darkMode: boolean }) {
+function KpiCard({
+  item,
+  darkMode,
+  onClick,
+}: {
+  item: KpiCard;
+  darkMode: boolean;
+  onClick: () => void;
+}) {
   const tone = toneClasses[item.tone];
   const Icon = item.icon;
   const value = `${compactNumber(item.value)}${item.suffix ?? ""}`;
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Open ${item.label}`}
       className={joinClasses(
-        "group relative overflow-hidden rounded-3xl border p-4 transition duration-300 hover:-translate-y-1",
+        "group relative cursor-pointer overflow-hidden rounded-3xl border p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-[#4DEBFF]/45 focus:outline-none focus:ring-2 focus:ring-[#4DEBFF]/60",
         darkMode ? "border-white/10 bg-white/[0.05]" : "border-slate-200 bg-white",
         tone.glow,
       )}
@@ -1933,7 +2042,7 @@ function KpiCard({ item, darkMode }: { item: KpiCard; darkMode: boolean }) {
           {item.trend}%
         </span>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -1971,9 +2080,11 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
 function RiskHeatmap({
   risks,
   darkMode,
+  onSelectCell,
 }: {
   risks: RiskAssessment[];
   darkMode: boolean;
+  onSelectCell: (likelihood: number, severity: number) => void;
 }) {
   const theme = getTheme(darkMode);
   const counts = new Map<string, number>();
@@ -2014,11 +2125,14 @@ function RiskHeatmap({
                       : "from-emerald-400/55 to-emerald-600/32 border-emerald-300/35";
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={`${likelihood}-${severity}`}
                     title={`Likelihood ${likelihood}, Severity ${severity}: ${count} hazards`}
+                    aria-label={`Open likelihood ${likelihood}, severity ${severity} risks`}
+                    onClick={() => onSelectCell(likelihood, severity)}
                     className={joinClasses(
-                      "group relative aspect-square overflow-hidden rounded-2xl border bg-gradient-to-br p-2 transition duration-300 hover:scale-[1.04]",
+                      "group relative aspect-square cursor-pointer overflow-hidden rounded-2xl border bg-gradient-to-br p-2 text-left transition duration-300 hover:scale-[1.04] focus:outline-none focus:ring-2 focus:ring-white/70",
                       color,
                     )}
                     style={{
@@ -2040,7 +2154,7 @@ function RiskHeatmap({
                       </span>
                     </div>
                     <div className="absolute inset-x-2 bottom-2 h-px scale-x-0 bg-white/70 transition group-hover:scale-x-100" />
-                  </div>
+                  </button>
                 );
               }),
             )}
@@ -2055,7 +2169,15 @@ function RiskHeatmap({
   );
 }
 
-function ActivityFeed({ items, darkMode }: { items: FeedItem[]; darkMode: boolean }) {
+function ActivityFeed({
+  items,
+  darkMode,
+  onNavigate,
+}: {
+  items: FeedItem[];
+  darkMode: boolean;
+  onNavigate: (request: WorkspaceNavigationRequest) => void;
+}) {
   const theme = getTheme(darkMode);
   const visibleItems =
     items.length > 0
@@ -2092,13 +2214,24 @@ function ActivityFeed({ items, darkMode }: { items: FeedItem[]; darkMode: boolea
                   : "border-[#4DEBFF]/25 bg-[#4DEBFF]/10 text-[#4DEBFF]";
 
           return (
-            <div
+            <button
+              type="button"
               key={item.id}
+              disabled={!item.navigation}
+              onClick={() => {
+                if (item.navigation) {
+                  onNavigate(item.navigation);
+                }
+              }}
               className={joinClasses(
-                "rounded-2xl border p-3 transition hover:border-[#4DEBFF]/35",
+                "group relative w-full overflow-hidden rounded-2xl border p-3 text-left transition duration-200",
+                item.navigation
+                  ? "cursor-pointer hover:border-[#4DEBFF]/45 hover:bg-[#1E90FF]/10 hover:shadow-[0_14px_40px_rgba(30,144,255,0.12)] focus:outline-none focus:ring-2 focus:ring-[#4DEBFF]/50"
+                  : "cursor-default",
                 darkMode ? "border-white/10 bg-white/[0.035]" : "border-slate-200 bg-slate-50",
               )}
             >
+              <span className="absolute inset-y-0 left-0 w-1 -translate-x-full bg-[#4DEBFF] transition-transform duration-200 group-hover:translate-x-0" />
               <div className="flex gap-3">
                 <div className={joinClasses("grid h-9 w-9 shrink-0 place-items-center rounded-xl border", tone)}>
                   <Icon className="h-4 w-4" aria-hidden />
@@ -2120,7 +2253,7 @@ function ActivityFeed({ items, darkMode }: { items: FeedItem[]; darkMode: boolea
                   </p>
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -2544,7 +2677,224 @@ function HorizontalBars({
   );
 }
 
-function AiIntelligenceCenter({ darkMode }: { darkMode: boolean }) {
+function HeatmapRiskPanel({
+  cell,
+  risks,
+  darkMode,
+  onClose,
+  onNavigate,
+}: {
+  cell: { likelihood: number; severity: number };
+  risks: RiskAssessment[];
+  darkMode: boolean;
+  onClose: () => void;
+  onNavigate: (request: WorkspaceNavigationRequest) => void;
+}) {
+  const theme = getTheme(darkMode);
+  const relatedHazards = risks.flatMap((assessment) =>
+    assessment.hazards
+      .filter(
+        (hazard) =>
+          hazard.residualProbability === cell.likelihood &&
+          hazard.residualSeverity === cell.severity,
+      )
+      .map((hazard) => ({
+        assessment,
+        hazard,
+        score: hazard.residualProbability * hazard.residualSeverity,
+      })),
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+        aria-label="Close risk heatmap details"
+        onClick={onClose}
+      />
+      <aside
+        className={joinClasses(
+          "relative z-10 h-full w-full max-w-xl overflow-y-auto border-l p-5 shadow-[-24px_0_80px_rgba(0,0,0,0.34)] sm:p-7",
+          darkMode
+            ? "border-white/10 bg-[#071225] text-white"
+            : "border-slate-200 bg-white text-slate-950",
+        )}
+        aria-label="Risk heatmap cell details"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#4DEBFF]">
+              Orbit Risk Heatmap
+            </div>
+            <h3 className="mt-2 text-2xl font-semibold">
+              Likelihood {cell.likelihood} x Severity {cell.severity}
+            </h3>
+            <p className={joinClasses("mt-2 text-sm", theme.muted)}>
+              {relatedHazards.length} related residual risk{" "}
+              {relatedHazards.length === 1 ? "hazard" : "hazards"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className={joinClasses(
+              "rounded-xl border p-2 transition hover:border-[#4DEBFF]/45",
+              darkMode ? "border-white/10 bg-white/[0.05]" : "border-slate-200 bg-slate-50",
+            )}
+            aria-label="Close risk heatmap details"
+          >
+            <X size={18} aria-hidden />
+          </button>
+        </div>
+
+        <div className="mt-6 space-y-3">
+          {relatedHazards.length === 0 ? (
+            <div
+              className={joinClasses(
+                "rounded-2xl border border-dashed p-6 text-sm leading-6",
+                darkMode ? "border-white/15 text-slate-300" : "border-slate-300 text-slate-600",
+              )}
+            >
+              No risks exist in this matrix zone for the active Command Center
+              filters.
+            </div>
+          ) : (
+            relatedHazards.map(({ assessment, hazard, score }, index) => (
+              <div
+                key={`${assessment.id}-${hazard.hazardDescription}-${index}`}
+                className={joinClasses(
+                  "rounded-2xl border p-4",
+                  darkMode ? "border-white/10 bg-white/[0.045]" : "border-slate-200 bg-slate-50",
+                )}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="rounded-full border border-rose-300/25 bg-rose-500/10 px-2.5 py-1 text-xs font-semibold text-rose-300">
+                    Residual risk {score} / {riskLevelFromScore(score)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onNavigate({
+                        moduleId: "risk-assessments",
+                        action: "open-record",
+                        recordId: String(assessment.id),
+                      })
+                    }
+                    className="text-xs font-semibold text-[#4DEBFF] transition hover:text-white"
+                  >
+                    Open assessment
+                  </button>
+                </div>
+                <h4 className={joinClasses("mt-3 font-semibold", theme.heading)}>
+                  {hazard.hazardDescription ||
+                    hazard.workplaceActivity ||
+                    assessment.header.title ||
+                    "Untitled hazard"}
+                </h4>
+                <div className={joinClasses("mt-3 grid gap-2 text-sm sm:grid-cols-2", theme.soft)}>
+                  <div>Department: {assessment.header.department || "Not assigned"}</div>
+                  <div>Risk owner: {hazard.responsiblePerson || "Unassigned"}</div>
+                  <div>Likelihood: {hazard.residualProbability}</div>
+                  <div>Severity: {hazard.residualSeverity}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function AiPreviewModal({
+  title,
+  darkMode,
+  onClose,
+  onOpenSettings,
+}: {
+  title: string;
+  darkMode: boolean;
+  onClose: () => void;
+  onOpenSettings: () => void;
+}) {
+  const theme = getTheme(darkMode);
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center px-4 py-6">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        aria-label="Close AI feature preview"
+        onClick={onClose}
+      />
+      <div
+        className={joinClasses(
+          "relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border p-6 shadow-[0_30px_100px_rgba(0,0,0,0.38)]",
+          darkMode
+            ? "border-[#4DEBFF]/20 bg-[#071225] text-white"
+            : "border-[#1E90FF]/20 bg-white text-slate-950",
+        )}
+      >
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#4DEBFF] to-transparent" />
+        <div className="flex items-start justify-between gap-4">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl border border-[#4DEBFF]/25 bg-[#4DEBFF]/10 text-[#4DEBFF]">
+            <Sparkles size={22} aria-hidden />
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className={joinClasses(
+              "rounded-xl border p-2 transition hover:border-[#4DEBFF]/45",
+              darkMode ? "border-white/10 bg-white/[0.05]" : "border-slate-200 bg-slate-50",
+            )}
+            aria-label="Close AI feature preview"
+          >
+            <X size={18} aria-hidden />
+          </button>
+        </div>
+        <div className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-[#4DEBFF]">
+          Enterprise AI Feature
+        </div>
+        <h3 className={joinClasses("mt-2 text-2xl font-semibold", theme.heading)}>
+          {title}
+        </h3>
+        <p className={joinClasses("mt-3 text-sm leading-6", theme.muted)}>
+          Enterprise AI feature coming soon. Orbit AI will extend the workspace
+          with controlled operational intelligence while keeping HSE teams in
+          charge of every decision.
+        </p>
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className={joinClasses(
+              "rounded-xl border px-4 py-3 text-sm font-semibold transition",
+              darkMode ? "border-white/10 bg-white/[0.05]" : "border-slate-200 bg-slate-50",
+            )}
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="rounded-xl bg-[#1E90FF] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1878d6]"
+          >
+            Open AI Intelligence
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AiIntelligenceCenter({
+  darkMode,
+  onPreview,
+}: {
+  darkMode: boolean;
+  onPreview: (title: string) => void;
+}) {
   const theme = getTheme(darkMode);
   const insights = [
     {
@@ -2600,10 +2950,12 @@ function AiIntelligenceCenter({ darkMode }: { darkMode: boolean }) {
           {insights.map((insight) => {
             const Icon = insight.icon;
             return (
-              <div
+              <button
+                type="button"
                 key={insight.title}
+                onClick={() => onPreview(insight.title)}
                 className={joinClasses(
-                  "rounded-2xl border p-4",
+                  "cursor-pointer rounded-2xl border p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#4DEBFF]/45 hover:shadow-[0_14px_42px_rgba(77,235,255,0.10)] focus:outline-none focus:ring-2 focus:ring-[#4DEBFF]/50",
                   darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white/75",
                 )}
               >
@@ -2626,7 +2978,7 @@ function AiIntelligenceCenter({ darkMode }: { darkMode: boolean }) {
                     </p>
                   </div>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -2638,22 +2990,44 @@ function AiIntelligenceCenter({ darkMode }: { darkMode: boolean }) {
 function QuickActionPanel({
   darkMode,
   onNavigate,
+  onAiPreview,
 }: {
   darkMode: boolean;
-  onNavigate: (moduleId: DashboardModuleTarget) => void;
+  onNavigate: (request: WorkspaceNavigationRequest) => void;
+  onAiPreview: () => void;
 }) {
   const actions: Array<{
     label: string;
     icon: LucideIcon;
-    moduleId?: DashboardModuleTarget;
-    disabled?: boolean;
+    navigation?: WorkspaceNavigationRequest;
+    aiPreview?: boolean;
   }> = [
-    { label: "New Inspection", icon: ClipboardCheck, moduleId: "inspections" },
-    { label: "New Incident", icon: HeartPulse, moduleId: "incident-management" },
-    { label: "New Risk Assessment", icon: TriangleAlert, moduleId: "risk-assessments" },
-    { label: "Assign Action", icon: CheckCircle2, moduleId: "action-tracker" },
-    { label: "Add Training", icon: GraduationCap, moduleId: "training-management" },
-    { label: "Generate AI Toolbox Talk", icon: Sparkles, disabled: true },
+    {
+      label: "New Inspection",
+      icon: ClipboardCheck,
+      navigation: { moduleId: "inspections", action: "new" },
+    },
+    {
+      label: "New Incident",
+      icon: HeartPulse,
+      navigation: { moduleId: "incident-management", action: "new" },
+    },
+    {
+      label: "New Risk Assessment",
+      icon: TriangleAlert,
+      navigation: { moduleId: "risk-assessments", action: "new" },
+    },
+    {
+      label: "Assign Action",
+      icon: CheckCircle2,
+      navigation: { moduleId: "action-tracker", action: "new" },
+    },
+    {
+      label: "Add Training",
+      icon: GraduationCap,
+      navigation: { moduleId: "training-management", action: "new-record" },
+    },
+    { label: "Generate AI Toolbox Talk", icon: Sparkles, aiPreview: true },
   ];
 
   return (
@@ -2670,17 +3044,16 @@ function QuickActionPanel({
             <button
               key={action.label}
               type="button"
-              disabled={action.disabled}
               onClick={() => {
-                if (action.moduleId) {
-                  onNavigate(action.moduleId);
+                if (action.navigation) {
+                  onNavigate(action.navigation);
+                } else if (action.aiPreview) {
+                  onAiPreview();
                 }
               }}
               className={joinClasses(
                 "group flex items-center gap-3 rounded-2xl border p-3 text-left text-sm font-semibold transition",
-                action.disabled
-                  ? "cursor-not-allowed opacity-70"
-                  : "hover:-translate-y-0.5 hover:border-[#4DEBFF]/40",
+                "hover:-translate-y-0.5 hover:border-[#4DEBFF]/40 hover:shadow-[0_12px_36px_rgba(77,235,255,0.10)] focus:outline-none focus:ring-2 focus:ring-[#4DEBFF]/50",
                 darkMode ? "border-white/10 bg-white/[0.04] text-white" : "border-slate-200 bg-slate-50 text-slate-900",
               )}
             >
@@ -2689,7 +3062,7 @@ function QuickActionPanel({
               </span>
               <span className="min-w-0 flex-1">
                 {action.label}
-                {action.disabled ? (
+                {action.aiPreview ? (
                   <span className="mt-1 block text-xs font-medium text-[#4DEBFF]">
                     Coming Soon
                   </span>

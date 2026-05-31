@@ -26,6 +26,7 @@ import {
   type ActionPriority,
   type HseAction,
 } from "@/app/lib/actionTracker";
+import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 
 const employeeStatusOptions = ["Active", "Inactive"] as const;
 const trainingRiskOptions = ["Low", "Medium", "High"] as const;
@@ -91,6 +92,8 @@ type TrainingManagementModuleProps = {
   darkMode: boolean;
   onToggleTheme: () => void;
   createdBy: string;
+  navigationIntent?: WorkspaceNavigationIntent | null;
+  onNavigationIntentHandled?: () => void;
 };
 
 type ModalState =
@@ -830,6 +833,8 @@ export default function TrainingManagementModule({
   darkMode,
   onToggleTheme,
   createdBy,
+  navigationIntent,
+  onNavigationIntentHandled,
 }: TrainingManagementModuleProps) {
   const theme = getTheme(darkMode);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -1164,6 +1169,31 @@ export default function TrainingManagementModule({
   };
 
   const closeModal = () => setModal(null);
+
+  useEffect(() => {
+    if (!navigationIntent || navigationIntent.moduleId !== "training-management") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (navigationIntent.action === "compliance") {
+        setActiveTab("Training Matrix");
+        setNotice("Showing the training compliance matrix.");
+        onNavigationIntentHandled?.();
+        return;
+      }
+
+      setActiveTab("Training Records");
+      setModal({
+        type: "record",
+        mode: "new",
+        draft: createEmptyTrainingRecord(),
+      });
+      onNavigationIntentHandled?.();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [navigationIntent, onNavigationIntentHandled]);
 
   const updateEmployeeDraft = <Key extends keyof Employee>(
     key: Key,

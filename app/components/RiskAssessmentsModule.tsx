@@ -28,6 +28,7 @@ import {
   workspaceSettingsUpdatedEvent,
   type WorkspaceSettings,
 } from "@/app/lib/workspaceSettings";
+import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 
 type RiskValue = 1 | 2 | 3 | 4 | 5;
 type RiskLevel = "Low" | "Medium" | "High";
@@ -81,6 +82,8 @@ type RiskAssessmentsModuleProps = {
   darkMode: boolean;
   onToggleTheme: () => void;
   createdBy: string;
+  navigationIntent?: WorkspaceNavigationIntent | null;
+  onNavigationIntentHandled?: () => void;
 };
 
 type SelectOption = {
@@ -8815,6 +8818,8 @@ export default function RiskAssessmentsModule({
   darkMode,
   onToggleTheme,
   createdBy,
+  navigationIntent,
+  onNavigationIntentHandled,
 }: RiskAssessmentsModuleProps) {
   const [header, setHeader] = useState<RiskAssessmentHeader>(
     createEmptyHeader,
@@ -8830,6 +8835,7 @@ export default function RiskAssessmentsModule({
   const [customSectorMode, setCustomSectorMode] = useState(false);
   const [customActivityMode, setCustomActivityMode] = useState(false);
   const [createdActionLinks, setCreatedActionLinks] = useState<string[]>([]);
+  const [highRiskOnly, setHighRiskOnly] = useState(false);
   const [workspaceSettings, setWorkspaceSettings] =
     useState<WorkspaceSettings>(defaultWorkspaceSettings);
 
@@ -9213,6 +9219,7 @@ export default function RiskAssessmentsModule({
     });
     setHazards([createEmptyHazard()]);
     setCurrentAssessmentId(null);
+    setHighRiskOnly(false);
     setCustomSectorMode(false);
     setCustomActivityMode(false);
     setNotice("New risk assessment started.");
@@ -9266,11 +9273,66 @@ export default function RiskAssessmentsModule({
         !nextActivities.includes(normalizedAssessment.header.activity),
     );
     setCurrentAssessmentId(normalizedAssessment.id);
+    setHighRiskOnly(false);
     setNotice("Risk assessment loaded.");
     window.requestAnimationFrame(() =>
       window.scrollTo({ top: 0, behavior: "smooth" }),
     );
   };
+
+  useEffect(() => {
+    if (!navigationIntent || navigationIntent.moduleId !== "risk-assessments") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (navigationIntent.action === "new") {
+        newAssessment();
+        onNavigationIntentHandled?.();
+        return;
+      }
+
+      if (navigationIntent.action === "open-record") {
+        const assessment = savedAssessments.find(
+          (item) => String(item.id) === navigationIntent.recordId,
+        );
+
+        if (assessment) {
+          loadAssessment(assessment);
+          onNavigationIntentHandled?.();
+        }
+        return;
+      }
+
+      const assessmentWithHighRisk = savedAssessments.find((assessment) =>
+        assessment.hazards.some(
+          (hazard) =>
+            riskLevel(
+              riskScore(hazard.residualProbability, hazard.residualSeverity),
+            ) === "High" ||
+            riskLevel(
+              riskScore(hazard.initialProbability, hazard.initialSeverity),
+            ) === "High",
+        ),
+      );
+
+      if (assessmentWithHighRisk) {
+        loadAssessment(assessmentWithHighRisk);
+      }
+
+      setHighRiskOnly(true);
+      setNotice(
+        assessmentWithHighRisk
+          ? "Showing high-risk hazards."
+          : "No high-risk hazards found in saved assessments.",
+      );
+      onNavigationIntentHandled?.();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+    // This consumes one parent-owned navigation intent after the module mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigationIntent, onNavigationIntentHandled, savedAssessments]);
 
   const deleteAssessment = (id: number) => {
     try {
@@ -9395,6 +9457,16 @@ export default function RiskAssessmentsModule({
     workspaceCompanyProfile.address,
   ].filter((value) => value.trim().length > 0);
   const hasWorkspaceCompanyBranding = hasCompanyBranding(workspaceSettings);
+  const displayedHazards = highRiskOnly
+    ? hazards.filter(
+        (hazard) =>
+          riskLevel(
+            riskScore(hazard.residualProbability, hazard.residualSeverity),
+          ) === "High" ||
+          riskLevel(riskScore(hazard.initialProbability, hazard.initialSeverity)) ===
+            "High",
+      )
+    : hazards;
 
   return (
     <div
@@ -9661,29 +9733,45 @@ export default function RiskAssessmentsModule({
                     5x5 matrix.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={addHazard}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E90FF] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1878d6]"
-                >
-                  <Plus size={16} aria-hidden />
-                  Add hazard
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  {highRiskOnly ? (
+                    <button
+                      type="button"
+                      onClick={() => setHighRiskOnly(false)}
+                      className={joinClasses(
+                        "rounded-xl border px-4 py-3 text-sm font-semibold transition",
+                        theme.ghostButton,
+                      )}
+                    >
+                      Show all hazards
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={addHazard}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E90FF] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1878d6]"
+                  >
+                    <Plus size={16} aria-hidden />
+                    Add hazard
+                  </button>
+                </div>
               </div>
 
               <div className="mt-5 space-y-5">
-                {hazards.length === 0 ? (
+                {displayedHazards.length === 0 ? (
                   <div
                     className={joinClasses(
                       "rounded-2xl border border-dashed px-5 py-8 text-center text-sm",
                       theme.emptyState,
                     )}
                   >
-                    No hazards added yet.
+                    {highRiskOnly
+                      ? "No high-risk hazards found in this assessment."
+                      : "No hazards added yet."}
                   </div>
                 ) : null}
 
-                {hazards.map((hazard, index) => {
+                {displayedHazards.map((hazard, index) => {
                   const initialScore = riskScore(
                     hazard.initialProbability,
                     hazard.initialSeverity,

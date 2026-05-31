@@ -53,6 +53,10 @@ import {
   writeWorkspaceSettings,
   type WorkspaceSettings,
 } from "@/app/lib/workspaceSettings";
+import type {
+  WorkspaceModuleId,
+  WorkspaceNavigationIntent,
+} from "@/app/lib/workspaceNavigation";
 import type { User } from "@supabase/supabase-js";
 
 type InspectionResult = {
@@ -84,16 +88,6 @@ type WorkflowWarning = {
 };
 
 type AutosaveStatus = "dirty" | "saving" | "saved";
-
-type WorkspaceModuleId =
-  | "command-center"
-  | "inspections"
-  | "risk-assessments"
-  | "action-tracker"
-  | "training-management"
-  | "incident-management"
-  | "hse-analytics"
-  | "settings";
 
 type WorkspaceModule = {
   id: WorkspaceModuleId;
@@ -579,6 +573,8 @@ export default function Home() {
   const [activeChecklistId, setActiveChecklistId] = useState("ppe");
   const [activeWorkspaceModule, setActiveWorkspaceModule] =
     useState<WorkspaceModuleId>("command-center");
+  const [workspaceNavigationIntent, setWorkspaceNavigationIntent] =
+    useState<WorkspaceNavigationIntent | null>(null);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
 
   const activeChecklist =
@@ -1472,6 +1468,7 @@ export default function Home() {
   const hasWorkspaceCompanyBranding = hasCompanyBranding(workspaceSettings);
 
   const selectWorkspaceModule = (moduleId: WorkspaceModuleId) => {
+    setWorkspaceNavigationIntent(null);
     setActiveWorkspaceModule(moduleId);
     setShowWorkspaceMenu(false);
 
@@ -1482,6 +1479,44 @@ export default function Home() {
     window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
+  };
+
+  const handleWorkspaceNavigationIntent = (
+    intent: WorkspaceNavigationIntent,
+  ) => {
+    setWorkspaceNavigationIntent(intent);
+    setActiveWorkspaceModule(intent.moduleId);
+    setShowWorkspaceMenu(false);
+
+    if (intent.moduleId === "inspections" && intent.action === "history") {
+      openHistory();
+      setWorkspaceNavigationIntent(null);
+    } else if (intent.moduleId === "inspections" && intent.action === "new") {
+      setShowHistory(false);
+      setAnswers({});
+      setRisk({});
+      setComments({});
+      setCompany(workspaceCompanyName);
+      setSite(workspaceCompanyProfile.mainSiteLocation);
+      setInspector(authProfile?.name ?? "");
+      setInspectionDate(new Date().toISOString().split("T")[0]);
+      setOpenSection(0);
+      setHistoryNotice({
+        type: "success",
+        message: "New inspection draft ready.",
+      });
+      setWorkspaceNavigationIntent(null);
+    } else if (intent.moduleId !== "inspections") {
+      setShowHistory(false);
+    }
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  };
+
+  const clearWorkspaceNavigationIntent = () => {
+    setWorkspaceNavigationIntent(null);
   };
 
   const renderWorkspaceNavigation = (isMobile = false) => (
@@ -2496,7 +2531,7 @@ export default function Home() {
             userId={authUserId}
             darkMode={darkMode}
             workspaceSettings={workspaceSettings}
-            onNavigate={selectWorkspaceModule}
+            onNavigate={handleWorkspaceNavigationIntent}
           />
         ) : activeWorkspaceModule === "action-tracker" ? (
           <ActionTrackerModule
@@ -2504,6 +2539,8 @@ export default function Home() {
             darkMode={darkMode}
             onToggleTheme={toggleWorkspaceTheme}
             createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
+            navigationIntent={workspaceNavigationIntent}
+            onNavigationIntentHandled={clearWorkspaceNavigationIntent}
           />
         ) : activeWorkspaceModule === "risk-assessments" ? (
           <RiskAssessmentsModule
@@ -2511,6 +2548,8 @@ export default function Home() {
             darkMode={darkMode}
             onToggleTheme={toggleWorkspaceTheme}
             createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
+            navigationIntent={workspaceNavigationIntent}
+            onNavigationIntentHandled={clearWorkspaceNavigationIntent}
           />
         ) : activeWorkspaceModule === "training-management" ? (
           <TrainingManagementModule
@@ -2518,6 +2557,8 @@ export default function Home() {
             darkMode={darkMode}
             onToggleTheme={toggleWorkspaceTheme}
             createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
+            navigationIntent={workspaceNavigationIntent}
+            onNavigationIntentHandled={clearWorkspaceNavigationIntent}
           />
         ) : activeWorkspaceModule === "incident-management" ? (
           <IncidentManagementModule
@@ -2525,6 +2566,8 @@ export default function Home() {
             darkMode={darkMode}
             onToggleTheme={toggleWorkspaceTheme}
             createdBy={authProfile?.email ?? authProfile?.name ?? "Signed-in user"}
+            navigationIntent={workspaceNavigationIntent}
+            onNavigationIntentHandled={clearWorkspaceNavigationIntent}
           />
         ) : activeWorkspaceModule === "hse-analytics" ? (
           <HseAnalyticsModule
@@ -2540,6 +2583,8 @@ export default function Home() {
             language={lang}
             onLanguageChange={updateWorkspaceLanguage}
             onSettingsChange={setWorkspaceSettings}
+            navigationIntent={workspaceNavigationIntent}
+            onNavigationIntentHandled={clearWorkspaceNavigationIntent}
           />
         ) : (
           renderComingSoonModule()

@@ -36,6 +36,7 @@ import {
   type WorkspaceModulePreference,
   type WorkspaceSettings,
 } from "@/app/lib/workspaceSettings";
+import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 
 type SettingsSectionId =
   | "company-profile"
@@ -55,6 +56,8 @@ type SettingsModuleProps = {
   language: WorkspaceLanguage;
   onLanguageChange: (language: WorkspaceLanguage) => void;
   onSettingsChange?: (settings: WorkspaceSettings) => void;
+  navigationIntent?: WorkspaceNavigationIntent | null;
+  onNavigationIntentHandled?: () => void;
 };
 
 type SettingsSection = {
@@ -392,6 +395,8 @@ export default function SettingsModule({
   language,
   onLanguageChange,
   onSettingsChange,
+  navigationIntent,
+  onNavigationIntentHandled,
 }: SettingsModuleProps) {
   const [activeSection, setActiveSection] =
     useState<SettingsSectionId>("company-profile");
@@ -416,6 +421,23 @@ export default function SettingsModule({
 
     setSettings(alignedSettings);
   }, [darkMode, language, userId]);
+
+  useEffect(() => {
+    if (!navigationIntent || navigationIntent.moduleId !== "settings") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setActiveSection(
+        navigationIntent.action === "billing"
+          ? "billing-subscription"
+          : "ai-intelligence",
+      );
+      onNavigationIntentHandled?.();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [navigationIntent, onNavigationIntentHandled]);
 
   const persistSettings = (nextSettings: WorkspaceSettings, message?: string) => {
     writeWorkspaceSettings(userId, nextSettings);

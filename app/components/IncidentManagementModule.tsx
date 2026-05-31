@@ -24,6 +24,7 @@ import {
   type ActionPriority,
   type HseAction,
 } from "@/app/lib/actionTracker";
+import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 
 const eventTypeOptions = [
   "Incident",
@@ -124,6 +125,8 @@ type IncidentManagementModuleProps = {
   darkMode: boolean;
   onToggleTheme: () => void;
   createdBy: string;
+  navigationIntent?: WorkspaceNavigationIntent | null;
+  onNavigationIntentHandled?: () => void;
 };
 
 const emptyFilters: IncidentFilters = {
@@ -870,6 +873,8 @@ export default function IncidentManagementModule({
   darkMode,
   onToggleTheme,
   createdBy,
+  navigationIntent,
+  onNavigationIntentHandled,
 }: IncidentManagementModuleProps) {
   const theme = getTheme(darkMode);
   const [incidents, setIncidents] = useState<IncidentEvent[]>([]);
@@ -879,6 +884,7 @@ export default function IncidentManagementModule({
   const [notice, setNotice] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<IncidentFilters>(emptyFilters);
+  const [activeOnly, setActiveOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [incidentActions, setIncidentActions] = useState<HseAction[]>([]);
   const [expandedSuggestionGroups, setExpandedSuggestionGroups] = useState<
@@ -986,6 +992,37 @@ export default function IncidentManagementModule({
     setDraftIncident(null);
     setModalMode(null);
   };
+
+  useEffect(() => {
+    if (!navigationIntent || navigationIntent.moduleId !== "incident-management") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (navigationIntent.action === "filter-active") {
+        setFilters(emptyFilters);
+        setActiveOnly(true);
+        setShowFilters(true);
+        setNotice("Showing active incident investigations.");
+        onNavigationIntentHandled?.();
+        return;
+      }
+
+      if (navigationIntent.action === "new") {
+        setDraftIncident(createEmptyIncident());
+        setModalMode("new");
+        onNavigationIntentHandled?.();
+        return;
+      }
+
+      if (navigationIntent.recordId) {
+        setSelectedIncidentId(navigationIntent.recordId);
+        onNavigationIntentHandled?.();
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [navigationIntent, onNavigationIntentHandled]);
 
   const saveDraftIncident = () => {
     if (!draftIncident) {
@@ -1252,6 +1289,10 @@ export default function IncidentManagementModule({
         return false;
       }
 
+      if (activeOnly && incident.status === "Closed") {
+        return false;
+      }
+
       if (
         filters.department &&
         incident.department.toLowerCase() !== filters.department.toLowerCase()
@@ -1284,7 +1325,7 @@ export default function IncidentManagementModule({
 
       return true;
     });
-  }, [filters, incidents, searchQuery]);
+  }, [activeOnly, filters, incidents, searchQuery]);
 
   const uniqueDepartments = useMemo(
     () =>
@@ -1453,6 +1494,7 @@ export default function IncidentManagementModule({
     filters.siteLocation.length > 0,
     filters.dateFrom.length > 0,
     filters.dateTo.length > 0,
+    activeOnly,
   ].filter(Boolean).length;
 
   const statCards = [
@@ -1742,7 +1784,10 @@ export default function IncidentManagementModule({
               {activeFilterCount > 0 ? (
                 <button
                   type="button"
-                  onClick={() => setFilters(emptyFilters)}
+                  onClick={() => {
+                    setFilters(emptyFilters);
+                    setActiveOnly(false);
+                  }}
                   className={joinClasses(
                     "rounded-xl border px-4 py-3 text-sm font-semibold transition xl:col-span-7",
                     theme.ghostButton,

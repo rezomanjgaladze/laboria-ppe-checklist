@@ -16,6 +16,7 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
+import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 
 const sourceModuleOptions = [
   "Manual",
@@ -88,6 +89,8 @@ type ActionTrackerModuleProps = {
   darkMode: boolean;
   onToggleTheme: () => void;
   createdBy: string;
+  navigationIntent?: WorkspaceNavigationIntent | null;
+  onNavigationIntentHandled?: () => void;
 };
 
 const emptyFilters: ActionFilters = {
@@ -609,6 +612,8 @@ export default function ActionTrackerModule({
   darkMode,
   onToggleTheme,
   createdBy,
+  navigationIntent,
+  onNavigationIntentHandled,
 }: ActionTrackerModuleProps) {
   const theme = getTheme(darkMode);
   const [actions, setActions] = useState<HseAction[]>([]);
@@ -677,6 +682,52 @@ export default function ActionTrackerModule({
     setDraftAction(null);
     setModalMode(null);
   };
+
+  useEffect(() => {
+    if (!navigationIntent || navigationIntent.moduleId !== "action-tracker") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (navigationIntent.action === "filter-open") {
+        setFilters({ ...emptyFilters, status: "Open" });
+        setShowFilters(true);
+        setNotice("Showing open actions.");
+        onNavigationIntentHandled?.();
+        return;
+      }
+
+      if (navigationIntent.action === "filter-overdue") {
+        setFilters({ ...emptyFilters, overdueOnly: true });
+        setShowFilters(true);
+        setNotice("Showing overdue actions.");
+        onNavigationIntentHandled?.();
+        return;
+      }
+
+      if (navigationIntent.action === "new") {
+        setDraftAction(createEmptyAction(createdBy));
+        setModalMode("new");
+        onNavigationIntentHandled?.();
+        return;
+      }
+
+      const action = actions.find((item) => item.id === navigationIntent.recordId);
+
+      if (action) {
+        setDraftAction({ ...action });
+        setModalMode("edit");
+        onNavigationIntentHandled?.();
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    actions,
+    createdBy,
+    navigationIntent,
+    onNavigationIntentHandled,
+  ]);
 
   const saveDraftAction = () => {
     if (!draftAction) {
