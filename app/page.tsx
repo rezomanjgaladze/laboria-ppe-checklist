@@ -21,6 +21,8 @@ import {
   Settings,
   LogOut,
   Plus,
+  Bell,
+  BellRing,
   type LucideIcon,
 } from "lucide-react";
 
@@ -37,6 +39,7 @@ import TrainingManagementModule from "./components/TrainingManagementModule";
 import IncidentManagementModule from "./components/IncidentManagementModule";
 import HseAnalyticsModule from "./components/HseAnalyticsModule";
 import SettingsModule from "./components/SettingsModule";
+import NotificationCenterDrawer from "./components/NotificationCenterDrawer";
 import { createClient } from "@/lib/supabase/client";
 import {
   appendActionTrackerAction,
@@ -53,10 +56,18 @@ import {
   writeWorkspaceSettings,
   type WorkspaceSettings,
 } from "@/app/lib/workspaceSettings";
-import type {
-  WorkspaceModuleId,
-  WorkspaceNavigationIntent,
+import {
+  createWorkspaceNavigationIntent,
+  type WorkspaceModuleId,
+  type WorkspaceNavigationIntent,
 } from "@/app/lib/workspaceNavigation";
+import {
+  markAllOrbitNotificationsRead,
+  markOrbitNotificationRead,
+  notificationCenterUpdatedEvent,
+  syncOrbitNotifications,
+  type OrbitNotification,
+} from "@/app/lib/notificationCenter";
 import type { User } from "@supabase/supabase-js";
 
 type InspectionResult = {
@@ -576,6 +587,8 @@ export default function Home() {
   const [workspaceNavigationIntent, setWorkspaceNavigationIntent] =
     useState<WorkspaceNavigationIntent | null>(null);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
+  const [notifications, setNotifications] = useState<OrbitNotification[]>([]);
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false);
 
   const activeChecklist =
     ALL_CHECKLISTS.find((c) => c.id === activeChecklistId) ?? ALL_CHECKLISTS[0];
@@ -727,6 +740,42 @@ export default function Home() {
       window.removeEventListener("storage", handleStorage);
     };
   }, [authUserId]);
+
+  useEffect(() => {
+    const refreshNotifications = () => {
+      setNotifications(syncOrbitNotifications(authUserId, workspaceSettings));
+    };
+    const timeoutId = window.setTimeout(refreshNotifications, 0);
+    const intervalId = window.setInterval(refreshNotifications, 30_000);
+
+    const handleNotificationUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<OrbitNotification[]>;
+
+      if (customEvent.detail) {
+        setNotifications(customEvent.detail);
+      }
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (!event.key || event.key.includes("notification_center")) {
+        refreshNotifications();
+      }
+    };
+
+    window.addEventListener(notificationCenterUpdatedEvent, handleNotificationUpdate);
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("focus", refreshNotifications);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+      window.removeEventListener(
+        notificationCenterUpdatedEvent,
+        handleNotificationUpdate,
+      );
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", refreshNotifications);
+    };
+  }, [activeWorkspaceModule, authUserId, workspaceSettings]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -1519,6 +1568,86 @@ export default function Home() {
     setWorkspaceNavigationIntent(null);
   };
 
+  const activeUnreadNotifications = notifications.filter(
+    (notification) => notification.active && !notification.read,
+  );
+  const hasCriticalUnreadNotification = activeUnreadNotifications.some(
+    (notification) => notification.severity === "Critical",
+  );
+
+  const openNotificationCenter = () => {
+    setNotifications(syncOrbitNotifications(authUserId, workspaceSettings));
+    setShowNotificationCenter(true);
+  };
+
+  const markAllNotificationsRead = () => {
+    setNotifications(markAllOrbitNotificationsRead(authUserId));
+  };
+
+  const openNotification = (notification: OrbitNotification) => {
+    setNotifications(markOrbitNotificationRead(authUserId, notification.id));
+    setShowNotificationCenter(false);
+    handleWorkspaceNavigationIntent(
+      createWorkspaceNavigationIntent(notification.relatedAction),
+    );
+  };
+
+  const renderNotificationBell = (compact = false) => {
+    const BellIcon = hasCriticalUnreadNotification ? BellRing : Bell;
+
+    return (
+      <button
+        type="button"
+        aria-label={`Open Notification Center. ${activeUnreadNotifications.length} unread notifications.`}
+        className={`group relative flex items-center rounded-xl border border-white/10 bg-white/[0.045] text-slate-200 transition hover:border-[#4DEBFF]/35 hover:bg-[#1E90FF]/10 hover:text-[#4DEBFF] ${
+          compact
+            ? "h-10 w-10 shrink-0 justify-center"
+            : "mb-3 w-full gap-3 px-3 py-2.5 text-left"
+        }`}
+        onClick={openNotificationCenter}
+      >
+        <span
+          className={`grid shrink-0 place-items-center rounded-lg ${
+            compact
+              ? "h-8 w-8"
+              : "h-9 w-9 bg-[#1E90FF]/10 text-[#4DEBFF]"
+          }`}
+        >
+          <BellIcon
+            size={compact ? 18 : 17}
+            className={hasCriticalUnreadNotification ? "text-rose-300" : undefined}
+            aria-hidden
+          />
+        </span>
+        {compact ? null : (
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">Notifications</span>
+            <span className="mt-0.5 block text-[11px] text-slate-400">
+              {activeUnreadNotifications.length > 0
+                ? `${activeUnreadNotifications.length} unread operational alert${
+                    activeUnreadNotifications.length === 1 ? "" : "s"
+                  }`
+                : "All operational alerts reviewed"}
+            </span>
+          </span>
+        )}
+        {activeUnreadNotifications.length > 0 ? (
+          <span
+            className={`grid shrink-0 place-items-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-[0_0_18px_rgba(244,63,94,0.5)] ${
+              compact
+                ? "absolute -right-1 -top-1 h-5 min-w-5 px-1"
+                : "h-6 min-w-6 px-1.5"
+            }`}
+          >
+            {activeUnreadNotifications.length > 99
+              ? "99+"
+              : activeUnreadNotifications.length}
+          </span>
+        ) : null}
+      </button>
+    );
+  };
+
   const renderWorkspaceNavigation = (isMobile = false) => (
     <div className="flex h-full min-h-0 flex-col overflow-hidden border-r border-white/10 bg-[#071225]/95 text-[#F5F7FA] shadow-[20px_0_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl">
       <div className="shrink-0 flex items-start justify-between gap-3 border-b border-white/10 px-5 py-5">
@@ -1634,6 +1763,7 @@ export default function Home() {
       </nav>
 
       <div className="shrink-0 border-t border-white/10 p-4">
+        {renderNotificationBell()}
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
           <span
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1E90FF] bg-cover bg-center text-sm font-bold text-white"
@@ -1774,6 +1904,7 @@ export default function Home() {
                 : activeWorkspaceModuleConfig.label}
             </div>
           </div>
+          {renderNotificationBell(true)}
           <Image
             src="/laboria-logo.png"
             alt="Laboria"
@@ -1805,6 +1936,15 @@ export default function Home() {
             {renderWorkspaceNavigation(true)}
           </div>
       </div>
+
+      <NotificationCenterDrawer
+        darkMode={darkMode}
+        notifications={notifications}
+        open={showNotificationCenter}
+        onClose={() => setShowNotificationCenter(false)}
+        onMarkAllRead={markAllNotificationsRead}
+        onOpenNotification={openNotification}
+      />
 
       {/* CONTENT WRAPPER */}
       {activeWorkspaceModule === "inspections" ? (
@@ -2531,7 +2671,10 @@ export default function Home() {
             userId={authUserId}
             darkMode={darkMode}
             workspaceSettings={workspaceSettings}
+            notifications={notifications}
             onNavigate={handleWorkspaceNavigationIntent}
+            onOpenNotification={openNotification}
+            onOpenNotificationCenter={openNotificationCenter}
           />
         ) : activeWorkspaceModule === "action-tracker" ? (
           <ActionTrackerModule

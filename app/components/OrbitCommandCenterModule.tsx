@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Activity,
   ArrowUpRight,
+  BellRing,
   Bot,
   Building2,
   CalendarClock,
@@ -28,6 +29,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ALL_CHECKLISTS } from "@/app/data/checklists";
+import type { OrbitNotification } from "@/app/lib/notificationCenter";
 import {
   readActionTrackerActions,
   type HseAction,
@@ -43,7 +45,10 @@ type OrbitCommandCenterModuleProps = {
   userId: string | null;
   darkMode: boolean;
   workspaceSettings: WorkspaceSettings;
+  notifications: OrbitNotification[];
   onNavigate: (intent: WorkspaceNavigationIntent) => void;
+  onOpenNotification: (notification: OrbitNotification) => void;
+  onOpenNotificationCenter: () => void;
 };
 
 type TimePeriod = "Last 7 days" | "Last 30 days" | "This month" | "All time";
@@ -1324,7 +1329,10 @@ export default function OrbitCommandCenterModule({
   userId,
   darkMode,
   workspaceSettings,
+  notifications,
   onNavigate,
+  onOpenNotification,
+  onOpenNotificationCenter,
 }: OrbitCommandCenterModuleProps) {
   const theme = getTheme(darkMode);
   const [data, setData] = useState<DashboardData>(() => loadDashboardData(userId));
@@ -1783,6 +1791,12 @@ export default function OrbitCommandCenterModule({
               darkMode={darkMode}
               onNavigate={navigate}
               onAiPreview={() => setAiPreviewTitle("AI Toolbox Talk Generator")}
+            />
+            <NotificationSummaryPanel
+              darkMode={darkMode}
+              notifications={notifications}
+              onOpenNotification={onOpenNotification}
+              onOpenNotificationCenter={onOpenNotificationCenter}
             />
             <ChartCard
               title="Recurring Incident Factors"
@@ -3072,6 +3086,135 @@ function QuickActionPanel({
           );
         })}
       </div>
+    </ChartCard>
+  );
+}
+
+function NotificationSummaryPanel({
+  darkMode,
+  notifications,
+  onOpenNotification,
+  onOpenNotificationCenter,
+}: {
+  darkMode: boolean;
+  notifications: OrbitNotification[];
+  onOpenNotification: (notification: OrbitNotification) => void;
+  onOpenNotificationCenter: () => void;
+}) {
+  const activeNotifications = notifications.filter((notification) => notification.active);
+  const unreadNotifications = activeNotifications.filter(
+    (notification) => !notification.read,
+  );
+  const criticalNotifications = unreadNotifications.filter(
+    (notification) => notification.severity === "Critical",
+  );
+  const latestNotifications = activeNotifications.slice(0, 3);
+
+  return (
+    <ChartCard
+      title="Notifications"
+      subtitle="Live workflow alerts and attention signals"
+      darkMode={darkMode}
+      icon={BellRing}
+    >
+      <div className="grid grid-cols-2 gap-3">
+        <div
+          className={joinClasses(
+            "rounded-2xl border p-3",
+            darkMode
+              ? "border-cyan-400/20 bg-cyan-500/[0.06]"
+              : "border-cyan-200 bg-cyan-50",
+          )}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#1E90FF]">
+            Unread
+          </p>
+          <p className={joinClasses("mt-1 text-2xl font-semibold", darkMode ? "text-white" : "text-slate-900")}>
+            {unreadNotifications.length}
+          </p>
+        </div>
+        <div
+          className={joinClasses(
+            "rounded-2xl border p-3",
+            darkMode
+              ? "border-rose-400/20 bg-rose-500/[0.06]"
+              : "border-rose-200 bg-rose-50",
+          )}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-rose-400">
+            Critical
+          </p>
+          <p className={joinClasses("mt-1 text-2xl font-semibold", darkMode ? "text-white" : "text-slate-900")}>
+            {criticalNotifications.length}
+          </p>
+        </div>
+      </div>
+
+      {latestNotifications.length > 0 ? (
+        <div className="mt-4 space-y-2">
+          {latestNotifications.map((notification) => (
+            <button
+              key={notification.id}
+              type="button"
+              className={joinClasses(
+                "group flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition",
+                "hover:-translate-y-0.5 hover:border-[#4DEBFF]/40 hover:shadow-[0_10px_30px_rgba(77,235,255,0.08)]",
+                darkMode
+                  ? "border-white/10 bg-white/[0.035]"
+                  : "border-slate-200 bg-slate-50",
+              )}
+              onClick={() => onOpenNotification(notification)}
+            >
+              <span
+                className={joinClasses(
+                  "mt-1 h-2 w-2 shrink-0 rounded-full",
+                  notification.severity === "Critical"
+                    ? "bg-rose-400"
+                    : notification.severity === "Warning"
+                      ? "bg-amber-400"
+                      : notification.severity === "Success"
+                        ? "bg-emerald-400"
+                        : "bg-cyan-400",
+                )}
+              />
+              <span className="min-w-0 flex-1">
+                <span className={joinClasses("block truncate text-xs font-semibold", darkMode ? "text-slate-100" : "text-slate-800")}>
+                  {notification.title}
+                </span>
+                <span className={joinClasses("mt-1 block truncate text-[11px]", darkMode ? "text-slate-500" : "text-slate-500")}>
+                  {notification.sourceModule}
+                </span>
+              </span>
+              <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-slate-500 transition group-hover:text-[#4DEBFF]" aria-hidden />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div
+          className={joinClasses(
+            "mt-4 rounded-xl border border-dashed px-3 py-4 text-center text-xs",
+            darkMode
+              ? "border-white/10 text-slate-500"
+              : "border-slate-200 text-slate-500",
+          )}
+        >
+          All critical indicators are under control.
+        </div>
+      )}
+
+      <button
+        type="button"
+        className={joinClasses(
+          "mt-4 flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold transition",
+          darkMode
+            ? "border-cyan-400/20 bg-cyan-500/[0.06] text-cyan-200 hover:border-cyan-300/45 hover:bg-cyan-500/[0.1]"
+            : "border-cyan-200 bg-cyan-50 text-cyan-700 hover:border-cyan-300 hover:bg-cyan-100",
+        )}
+        onClick={onOpenNotificationCenter}
+      >
+        Open Notification Center
+        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+      </button>
     </ChartCard>
   );
 }
