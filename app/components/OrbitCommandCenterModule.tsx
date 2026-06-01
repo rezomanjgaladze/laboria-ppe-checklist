@@ -18,10 +18,12 @@ import {
   GraduationCap,
   HeartPulse,
   Lock,
+  Moon,
   Plus,
   Radar,
   ShieldCheck,
   Sparkles,
+  Sun,
   Target,
   TriangleAlert,
   X,
@@ -51,6 +53,7 @@ type OrbitCommandCenterModuleProps = {
   darkMode: boolean;
   workspaceSettings: WorkspaceSettings;
   notifications: OrbitNotification[];
+  onToggleTheme: () => void;
   onNavigate: (intent: WorkspaceNavigationIntent) => void;
   onOpenNotification: (notification: OrbitNotification) => void;
   onOpenNotificationCenter: () => void;
@@ -1335,6 +1338,7 @@ export default function OrbitCommandCenterModule({
   darkMode,
   workspaceSettings,
   notifications,
+  onToggleTheme,
   onNavigate,
   onOpenNotification,
   onOpenNotificationCenter,
@@ -1643,14 +1647,35 @@ export default function OrbitCommandCenterModule({
               </div>
             </div>
 
-            <div
-              className={joinClasses(
-                "rounded-3xl border p-5",
-                darkMode
-                  ? "border-white/10 bg-white/[0.055]"
-                  : "border-slate-200 bg-slate-50/90",
-              )}
-            >
+            <div className="space-y-3">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={onToggleTheme}
+                  className={joinClasses(
+                    "inline-flex h-11 w-11 items-center justify-center rounded-xl border transition-all duration-200",
+                    darkMode
+                      ? "border-white/10 bg-white/[0.055] text-slate-200 hover:border-[#4DEBFF]/45 hover:bg-[#4DEBFF]/10 hover:text-[#4DEBFF]"
+                      : "border-slate-200 bg-white text-slate-600 shadow-sm hover:border-[#1E90FF]/45 hover:text-[#1E90FF]",
+                  )}
+                  title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                  aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                >
+                  {darkMode ? (
+                    <Sun size={18} aria-hidden />
+                  ) : (
+                    <Moon size={18} aria-hidden />
+                  )}
+                </button>
+              </div>
+              <div
+                className={joinClasses(
+                  "rounded-3xl border p-5",
+                  darkMode
+                    ? "border-white/10 bg-white/[0.055]"
+                    : "border-slate-200 bg-slate-50/90",
+                )}
+              >
               <div className="flex items-center gap-4">
                 <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border border-[#4DEBFF]/25 bg-[#071225] shadow-[0_18px_50px_rgba(30,144,255,0.22)]">
                   {companyProfile.logoDataUrl ? (
@@ -1683,6 +1708,7 @@ export default function OrbitCommandCenterModule({
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <MiniMetric label="Sites" value={filterOptions.sites.length || 1} darkMode={darkMode} />
                 <MiniMetric label="Departments" value={filterOptions.departments.length || 1} darkMode={darkMode} />
+              </div>
               </div>
             </div>
           </div>

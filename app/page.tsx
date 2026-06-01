@@ -27,7 +27,6 @@ import {
   Download,
   Gauge,
   History,
-  Languages,
   ListChecks,
   Moon,
   Save,
@@ -525,6 +524,8 @@ const loadHistoryForChecklist = (
 
 type Lang = "EN" | "KA";
 
+const getInspectionPresentationLanguage = (): Lang => "EN";
+
 const TEXT = {
   EN: {
     headerTitle: "PPE COMPLIANCE REPORT",
@@ -607,7 +608,8 @@ export default function Home() {
     ALL_CHECKLISTS.find((c) => c.id === activeChecklistId) ?? ALL_CHECKLISTS[0];
 
   const [lang, setLang] = useState<Lang>("EN");
-  const t = TEXT[lang];
+  const inspectionLang = getInspectionPresentationLanguage();
+  const t = TEXT[inspectionLang];
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [risk, setRisk] = useState<Record<string, string>>({});
@@ -1898,9 +1900,11 @@ export default function Home() {
   };
 
   const reportTitle =
-    lang === "EN" ? activeChecklist.headerTitleEN : activeChecklist.headerTitleKA;
+    inspectionLang === "EN"
+      ? activeChecklist.headerTitleEN
+      : activeChecklist.headerTitleKA;
   const reportSubtitle =
-    lang === "EN"
+    inspectionLang === "EN"
       ? activeChecklist.headerSubtitleEN
       : activeChecklist.headerSubtitleKA;
   const compliancePalette =
@@ -2039,7 +2043,7 @@ export default function Home() {
                     Inspections Operations
                   </div>
                   <h1 className="mt-3 text-2xl font-semibold leading-tight sm:text-3xl">
-                    {lang === "EN"
+                    {inspectionLang === "EN"
                       ? activeChecklist.headerTitleEN
                       : activeChecklist.headerTitleKA}
                   </h1>
@@ -2064,7 +2068,7 @@ export default function Home() {
                           ? "border-white/10 bg-white/[0.055] text-slate-200 hover:border-[#4DEBFF]/45 hover:bg-[#4DEBFF]/10 hover:text-[#4DEBFF]"
                           : "border-slate-200 bg-white text-slate-600 shadow-sm hover:border-[#1E90FF]/45 hover:text-[#1E90FF]"
                       }`}
-                      title={lang === "KA" ? "შენახვა" : "Save"}
+                      title={inspectionLang === "KA" ? "შენახვა" : "Save"}
                       aria-label="Save inspection"
                     >
                       <Save size={17} aria-hidden />
@@ -2077,7 +2081,7 @@ export default function Home() {
                           ? "border-white/10 bg-white/[0.055] text-slate-200 hover:border-[#4DEBFF]/45 hover:bg-[#4DEBFF]/10 hover:text-[#4DEBFF]"
                           : "border-slate-200 bg-white text-slate-600 shadow-sm hover:border-[#1E90FF]/45 hover:text-[#1E90FF]"
                       }`}
-                      title={lang === "KA" ? "ისტორია" : "History"}
+                      title={inspectionLang === "KA" ? "ისტორია" : "History"}
                       aria-label="Open inspection history"
                     >
                       <History size={17} aria-hidden />
@@ -2112,35 +2116,6 @@ export default function Home() {
                     >
                       <Download size={17} aria-hidden />
                     </button>
-                    <div
-                      className={`flex h-11 items-center gap-1 rounded-xl border p-1 ${
-                        darkMode
-                          ? "border-white/10 bg-white/[0.055]"
-                          : "border-slate-200 bg-white shadow-sm"
-                      }`}
-                    >
-                      <Languages
-                        size={15}
-                        className={darkMode ? "ml-1 text-slate-400" : "ml-1 text-slate-500"}
-                        aria-hidden
-                      />
-                      {(["EN", "KA"] as const).map((language) => (
-                        <button
-                          key={language}
-                          type="button"
-                          onClick={() => updateWorkspaceLanguage(language)}
-                          className={`rounded-lg px-2 py-1.5 text-xs font-bold transition ${
-                            lang === language
-                              ? "bg-[#1E90FF] text-white"
-                              : darkMode
-                                ? "text-slate-400 hover:text-white"
-                                : "text-slate-500 hover:text-slate-900"
-                          }`}
-                        >
-                          {language}
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
                   <div
@@ -2372,7 +2347,7 @@ export default function Home() {
                         const Icon = ICON_MAP[checklist.id];
                         return Icon ? <Icon size={15} /> : null;
                       })()}
-                      {lang === "EN"
+                      {inspectionLang === "EN"
                         ? checklist.headerTitleEN
                         : checklist.headerTitleKA}
                     </span>
@@ -2574,22 +2549,22 @@ export default function Home() {
                 }`}
               >
                 <h2 className="text-sm font-semibold">
-                  {lang === "KA" ? "რისკების შეჯამება" : "Risk Summary"}
+                  {inspectionLang === "KA" ? "რისკების შეჯამება" : "Risk Summary"}
                 </h2>
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                   {[
                     {
-                      label: lang === "KA" ? "მაღალი" : "High",
+                      label: inspectionLang === "KA" ? "მაღალი" : "High",
                       value: riskSummary.high,
                       className: "bg-rose-500/10 text-rose-500",
                     },
                     {
-                      label: lang === "KA" ? "საშუალო" : "Medium",
+                      label: inspectionLang === "KA" ? "საშუალო" : "Medium",
                       value: riskSummary.medium,
                       className: "bg-amber-500/10 text-amber-500",
                     },
                     {
-                      label: lang === "KA" ? "დაბალი" : "Low",
+                      label: inspectionLang === "KA" ? "დაბალი" : "Low",
                       value: riskSummary.low,
                       className: "bg-emerald-500/10 text-emerald-500",
                     },
@@ -2623,14 +2598,14 @@ export default function Home() {
             >
               <div className="font-semibold text-sm">
                 {riskSummary.high > 0
-                  ? lang === "KA"
+                  ? inspectionLang === "KA"
                     ? "მაღალი რისკები დაფიქსირდა — დაუყოვნებლივი მოქმედება აუცილებელია."
                     : "High risks detected — Immediate action required."
                   : riskSummary.medium > 0
-                    ? lang === "KA"
+                    ? inspectionLang === "KA"
                       ? "საშუალო რისკები გამოვლენილია — რეკომენდებულია კონტროლის ზომები."
                       : "Medium risks identified — Control improvement recommended."
-                    : lang === "KA"
+                    : inspectionLang === "KA"
                       ? "დაბალი რისკები — მდგომარეობა სტაბილურია."
                       : "Low risks only — Situation under control."}
               </div>
@@ -2688,7 +2663,7 @@ export default function Home() {
                   <div className="relative pr-10">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-semibold uppercase tracking-wide">
-                        {lang === "EN" ? sec.sectionEN : sec.sectionKA}
+                        {inspectionLang === "EN" ? sec.sectionEN : sec.sectionKA}
                       </span>
                       {calculateSectionProgress(si).isComplete ? (
                         <span
@@ -2709,7 +2684,7 @@ export default function Home() {
                     >
                       <span>
                         {calculateSectionResult(si).percent}%{" "}
-                        {lang === "EN" ? "Compliant" : "შესაბამისობა"}
+                        {inspectionLang === "EN" ? "Compliant" : "შესაბამისობა"}
                       </span>
                       <span>
                         {calculateSectionProgress(si).completed} /{" "}
@@ -2753,9 +2728,10 @@ export default function Home() {
                   >
                     {sec.items.map((q, qi) => {
                       const id = `${si}-${qi}`;
-                      const questionText = lang === "EN" ? q.EN : q.KA;
+                      const questionText =
+                        inspectionLang === "EN" ? q.EN : q.KA;
                       const sectionTitle =
-                        lang === "EN" ? sec.sectionEN : sec.sectionKA;
+                        inspectionLang === "EN" ? sec.sectionEN : sec.sectionKA;
                       const linkedInspectionId = getInspectionActionLinkId(id);
                       const shouldShowCreateAction =
                         answers[id] === "no" ||
@@ -2971,6 +2947,7 @@ export default function Home() {
             darkMode={darkMode}
             workspaceSettings={workspaceSettings}
             notifications={notifications}
+            onToggleTheme={toggleWorkspaceTheme}
             onNavigate={handleWorkspaceNavigationIntent}
             onOpenNotification={openNotification}
             onOpenNotificationCenter={openNotificationCenter}
@@ -3467,8 +3444,8 @@ export default function Home() {
               style={{
                 fontWeight: "bold",
                 fontSize: "12px",
-                textTransform: lang === "EN" ? "uppercase" : "none",
-                letterSpacing: lang === "EN" ? "0.07em" : "0",
+                textTransform: inspectionLang === "EN" ? "uppercase" : "none",
+                letterSpacing: inspectionLang === "EN" ? "0.07em" : "0",
                 marginBottom: "10px",
                 borderRadius: "14px",
                 padding: "12px 14px",
@@ -3477,7 +3454,7 @@ export default function Home() {
                 boxShadow: "0 8px 20px rgba(15,23,42,0.08)",
               }}
             >
-              {lang === "EN" ? sec.sectionEN : sec.sectionKA}
+              {inspectionLang === "EN" ? sec.sectionEN : sec.sectionKA}
             </div>
 
             {sec.items.map((q, qi) => {
@@ -3524,7 +3501,7 @@ export default function Home() {
                         fontWeight: 650,
                       }}
                     >
-                      {lang === "EN" ? q.EN : q.KA}
+                      {inspectionLang === "EN" ? q.EN : q.KA}
                     </div>
 
                     <div
@@ -3632,7 +3609,9 @@ export default function Home() {
       >
         <div className="p-6 flex justify-between items-center border-b border-white/10">
           <h2 className="text-lg font-semibold">
-            {lang === "KA" ? "ინსპექტირების ისტორია" : "Inspection History"}
+            {inspectionLang === "KA"
+              ? "ინსპექტირების ისტორია"
+              : "Inspection History"}
           </h2>
           <button
             onClick={() => setShowHistory(false)}
@@ -3658,7 +3637,9 @@ export default function Home() {
 
           {history.length === 0 && (
             <div className="text-sm opacity-60">
-              {lang === "KA" ? "ისტორია ცარიელია" : "No saved inspections"}
+              {inspectionLang === "KA"
+                ? "ისტორია ცარიელია"
+                : "No saved inspections"}
             </div>
           )}
 
@@ -3678,14 +3659,14 @@ export default function Home() {
                   onClick={() => loadFromHistory(item)}
                   className="px-3 py-1 text-xs bg-blue-600 rounded-md"
                 >
-                  {lang === "KA" ? "ჩატვირთვა" : "Load"}
+                  {inspectionLang === "KA" ? "ჩატვირთვა" : "Load"}
                 </button>
 
                 <button
                   onClick={() => deleteInspection(item.id)}
                   className="px-3 py-1 text-xs bg-red-600 rounded-md"
                 >
-                  {lang === "KA" ? "წაშლა" : "Delete"}
+                  {inspectionLang === "KA" ? "წაშლა" : "Delete"}
                 </button>
               </div>
             </div>
