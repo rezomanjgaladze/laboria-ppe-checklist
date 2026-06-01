@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -233,6 +234,31 @@ const getOpenAiErrorDetails = (error: unknown) => {
   };
 };
 
+const getOpenAiConfigurationDetails = (rawApiKey: string | undefined) => {
+  const apiKey = rawApiKey?.trim() || "";
+
+  return {
+    model: OPENAI_MODEL,
+    apiKeyConfigured: Boolean(apiKey),
+    apiKeyLength: apiKey.length,
+    apiKeyFingerprint: apiKey
+      ? createHash("sha256").update(apiKey).digest("hex").slice(0, 12)
+      : undefined,
+    apiKeyFormat: apiKey.startsWith("sk-proj-")
+      ? "project-key"
+      : apiKey.startsWith("sk-")
+        ? "api-key"
+        : apiKey
+          ? "unexpected-prefix"
+          : "missing",
+    trimmedOuterWhitespace: Boolean(rawApiKey && rawApiKey !== apiKey),
+    baseUrl: process.env.OPENAI_BASE_URL?.trim() || "https://api.openai.com/v1",
+    vercelEnvironment: process.env.VERCEL_ENV || "local",
+    deploymentUrl: process.env.VERCEL_URL || "local",
+    gitCommitSha: process.env.VERCEL_GIT_COMMIT_SHA || "local",
+  };
+};
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
@@ -246,12 +272,15 @@ export async function POST(request: Request) {
     );
   }
 
+  const openAiConfiguration = getOpenAiConfigurationDetails(
+    process.env.OPENAI_API_KEY,
+  );
   const openAiApiKey = process.env.OPENAI_API_KEY?.trim();
 
   if (!openAiApiKey) {
     console.error("AI Toolbox Talk Generator configuration error", {
-      model: OPENAI_MODEL,
       message: "OPENAI_API_KEY is missing or empty.",
+      configuration: openAiConfiguration,
     });
     return NextResponse.json(
       { error: "OpenAI API key is not configured." },
@@ -305,6 +334,13 @@ export async function POST(request: Request) {
   }
 
   try {
+    console.info("AI Toolbox Talk OpenAI request started", {
+      configuration: openAiConfiguration,
+      variant,
+      sourceType,
+      riskAssessmentHazards: riskAssessment?.hazards.length || 0,
+    });
+
     const openai = new OpenAI({ apiKey: openAiApiKey });
     const response = await openai.responses.create({
       model: OPENAI_MODEL,
@@ -326,11 +362,21 @@ export async function POST(request: Request) {
 
     const content = JSON.parse(response.output_text) as ToolboxTalkContent;
 
+    console.info("AI Toolbox Talk OpenAI request succeeded", {
+      configuration: openAiConfiguration,
+      responseId: response.id,
+      variant,
+      sourceType,
+    });
+
     return NextResponse.json({ content });
   } catch (error) {
     const errorDetails = getOpenAiErrorDetails(error);
 
-    console.error("AI Toolbox Talk generation failed", errorDetails);
+    console.error("AI Toolbox Talk generation failed", {
+      configuration: openAiConfiguration,
+      error: errorDetails,
+    });
 
     if (errorDetails.status === 401 || errorDetails.code === "invalid_api_key") {
       return NextResponse.json(
