@@ -1710,7 +1710,7 @@ export default function Home() {
                 alt="Laboria"
                 width={240}
                 height={80}
-                className="max-h-[4.5rem] w-full max-w-[15rem] scale-[2] object-contain drop-shadow-[0_0_16px_rgba(77,235,255,0.16)] transition duration-300 group-hover:scale-[2.04]"
+                className="max-h-[4.5rem] w-full max-w-[15rem] scale-[2] object-contain brightness-110 contrast-110 drop-shadow-[0_0_10px_rgba(77,235,255,0.28)] [filter:brightness(1.1)_contrast(1.1)_drop-shadow(0_0_10px_rgba(77,235,255,0.28))_drop-shadow(0_0_22px_rgba(30,144,255,0.18))] transition duration-300 group-hover:scale-[2.04] group-hover:[filter:brightness(1.14)_contrast(1.12)_drop-shadow(0_0_12px_rgba(77,235,255,0.34))_drop-shadow(0_0_24px_rgba(30,144,255,0.22))]"
               />
             </span>
 
