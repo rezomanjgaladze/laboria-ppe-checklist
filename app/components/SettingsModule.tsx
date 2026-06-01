@@ -39,6 +39,7 @@ import {
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 import OrbitAiModal from "@/app/components/OrbitAiModal";
 import {
+  addOrbitAiTestCredits,
   getOrbitAiAccount,
   getOrbitAiTool,
   orbitAiAccountUpdatedEvent,
@@ -476,6 +477,18 @@ export default function SettingsModule({
     if (message) {
       setNotice(message);
     }
+  };
+
+  const addTestingAiCredits = () => {
+    const result = addOrbitAiTestCredits(userId);
+
+    if (!result) {
+      setNotice("Sign in before adding testing credits.");
+      return;
+    }
+
+    setAiAccount(result.account);
+    setNotice("50 AI credits added for testing.");
   };
 
   const updateSettings = (
@@ -1171,9 +1184,37 @@ export default function SettingsModule({
                 {aiAccount.plan}
               </div>
               <p className={joinClasses("mt-2 text-sm leading-6", theme.muted)}>
-                Billing actions are UI-only for now. Payment processing and
-                live credit accounting will be connected later.
+                Payment processing is not connected yet. AI credits remain
+                account-specific and update Orbit tools immediately.
               </p>
+            </div>
+            <div
+              className={joinClasses(
+                "mt-4 rounded-2xl border p-4",
+                darkMode
+                  ? "border-amber-300/20 bg-amber-400/[0.06]"
+                  : "border-amber-400/35 bg-amber-50",
+              )}
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-[0.16em] text-amber-400">
+                    Testing only
+                  </div>
+                  <p className={joinClasses("mt-1 text-sm leading-5", theme.muted)}>
+                    Add development credits to the signed-in Orbit account.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addTestingAiCredits}
+                  disabled={!userId}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-amber-300/30 bg-amber-400/10 px-4 py-2.5 text-sm font-semibold text-amber-300 transition hover:border-amber-300/55 hover:bg-amber-400/16 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Sparkles size={15} aria-hidden />
+                  Add 50 Test Credits
+                </button>
+              </div>
             </div>
           </div>
         </div>

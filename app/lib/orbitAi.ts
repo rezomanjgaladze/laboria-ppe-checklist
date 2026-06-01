@@ -38,6 +38,13 @@ export type OrbitAiAccount = {
   credits: number;
 };
 
+export type OrbitAiCreditTopUp = {
+  id: string;
+  creditsAdded: number;
+  createdAt: string;
+  reason: "testing";
+};
+
 export const orbitAiNavigationEvent = "laboria-orbit-ai-navigation";
 export const orbitAiAccountUpdatedEvent = "laboria-orbit-ai-account-updated";
 
@@ -384,6 +391,9 @@ const getOrbitAiAccountStorageKey = (userId: string | null) =>
     ? `laboria_${encodeURIComponent(userId)}_orbit_ai_account`
     : "laboria_orbit_ai_account";
 
+const getOrbitAiCreditTopUpStorageKey = (userId: string) =>
+  `laboria_${encodeURIComponent(userId)}_orbit_ai_credit_topups`;
+
 const getDefaultOrbitAiCredits = () => {
   const configuredCredits = Number(
     process.env.NEXT_PUBLIC_ORBIT_AI_DEFAULT_CREDITS || "0",
@@ -472,6 +482,51 @@ export const spendOrbitAiCredits = (
   writeOrbitAiAccount(userId, updatedAccount);
 
   return updatedAccount;
+};
+
+export const readOrbitAiCreditTopUps = (
+  userId: string | null,
+): OrbitAiCreditTopUp[] => {
+  if (typeof window === "undefined" || !userId) return [];
+
+  const stored = window.localStorage.getItem(getOrbitAiCreditTopUpStorageKey(userId));
+  if (!stored) return [];
+
+  try {
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? (parsed as OrbitAiCreditTopUp[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const addOrbitAiTestCredits = (userId: string | null) => {
+  if (typeof window === "undefined" || !userId) return null;
+
+  const creditsAdded = 50;
+  const topUp: OrbitAiCreditTopUp = {
+    id:
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `test-credit-${Date.now()}`,
+    creditsAdded,
+    createdAt: new Date().toISOString(),
+    reason: "testing",
+  };
+  const account = getOrbitAiAccount(userId);
+  const updatedAccount = {
+    ...account,
+    credits: account.credits + creditsAdded,
+  };
+  const topUps = [topUp, ...readOrbitAiCreditTopUps(userId)].slice(0, 100);
+
+  window.localStorage.setItem(
+    getOrbitAiCreditTopUpStorageKey(userId),
+    JSON.stringify(topUps),
+  );
+  writeOrbitAiAccount(userId, updatedAccount);
+
+  return { account: updatedAccount, topUp };
 };
 
 export const requestOrbitAiNavigation = (

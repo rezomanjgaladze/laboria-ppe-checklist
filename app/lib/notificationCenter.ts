@@ -5,7 +5,10 @@ import {
 } from "@/app/lib/actionTracker";
 import type { WorkspaceNavigationRequest } from "@/app/lib/workspaceNavigation";
 import type { WorkspaceSettings } from "@/app/lib/workspaceSettings";
-import { getOrbitAiAccount } from "@/app/lib/orbitAi";
+import {
+  getOrbitAiAccount,
+  readOrbitAiCreditTopUps,
+} from "@/app/lib/orbitAi";
 import { readOrbitAiGenerations } from "@/app/lib/orbitAiGenerations";
 import { readToolboxTalks } from "@/app/lib/toolboxTalks";
 
@@ -787,6 +790,21 @@ const getBillingDrafts = (userId: string | null) => {
       ),
     );
   }
+
+  drafts.push(
+    ...readOrbitAiCreditTopUps(userId).map((topUp) =>
+      createDraft(
+        `ai-billing:test-credit-top-up:${topUp.id}`,
+        "AI / Billing",
+        "Success",
+        `${topUp.creditsAdded} AI credits added for testing.`,
+        "Testing credits are ready to use with Orbit AI generation tools.",
+        topUp.createdAt,
+        { moduleId: "settings", action: "billing" },
+        topUp.id,
+      ),
+    ),
+  );
 
   return drafts;
 };
