@@ -500,25 +500,31 @@ export const readOrbitAiCreditTopUps = (
   }
 };
 
-export const addOrbitAiTestCredits = (userId: string | null) => {
-  if (typeof window === "undefined" || !userId) return null;
+export const applyAuthorizedOrbitAiTestCreditTopUp = (
+  userId: string | null,
+  topUp: OrbitAiCreditTopUp,
+) => {
+  if (
+    typeof window === "undefined" ||
+    !userId ||
+    !topUp.id ||
+    topUp.creditsAdded !== 50 ||
+    topUp.reason !== "testing"
+  ) {
+    return null;
+  }
 
-  const creditsAdded = 50;
-  const topUp: OrbitAiCreditTopUp = {
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `test-credit-${Date.now()}`,
-    creditsAdded,
-    createdAt: new Date().toISOString(),
-    reason: "testing",
-  };
+  const existingTopUps = readOrbitAiCreditTopUps(userId);
+  if (existingTopUps.some((existingTopUp) => existingTopUp.id === topUp.id)) {
+    return null;
+  }
+
   const account = getOrbitAiAccount(userId);
   const updatedAccount = {
     ...account,
-    credits: account.credits + creditsAdded,
+    credits: account.credits + topUp.creditsAdded,
   };
-  const topUps = [topUp, ...readOrbitAiCreditTopUps(userId)].slice(0, 100);
+  const topUps = [topUp, ...existingTopUps].slice(0, 100);
 
   window.localStorage.setItem(
     getOrbitAiCreditTopUpStorageKey(userId),

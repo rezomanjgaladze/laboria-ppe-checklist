@@ -3009,6 +3009,7 @@ export default function Home() {
         ) : activeWorkspaceModule === "settings" ? (
           <SettingsModule
             userId={authUserId}
+            userEmail={authProfile?.email}
             darkMode={darkMode}
             onToggleTheme={toggleWorkspaceTheme}
             language={lang}

@@ -39,12 +39,14 @@ import {
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 import OrbitAiModal from "@/app/components/OrbitAiModal";
 import {
-  addOrbitAiTestCredits,
+  applyAuthorizedOrbitAiTestCreditTopUp,
   getOrbitAiAccount,
   getOrbitAiTool,
   orbitAiAccountUpdatedEvent,
+  type OrbitAiCreditTopUp,
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
+import { isOrbitAiTestCreditAdmin } from "@/app/lib/orbitAiAdmin";
 
 type SettingsSectionId =
   | "company-profile"
@@ -59,6 +61,7 @@ type SettingsSectionId =
 
 type SettingsModuleProps = {
   userId: string | null;
+  userEmail?: string | null;
   darkMode: boolean;
   onToggleTheme: () => void;
   language: WorkspaceLanguage;
@@ -407,6 +410,7 @@ const readBrowserWorkspaceData = (): Record<string, unknown> => {
 
 export default function SettingsModule({
   userId,
+  userEmail,
   darkMode,
   onToggleTheme,
   language,
@@ -424,8 +428,10 @@ export default function SettingsModule({
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [activeAiToolId, setActiveAiToolId] = useState<OrbitAiToolId | null>(null);
   const [aiAccount, setAiAccount] = useState(() => getOrbitAiAccount(userId));
+  const [isAddingTestCredits, setIsAddingTestCredits] = useState(false);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const theme = getTheme(darkMode);
+  const canAddTestCredits = isOrbitAiTestCreditAdmin(userEmail);
 
   useEffect(() => {
     const storedSettings = readWorkspaceSettings(userId);
@@ -479,16 +485,41 @@ export default function SettingsModule({
     }
   };
 
-  const addTestingAiCredits = () => {
-    const result = addOrbitAiTestCredits(userId);
-
-    if (!result) {
-      setNotice("Sign in before adding testing credits.");
+  const addTestingAiCredits = async () => {
+    if (!canAddTestCredits || !userId) {
+      setNotice("Unauthorized test credit action.");
       return;
     }
 
-    setAiAccount(result.account);
-    setNotice("50 AI credits added for testing.");
+    setIsAddingTestCredits(true);
+
+    try {
+      const response = await fetch("/api/admin/test-ai-credits", {
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        topUp?: OrbitAiCreditTopUp;
+      };
+
+      if (!response.ok || !payload.topUp) {
+        setNotice(payload.error || "Could not add testing credits.");
+        return;
+      }
+
+      const result = applyAuthorizedOrbitAiTestCreditTopUp(userId, payload.topUp);
+      if (!result) {
+        setNotice("Could not apply testing credits.");
+        return;
+      }
+
+      setAiAccount(result.account);
+      setNotice("50 AI credits added for testing.");
+    } catch {
+      setNotice("Could not add testing credits.");
+    } finally {
+      setIsAddingTestCredits(false);
+    }
   };
 
   const updateSettings = (
@@ -1188,34 +1219,36 @@ export default function SettingsModule({
                 account-specific and update Orbit tools immediately.
               </p>
             </div>
-            <div
-              className={joinClasses(
-                "mt-4 rounded-2xl border p-4",
-                darkMode
-                  ? "border-amber-300/20 bg-amber-400/[0.06]"
-                  : "border-amber-400/35 bg-amber-50",
-              )}
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-[0.16em] text-amber-400">
-                    Testing only
+            {canAddTestCredits ? (
+              <div
+                className={joinClasses(
+                  "mt-4 rounded-2xl border p-4",
+                  darkMode
+                    ? "border-amber-300/20 bg-amber-400/[0.06]"
+                    : "border-amber-400/35 bg-amber-50",
+                )}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-[0.16em] text-amber-400">
+                      Testing only
+                    </div>
+                    <p className={joinClasses("mt-1 text-sm leading-5", theme.muted)}>
+                      Add development credits to the signed-in Orbit account.
+                    </p>
                   </div>
-                  <p className={joinClasses("mt-1 text-sm leading-5", theme.muted)}>
-                    Add development credits to the signed-in Orbit account.
-                  </p>
+                  <button
+                    type="button"
+                    onClick={addTestingAiCredits}
+                    disabled={isAddingTestCredits}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-amber-300/30 bg-amber-400/10 px-4 py-2.5 text-sm font-semibold text-amber-300 transition hover:border-amber-300/55 hover:bg-amber-400/16 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Sparkles size={15} aria-hidden />
+                    {isAddingTestCredits ? "Adding..." : "Add 50 Test Credits"}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={addTestingAiCredits}
-                  disabled={!userId}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-amber-300/30 bg-amber-400/10 px-4 py-2.5 text-sm font-semibold text-amber-300 transition hover:border-amber-300/55 hover:bg-amber-400/16 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Sparkles size={15} aria-hidden />
-                  Add 50 Test Credits
-                </button>
               </div>
-            </div>
+            ) : null}
           </div>
         </div>
 
