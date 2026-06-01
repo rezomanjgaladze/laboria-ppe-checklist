@@ -260,6 +260,14 @@ const getOpenAiConfigurationDetails = (rawApiKey: string | undefined) => {
 };
 
 export async function POST(request: Request) {
+  const openAiConfiguration = getOpenAiConfigurationDetails(
+    process.env.OPENAI_API_KEY,
+  );
+
+  console.info("AI Toolbox Talk request received", {
+    configuration: openAiConfiguration,
+  });
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -272,9 +280,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const openAiConfiguration = getOpenAiConfigurationDetails(
-    process.env.OPENAI_API_KEY,
-  );
   const openAiApiKey = process.env.OPENAI_API_KEY?.trim();
 
   if (!openAiApiKey) {
