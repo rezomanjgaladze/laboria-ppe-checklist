@@ -18,6 +18,7 @@ type GenerateToolboxTalkRequest = {
 
 const REVIEW_NOTE =
   "Review and adapt this toolbox talk to your specific workplace conditions before use.";
+const OPENAI_MODEL = process.env.OPENAI_MODEL?.trim() || "gpt-5.4-mini";
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_REQUESTS = 6;
 const generationRequests = new Map<string, number[]>();
@@ -200,6 +201,38 @@ const isRateLimited = (userId: string) => {
   return false;
 };
 
+const getOpenAiErrorDetails = (error: unknown) => {
+  const apiError =
+    error && typeof error === "object"
+      ? (error as {
+          status?: unknown;
+          code?: unknown;
+          type?: unknown;
+          requestID?: unknown;
+          request_id?: unknown;
+        })
+      : null;
+
+  return {
+    model: OPENAI_MODEL,
+    name: error instanceof Error ? error.name : "UnknownError",
+    message:
+      error instanceof Error
+        ? error.message
+        : "OpenAI request failed with a non-Error value.",
+    status: typeof apiError?.status === "number" ? apiError.status : undefined,
+    code: typeof apiError?.code === "string" ? apiError.code : undefined,
+    type: typeof apiError?.type === "string" ? apiError.type : undefined,
+    requestId:
+      typeof apiError?.requestID === "string"
+        ? apiError.requestID
+        : typeof apiError?.request_id === "string"
+          ? apiError.request_id
+          : undefined,
+    stack: error instanceof Error ? error.stack : undefined,
+  };
+};
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
@@ -213,9 +246,15 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  const openAiApiKey = process.env.OPENAI_API_KEY?.trim();
+
+  if (!openAiApiKey) {
+    console.error("AI Toolbox Talk Generator configuration error", {
+      model: OPENAI_MODEL,
+      message: "OPENAI_API_KEY is missing or empty.",
+    });
     return NextResponse.json(
-      { error: "AI Toolbox Talk Generator is not configured yet." },
+      { error: "OpenAI API key is not configured." },
       { status: 503 },
     );
   }
@@ -266,9 +305,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = new OpenAI({ apiKey: openAiApiKey });
     const response = await openai.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-5.4-mini",
+      model: OPENAI_MODEL,
       input: buildPrompt(inputs, variant, sourceType, riskAssessment),
       text: {
         format: {
@@ -289,7 +328,20 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ content });
   } catch (error) {
-    console.error("AI Toolbox Talk generation failed", error);
+    const errorDetails = getOpenAiErrorDetails(error);
+
+    console.error("AI Toolbox Talk generation failed", errorDetails);
+
+    if (errorDetails.status === 401 || errorDetails.code === "invalid_api_key") {
+      return NextResponse.json(
+        {
+          error:
+            "OpenAI API authentication failed. No AI credits were deducted. Please contact your workspace administrator.",
+        },
+        { status: 502 },
+      );
+    }
+
     return NextResponse.json(
       {
         error:

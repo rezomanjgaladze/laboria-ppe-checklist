@@ -24,6 +24,8 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_SITE_URL=
 OPENAI_API_KEY=
+# Optional override. Defaults to the current cost-efficient toolbox talk model.
+OPENAI_MODEL=gpt-5.4-mini
 ```
 
 During the pre-payment beta, an optional per-browser starter balance can be set
