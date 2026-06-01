@@ -102,6 +102,7 @@ type NotificationDraft = Omit<OrbitNotification, "read" | "active">;
 export const notificationCenterUpdatedEvent = "laboria-notification-center-updated";
 
 const LEGACY_NOTIFICATION_KEY = "laboria_notification_center";
+const LEGACY_DISMISSED_NOTIFICATION_KEY = "laboria_notification_center_dismissed";
 const CLOSED_ACTION_STATUSES = new Set(["Completed", "Closed"]);
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -110,6 +111,9 @@ const getUserStorageKey = (userId: string | null, suffix: string) =>
 
 export const getNotificationStorageKey = (userId: string | null) =>
   getUserStorageKey(userId, "notification_center");
+
+export const getDismissedNotificationStorageKey = (userId: string | null) =>
+  getUserStorageKey(userId, "notification_center_dismissed");
 
 const getStorageValue = <T>(keys: string[], fallback: T): T => {
   if (typeof window === "undefined") return fallback;
@@ -180,6 +184,29 @@ const readStoredNotifications = (userId: string | null): OrbitNotification[] =>
     [getNotificationStorageKey(userId), LEGACY_NOTIFICATION_KEY],
     [],
   );
+
+const readDismissedNotificationIds = (userId: string | null) =>
+  new Set(
+    getStorageValue<string[]>(
+      [
+        getDismissedNotificationStorageKey(userId),
+        LEGACY_DISMISSED_NOTIFICATION_KEY,
+      ],
+      [],
+    ),
+  );
+
+const writeDismissedNotificationIds = (
+  userId: string | null,
+  notificationIds: Set<string>,
+) => {
+  if (typeof window === "undefined") return;
+
+  window.localStorage.setItem(
+    getDismissedNotificationStorageKey(userId),
+    JSON.stringify(Array.from(notificationIds)),
+  );
+};
 
 const writeStoredNotifications = (
   userId: string | null,
@@ -797,10 +824,16 @@ export const syncOrbitNotifications = (
   const dedupedDrafts = Array.from(
     new Map(drafts.map((draft) => [draft.id, draft])).values(),
   );
+  const dismissedNotificationIds = readDismissedNotificationIds(userId);
 
   return writeStoredNotifications(
     userId,
-    mergeNotifications(readStoredNotifications(userId), dedupedDrafts),
+    mergeNotifications(
+      readStoredNotifications(userId).filter(
+        (notification) => !dismissedNotificationIds.has(notification.id),
+      ),
+      dedupedDrafts.filter((draft) => !dismissedNotificationIds.has(draft.id)),
+    ),
   );
 };
 
@@ -825,3 +858,36 @@ export const markAllOrbitNotificationsRead = (userId: string | null) =>
       read: true,
     })),
   );
+
+export const deleteOrbitNotification = (
+  userId: string | null,
+  notificationId: string,
+) => {
+  const dismissedNotificationIds = readDismissedNotificationIds(userId);
+  dismissedNotificationIds.add(notificationId);
+  writeDismissedNotificationIds(userId, dismissedNotificationIds);
+
+  return writeStoredNotifications(
+    userId,
+    readStoredNotifications(userId).filter(
+      (notification) => notification.id !== notificationId,
+    ),
+  );
+};
+
+export const deleteAllReadOrbitNotifications = (userId: string | null) => {
+  const notifications = readStoredNotifications(userId);
+  const dismissedNotificationIds = readDismissedNotificationIds(userId);
+
+  notifications.forEach((notification) => {
+    if (notification.read) {
+      dismissedNotificationIds.add(notification.id);
+    }
+  });
+  writeDismissedNotificationIds(userId, dismissedNotificationIds);
+
+  return writeStoredNotifications(
+    userId,
+    notifications.filter((notification) => !notification.read),
+  );
+};

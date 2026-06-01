@@ -11,6 +11,7 @@ import {
   GraduationCap,
   ListChecks,
   ShieldAlert,
+  Trash2,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -26,6 +27,8 @@ type NotificationCenterDrawerProps = {
   open: boolean;
   onClose: () => void;
   onMarkAllRead: () => void;
+  onDeleteNotification: (notificationId: string) => void;
+  onDeleteAllRead: () => void;
   onOpenNotification: (notification: OrbitNotification) => void;
 };
 
@@ -126,11 +129,17 @@ export default function NotificationCenterDrawer({
   open,
   onClose,
   onMarkAllRead,
+  onDeleteNotification,
+  onDeleteAllRead,
   onOpenNotification,
 }: NotificationCenterDrawerProps) {
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>("All");
+  const [pendingDelete, setPendingDelete] = useState<
+    OrbitNotification | "all-read" | null
+  >(null);
   const activeNotifications = notifications.filter((notification) => notification.active);
   const unreadCount = activeNotifications.filter((notification) => !notification.read).length;
+  const readCount = notifications.filter((notification) => notification.read).length;
   const filteredNotifications = notifications.filter((notification) => {
     if (activeFilter === "Unread") return !notification.read && notification.active;
     if (activeFilter === "Critical") return notification.severity === "Critical";
@@ -139,6 +148,16 @@ export default function NotificationCenterDrawer({
   });
 
   if (!open) return null;
+
+  const confirmDelete = () => {
+    if (pendingDelete === "all-read") {
+      onDeleteAllRead();
+    } else if (pendingDelete) {
+      onDeleteNotification(pendingDelete.id);
+    }
+
+    setPendingDelete(null);
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex justify-end bg-slate-950/60 backdrop-blur-sm">
@@ -195,7 +214,7 @@ export default function NotificationCenterDrawer({
             </button>
           </div>
 
-          <div className="mt-4 flex items-center justify-between gap-3">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p
               className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
                 darkMode ? "text-slate-500" : "text-slate-400"
@@ -203,18 +222,33 @@ export default function NotificationCenterDrawer({
             >
               Workflow intelligence
             </p>
-            <button
-              type="button"
-              className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition ${
-                darkMode
-                  ? "border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-400/30 hover:text-cyan-200"
-                  : "border-slate-200 bg-slate-50 text-slate-600 hover:border-cyan-300 hover:text-cyan-700"
-              }`}
-              onClick={onMarkAllRead}
-            >
-              <CheckCheck className="h-3.5 w-3.5" />
-              Mark all read
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition ${
+                  darkMode
+                    ? "border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-400/30 hover:text-cyan-200"
+                    : "border-slate-200 bg-slate-50 text-slate-600 hover:border-cyan-300 hover:text-cyan-700"
+                }`}
+                onClick={onMarkAllRead}
+              >
+                <CheckCheck className="h-3.5 w-3.5" />
+                Mark all read
+              </button>
+              <button
+                type="button"
+                disabled={readCount === 0}
+                className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                  darkMode
+                    ? "border-rose-400/20 bg-rose-500/[0.06] text-rose-200 hover:border-rose-300/40 hover:bg-rose-500/10"
+                    : "border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300 hover:bg-rose-100"
+                }`}
+                onClick={() => setPendingDelete("all-read")}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete all read
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
@@ -267,9 +301,8 @@ export default function NotificationCenterDrawer({
                 const palette = severityStyles[notification.severity];
 
                 return (
-                  <button
+                  <div
                     key={notification.id}
-                    type="button"
                     className={`group relative w-full overflow-hidden rounded-xl border px-3 py-3 text-left transition sm:px-4 ${
                       notification.read
                         ? darkMode
@@ -279,14 +312,18 @@ export default function NotificationCenterDrawer({
                           ? "border-cyan-400/20 bg-cyan-500/[0.055] hover:border-cyan-300/40 hover:bg-cyan-500/[0.09]"
                           : "border-cyan-200 bg-cyan-50/70 hover:border-cyan-300 hover:bg-cyan-50"
                     }`}
-                    onClick={() => onOpenNotification(notification)}
                   >
                     <span
                       className={`absolute inset-y-0 left-0 w-0.5 transition group-hover:w-1 ${
                         palette.dot
                       }`}
                     />
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2">
+                      <button
+                        type="button"
+                        className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                        onClick={() => onOpenNotification(notification)}
+                      >
                       <span
                         className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border ${
                           darkMode ? palette.icon : palette.iconLight
@@ -294,7 +331,7 @@ export default function NotificationCenterDrawer({
                       >
                         <SourceIcon className="h-4 w-4" />
                       </span>
-                      <span className="min-w-0 flex-1">
+                        <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-2">
                           <span className="min-w-0 flex-1 text-sm font-semibold leading-5">
                             {notification.title}
@@ -347,15 +384,90 @@ export default function NotificationCenterDrawer({
                             </span>
                           )}
                         </span>
-                      </span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Delete notification: ${notification.title}`}
+                        title="Delete notification"
+                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg border transition ${
+                          darkMode
+                            ? "border-white/10 bg-white/[0.035] text-slate-500 hover:border-rose-400/35 hover:bg-rose-500/10 hover:text-rose-300"
+                            : "border-slate-200 bg-white text-slate-400 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
+                        }`}
+                        onClick={() => setPendingDelete(notification)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
           )}
         </div>
       </aside>
+      {pendingDelete ? (
+        <div className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/65 px-4 backdrop-blur-sm">
+          <button
+            type="button"
+            aria-label="Cancel delete notification"
+            className="absolute inset-0 cursor-default"
+            onClick={() => setPendingDelete(null)}
+          />
+          <div
+            className={`relative z-10 w-full max-w-sm rounded-2xl border p-5 shadow-2xl ${
+              darkMode
+                ? "border-white/10 bg-[#071225] text-slate-100"
+                : "border-slate-200 bg-white text-slate-900"
+            }`}
+          >
+            <span
+              className={`grid h-10 w-10 place-items-center rounded-xl border ${
+                darkMode
+                  ? "border-rose-400/25 bg-rose-500/10 text-rose-300"
+                  : "border-rose-200 bg-rose-50 text-rose-600"
+              }`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </span>
+            <h3 className="mt-4 text-base font-semibold">
+              {pendingDelete === "all-read"
+                ? "Delete all read notifications?"
+                : "Delete this notification?"}
+            </h3>
+            <p
+              className={`mt-2 text-xs leading-5 ${
+                darkMode ? "text-slate-400" : "text-slate-500"
+              }`}
+            >
+              {pendingDelete === "all-read"
+                ? `${readCount} read notification${readCount === 1 ? "" : "s"} will be removed from your history.`
+                : "This notification will be removed from your personal Notification Center."}
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                  darkMode
+                    ? "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]"
+                    : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                }`}
+                onClick={() => setPendingDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-rose-500 bg-rose-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-600"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
