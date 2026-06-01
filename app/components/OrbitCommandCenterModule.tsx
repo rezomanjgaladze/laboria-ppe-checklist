@@ -34,7 +34,9 @@ import { ALL_CHECKLISTS } from "@/app/data/checklists";
 import type { OrbitNotification } from "@/app/lib/notificationCenter";
 import OrbitAiModal from "@/app/components/OrbitAiModal";
 import {
+  getOrbitAiAccount,
   getOrbitAiTool,
+  orbitAiAccountUpdatedEvent,
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
 import {
@@ -1347,6 +1349,7 @@ export default function OrbitCommandCenterModule({
   const [data, setData] = useState<DashboardData>(() => loadDashboardData(userId));
   const [filters, setFilters] = useState<DashboardFilters>(defaultFilters);
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [aiAccount, setAiAccount] = useState(() => getOrbitAiAccount(userId));
   const [selectedHeatmapCell, setSelectedHeatmapCell] = useState<{
     likelihood: number;
     severity: number;
@@ -1378,6 +1381,21 @@ export default function OrbitCommandCenterModule({
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("focus", load);
       document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    const syncAiAccount = () => setAiAccount(getOrbitAiAccount(userId));
+
+    syncAiAccount();
+    window.addEventListener(orbitAiAccountUpdatedEvent, syncAiAccount);
+    window.addEventListener("storage", syncAiAccount);
+    window.addEventListener("focus", syncAiAccount);
+
+    return () => {
+      window.removeEventListener(orbitAiAccountUpdatedEvent, syncAiAccount);
+      window.removeEventListener("storage", syncAiAccount);
+      window.removeEventListener("focus", syncAiAccount);
     };
   }, [userId]);
 
@@ -1519,10 +1537,13 @@ export default function OrbitCommandCenterModule({
     },
     {
       label: "AI Credits Remaining",
-      value: 0,
-      detail: "Orbit Starter plan",
+      value: aiAccount.credits,
+      detail: `${aiAccount.plan} plan`,
       trend: 0,
-      sparkline: [0, 0, 0, 0, 0, 0],
+      sparkline:
+        aiAccount.credits > 0
+          ? makeSparkline(aiAccount.credits)
+          : [0, 0, 0, 0, 0, 0],
       icon: Bot,
       tone: "cyan",
       navigation: { moduleId: "settings", action: "billing" },
@@ -1629,13 +1650,13 @@ export default function OrbitCommandCenterModule({
                 <HeroSignal
                   icon={ShieldCheck}
                   label="Subscription"
-                  value="Orbit Starter"
+                  value={aiAccount.plan}
                   darkMode={darkMode}
                 />
                 <HeroSignal
                   icon={Sparkles}
                   label="AI credits"
-                  value="0 remaining"
+                  value={`${aiAccount.credits} remaining`}
                   darkMode={darkMode}
                 />
                 <HeroSignal
@@ -1820,6 +1841,7 @@ export default function OrbitCommandCenterModule({
           <div className="space-y-5">
             <QuickActionPanel
               darkMode={darkMode}
+              aiCredits={aiAccount.credits}
               onNavigate={navigate}
               onAiPreview={() => setAiPreviewToolId("toolbox-talk")}
             />
@@ -2957,13 +2979,16 @@ function AiIntelligenceCenter({
 
 function QuickActionPanel({
   darkMode,
+  aiCredits,
   onNavigate,
   onAiPreview,
 }: {
   darkMode: boolean;
+  aiCredits: number;
   onNavigate: (request: WorkspaceNavigationRequest) => void;
   onAiPreview: () => void;
 }) {
+  const toolboxTalkCredits = getOrbitAiTool("toolbox-talk").getCredits();
   const actions: Array<{
     label: string;
     icon: LucideIcon;
@@ -3032,7 +3057,8 @@ function QuickActionPanel({
                 {action.label}
                 {action.aiPreview ? (
                   <span className="mt-1 block text-xs font-medium text-[#4DEBFF]">
-                    {getOrbitAiTool("toolbox-talk").creditLabel} / Locked
+                    {getOrbitAiTool("toolbox-talk").creditLabel} /{" "}
+                    {aiCredits >= toolboxTalkCredits ? "Available" : "Locked"}
                   </span>
                 ) : null}
               </span>

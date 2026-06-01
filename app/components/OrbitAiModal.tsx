@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bot,
   CheckCircle2,
@@ -13,6 +13,7 @@ import {
 import {
   getOrbitAiAccount,
   getOrbitAiTool,
+  orbitAiAccountUpdatedEvent,
   requestOrbitAiNavigation,
   type OrbitAiContext,
   type OrbitAiSourceModule,
@@ -41,11 +42,20 @@ export default function OrbitAiModal({
   onClose,
 }: OrbitAiModalProps) {
   const tool = toolId ? getOrbitAiTool(toolId) : null;
-  const account = getOrbitAiAccount(userId);
+  const [account, setAccount] = useState(() => getOrbitAiAccount(userId));
   const requiredCredits = tool?.getCredits(context) ?? 0;
   const hasEnoughCredits = account.credits >= requiredCredits;
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const syncAccount = () => setAccount(getOrbitAiAccount(userId));
+
+    syncAccount();
+    window.addEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+    return () =>
+      window.removeEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+  }, [userId]);
   const theme = {
     panel: darkMode
       ? "border-[#4DEBFF]/22 bg-[#071225] text-white shadow-[0_34px_110px_rgba(0,0,0,0.52)]"

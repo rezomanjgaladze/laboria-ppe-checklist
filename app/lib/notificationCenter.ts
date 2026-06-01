@@ -5,6 +5,7 @@ import {
 } from "@/app/lib/actionTracker";
 import type { WorkspaceNavigationRequest } from "@/app/lib/workspaceNavigation";
 import type { WorkspaceSettings } from "@/app/lib/workspaceSettings";
+import { getOrbitAiAccount } from "@/app/lib/orbitAi";
 
 export type OrbitNotificationSeverity = "Info" | "Warning" | "Critical" | "Success";
 
@@ -742,28 +743,51 @@ const getIncidentDrafts = (userId: string | null) => {
   return drafts;
 };
 
-const getBillingDrafts = () => [
-  createDraft(
-    "ai-billing:credits-empty",
-    "AI / Billing",
-    "Critical",
-    "AI credits are empty",
-    "Your workspace currently has 0 AI credits available.",
-    undefined,
-    { moduleId: "settings", action: "billing" },
-    "ai-credits",
-  ),
-  createDraft(
+const getBillingDrafts = (userId: string | null) => {
+  const account = getOrbitAiAccount(userId);
+  const drafts = [
+    createDraft(
     "ai-billing:feature-locked",
     "AI / Billing",
     "Info",
-    "Orbit AI features are locked",
-    "AI Intelligence features are available for preview and require an Orbit AI credit pack or eligible plan.",
+    "Advanced Orbit AI features are in preview",
+    "Advanced AI Intelligence tools are available for preview while additional Orbit AI features are prepared for launch.",
     undefined,
     { moduleId: "settings", action: "ai-intelligence" },
     "ai-intelligence",
   ),
-];
+  ];
+
+  if (account.credits === 0) {
+    drafts.push(
+      createDraft(
+        "ai-billing:credits-empty",
+        "AI / Billing",
+        "Critical",
+        "AI credits are empty",
+        "Your workspace currently has 0 AI credits available.",
+        undefined,
+        { moduleId: "settings", action: "billing" },
+        "ai-credits",
+      ),
+    );
+  } else if (account.credits <= 5) {
+    drafts.push(
+      createDraft(
+        "ai-billing:credits-low",
+        "AI / Billing",
+        "Warning",
+        "AI credits are running low",
+        `Your workspace currently has ${account.credits} AI credits available.`,
+        undefined,
+        { moduleId: "settings", action: "billing" },
+        "ai-credits",
+      ),
+    );
+  }
+
+  return drafts;
+};
 
 const mergeNotifications = (
   storedNotifications: OrbitNotification[],
@@ -819,7 +843,7 @@ export const syncOrbitNotifications = (
     ...getInspectionDrafts(userId),
     ...getTrainingDrafts(userId, settings),
     ...getIncidentDrafts(userId),
-    ...getBillingDrafts(),
+    ...getBillingDrafts(userId),
   ];
   const dedupedDrafts = Array.from(
     new Map(drafts.map((draft) => [draft.id, draft])).values(),

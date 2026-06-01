@@ -79,7 +79,10 @@ import {
   syncOrbitNotifications,
   type OrbitNotification,
 } from "@/app/lib/notificationCenter";
-import { orbitAiNavigationEvent } from "@/app/lib/orbitAi";
+import {
+  orbitAiAccountUpdatedEvent,
+  orbitAiNavigationEvent,
+} from "@/app/lib/orbitAi";
 import type { User } from "@supabase/supabase-js";
 
 type InspectionResult = {
@@ -798,6 +801,7 @@ export default function Home() {
     };
 
     window.addEventListener(notificationCenterUpdatedEvent, handleNotificationUpdate);
+    window.addEventListener(orbitAiAccountUpdatedEvent, refreshNotifications);
     window.addEventListener("storage", handleStorage);
     window.addEventListener("focus", refreshNotifications);
 
@@ -808,6 +812,7 @@ export default function Home() {
         notificationCenterUpdatedEvent,
         handleNotificationUpdate,
       );
+      window.removeEventListener(orbitAiAccountUpdatedEvent, refreshNotifications);
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("focus", refreshNotifications);
     };
