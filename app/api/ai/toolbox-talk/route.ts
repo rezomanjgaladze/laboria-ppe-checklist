@@ -4,12 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 import type {
   ToolboxTalkContent,
   ToolboxTalkInputs,
+  ToolboxTalkRiskAssessmentSource,
+  ToolboxTalkSourceType,
   ToolboxTalkVariant,
 } from "@/app/lib/toolboxTalks";
 
 type GenerateToolboxTalkRequest = {
   variant?: ToolboxTalkVariant;
   inputs?: Partial<ToolboxTalkInputs>;
+  sourceType?: ToolboxTalkSourceType;
+  riskAssessment?: Partial<ToolboxTalkRiskAssessmentSource>;
 };
 
 const REVIEW_NOTE =
@@ -92,7 +96,70 @@ const normalizeInputs = (
 const hasRequiredInputs = (inputs: ToolboxTalkInputs) =>
   Object.values(inputs).every(Boolean);
 
-const buildPrompt = (inputs: ToolboxTalkInputs, variant: ToolboxTalkVariant) => `
+const clampRiskValue = (value: unknown) =>
+  Math.min(Math.max(Math.round(Number(value) || 1), 1), 5);
+
+const getRiskLevel = (score: number) => {
+  if (score >= 15) return "High";
+  if (score >= 4) return "Medium";
+  return "Low";
+};
+
+const normalizeRiskAssessment = (
+  source: Partial<ToolboxTalkRiskAssessmentSource> | undefined,
+): ToolboxTalkRiskAssessmentSource | null => {
+  if (!source?.id || !Array.isArray(source.hazards)) {
+    return null;
+  }
+
+  const hazards = source.hazards.slice(0, 100).map((hazard, index) => {
+    const residualProbability = clampRiskValue(hazard.residualProbability);
+    const residualSeverity = clampRiskValue(hazard.residualSeverity);
+    const residualScore = residualProbability * residualSeverity;
+
+    return {
+      id: sanitizeText(hazard.id, 120) || `hazard-${index + 1}`,
+      workplaceActivity: sanitizeText(hazard.workplaceActivity, 240),
+      hazardDescription: sanitizeText(hazard.hazardDescription, 600),
+      possibleConsequence: sanitizeText(hazard.possibleConsequence, 480),
+      existingMeasures: sanitizeText(hazard.existingMeasures, 900),
+      additionalMeasures: sanitizeText(hazard.additionalMeasures, 900),
+      controlHierarchy: Array.isArray(hazard.controlHierarchy)
+        ? hazard.controlHierarchy
+            .map((control) => sanitizeText(control, 120))
+            .filter(Boolean)
+        : [],
+      residualProbability,
+      residualSeverity,
+      residualScore,
+      residualRiskLevel: getRiskLevel(residualScore),
+      comments: sanitizeText(hazard.comments, 500),
+    };
+  });
+  const highestScore = hazards.reduce(
+    (highest, hazard) => Math.max(highest, hazard.residualScore),
+    0,
+  );
+
+  return {
+    id: sanitizeText(source.id, 120),
+    title: sanitizeText(source.title, 240),
+    siteLocation: sanitizeText(source.siteLocation, 180),
+    department: sanitizeText(source.department, 180),
+    sector: sanitizeText(source.sector, 180),
+    activity: sanitizeText(source.activity, 240),
+    savedAt: sanitizeText(source.savedAt, 80),
+    highestResidualRiskLevel: getRiskLevel(highestScore),
+    hazards: hazards.sort((a, b) => b.residualScore - a.residualScore),
+  };
+};
+
+const buildPrompt = (
+  inputs: ToolboxTalkInputs,
+  variant: ToolboxTalkVariant,
+  sourceType: ToolboxTalkSourceType,
+  riskAssessment: ToolboxTalkRiskAssessmentSource | null,
+) => `
 Create a professional, practical workplace health and safety toolbox talk.
 
 Use only the operational context supplied below. Do not invent site-specific facts,
@@ -111,6 +178,8 @@ Operational context:
 - Duration: ${inputs.duration}
 - Risk level: ${inputs.riskLevel}
 - Key hazards / notes: ${inputs.keyHazardsNotes}
+
+${sourceType === "risk_assessment" && riskAssessment ? `This toolbox talk is based on the following saved risk assessment. Cover every relevant hazard in a concise, worker-friendly way. Prioritize high residual risks first. Turn the verified preventive measures, additional controls, hierarchy controls, PPE requirements, emergency controls, supervision requirements, and training needs into practical talking points. Do not invent controls that are not supported by the assessment unless clearly presented as a supervisor consideration.\n\nSaved risk assessment JSON:\n${JSON.stringify(riskAssessment)}` : ""}
 
 The attendanceSignatureSection should provide a concise printable attendance
 instruction and signature-table heading, not fabricated attendee names.
@@ -174,7 +243,20 @@ export async function POST(request: Request) {
 
   const variant: ToolboxTalkVariant =
     body.variant === "quiz" ? "quiz" : "basic";
+  const sourceType: ToolboxTalkSourceType =
+    body.sourceType === "risk_assessment" ? "risk_assessment" : "manual_topic";
   const inputs = normalizeInputs(body.inputs);
+  const riskAssessment =
+    sourceType === "risk_assessment"
+      ? normalizeRiskAssessment(body.riskAssessment)
+      : null;
+
+  if (sourceType === "risk_assessment" && !riskAssessment) {
+    return NextResponse.json(
+      { error: "Please select a saved risk assessment before generating." },
+      { status: 400 },
+    );
+  }
 
   if (!hasRequiredInputs(inputs)) {
     return NextResponse.json(
@@ -187,7 +269,7 @@ export async function POST(request: Request) {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const response = await openai.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-5.4-mini",
-      input: buildPrompt(inputs, variant),
+      input: buildPrompt(inputs, variant, sourceType, riskAssessment),
       text: {
         format: {
           type: "json_schema",
