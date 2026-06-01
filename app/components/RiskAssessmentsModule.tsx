@@ -9556,6 +9556,7 @@ export default function RiskAssessmentsModule({
             <div className="mt-4">
               <OrbitAiToolStrip
                 darkMode={darkMode}
+                userId={userId}
                 compact
                 title="Risk Assessment AI"
                 sourceModule="Risk Assessments"

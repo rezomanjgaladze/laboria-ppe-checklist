@@ -39,6 +39,7 @@ export type OrbitAiAccount = {
 };
 
 export const orbitAiNavigationEvent = "laboria-orbit-ai-navigation";
+export const orbitAiAccountUpdatedEvent = "laboria-orbit-ai-account-updated";
 
 export const orbitAiPricingMap = {
   "Toolbox Talk": 3,
@@ -369,10 +370,100 @@ export const orbitAiTools = toolCatalog as Record<OrbitAiToolId, OrbitAiTool>;
 
 export const getOrbitAiTool = (toolId: OrbitAiToolId) => orbitAiTools[toolId];
 
-export const getOrbitAiAccount = (): OrbitAiAccount => ({
+const getOrbitAiAccountStorageKey = (userId: string | null) =>
+  userId
+    ? `laboria_${encodeURIComponent(userId)}_orbit_ai_account`
+    : "laboria_orbit_ai_account";
+
+const getDefaultOrbitAiCredits = () => {
+  const configuredCredits = Number(
+    process.env.NEXT_PUBLIC_ORBIT_AI_DEFAULT_CREDITS || "0",
+  );
+
+  return Number.isFinite(configuredCredits) && configuredCredits > 0
+    ? Math.floor(configuredCredits)
+    : 0;
+};
+
+const defaultOrbitAiAccount = (): OrbitAiAccount => ({
   plan: "Orbit Starter",
-  credits: 0,
+  credits: getDefaultOrbitAiCredits(),
 });
+
+const normalizeOrbitAiAccount = (value: unknown): OrbitAiAccount => {
+  if (!value || typeof value !== "object") {
+    return defaultOrbitAiAccount();
+  }
+
+  const candidate = value as Partial<OrbitAiAccount>;
+  const plan =
+    candidate.plan === "Orbit Plus" || candidate.plan === "Orbit Pro"
+      ? candidate.plan
+      : "Orbit Starter";
+  const credits =
+    typeof candidate.credits === "number" &&
+    Number.isFinite(candidate.credits) &&
+    candidate.credits >= 0
+      ? Math.floor(candidate.credits)
+      : getDefaultOrbitAiCredits();
+
+  return { plan, credits };
+};
+
+export const getOrbitAiAccount = (
+  userId: string | null = null,
+): OrbitAiAccount => {
+  if (typeof window === "undefined") {
+    return defaultOrbitAiAccount();
+  }
+
+  const stored = window.localStorage.getItem(getOrbitAiAccountStorageKey(userId));
+
+  if (!stored) {
+    return defaultOrbitAiAccount();
+  }
+
+  try {
+    return normalizeOrbitAiAccount(JSON.parse(stored));
+  } catch {
+    return defaultOrbitAiAccount();
+  }
+};
+
+export const writeOrbitAiAccount = (
+  userId: string | null,
+  account: OrbitAiAccount,
+) => {
+  if (typeof window === "undefined") return;
+
+  const normalized = normalizeOrbitAiAccount(account);
+  window.localStorage.setItem(
+    getOrbitAiAccountStorageKey(userId),
+    JSON.stringify(normalized),
+  );
+  window.dispatchEvent(
+    new CustomEvent(orbitAiAccountUpdatedEvent, { detail: normalized }),
+  );
+};
+
+export const spendOrbitAiCredits = (
+  userId: string | null,
+  credits: number,
+) => {
+  const account = getOrbitAiAccount(userId);
+
+  if (!Number.isFinite(credits) || credits <= 0 || account.credits < credits) {
+    return null;
+  }
+
+  const updatedAccount = {
+    ...account,
+    credits: account.credits - Math.floor(credits),
+  };
+  writeOrbitAiAccount(userId, updatedAccount);
+
+  return updatedAccount;
+};
 
 export const requestOrbitAiNavigation = (
   destination: "billing" | "ai-intelligence",

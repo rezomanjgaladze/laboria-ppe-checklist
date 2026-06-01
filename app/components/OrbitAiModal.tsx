@@ -18,9 +18,11 @@ import {
   type OrbitAiSourceModule,
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
+import ToolboxTalkGeneratorModal from "@/app/components/ToolboxTalkGeneratorModal";
 
 type OrbitAiModalProps = {
   darkMode: boolean;
+  userId?: string | null;
   toolId: OrbitAiToolId | null;
   context?: OrbitAiContext;
   sourceModule?: OrbitAiSourceModule;
@@ -32,13 +34,14 @@ const joinClasses = (...classes: Array<string | false | null | undefined>) =>
 
 export default function OrbitAiModal({
   darkMode,
+  userId = null,
   toolId,
   context,
   sourceModule,
   onClose,
 }: OrbitAiModalProps) {
   const tool = toolId ? getOrbitAiTool(toolId) : null;
-  const account = getOrbitAiAccount();
+  const account = getOrbitAiAccount(userId);
   const requiredCredits = tool?.getCredits(context) ?? 0;
   const hasEnoughCredits = account.credits >= requiredCredits;
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -68,6 +71,18 @@ export default function OrbitAiModal({
       tool?.inputs.filter((input) => formValues[input.id]?.trim()).length ?? 0,
     [formValues, tool],
   );
+
+  if (toolId === "toolbox-talk" || toolId === "toolbox-talk-quiz") {
+    return (
+      <ToolboxTalkGeneratorModal
+        darkMode={darkMode}
+        userId={userId}
+        defaultVariant={toolId === "toolbox-talk-quiz" ? "quiz" : "basic"}
+        sourceModule={sourceModule}
+        onClose={closeModal}
+      />
+    );
+  }
 
   if (!tool) return null;
 

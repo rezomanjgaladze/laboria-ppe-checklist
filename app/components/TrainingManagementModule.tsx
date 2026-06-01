@@ -1664,6 +1664,7 @@ export default function TrainingManagementModule({
             <div className="mt-4">
               <OrbitAiToolStrip
                 darkMode={darkMode}
+                userId={userId}
                 compact
                 title="Training AI"
                 sourceModule="Training Management"

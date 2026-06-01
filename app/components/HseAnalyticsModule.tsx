@@ -2865,6 +2865,7 @@ export default function HseAnalyticsModule({
           <div className="relative px-5 pt-5 sm:px-7">
             <OrbitAiToolStrip
               darkMode={darkMode}
+              userId={userId}
               compact
               title="Analytics AI"
               sourceModule="HSE Analytics"

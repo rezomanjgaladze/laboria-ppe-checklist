@@ -2142,6 +2142,7 @@ export default function Home() {
               <div className="mt-5">
                 <OrbitAiToolStrip
                   darkMode={darkMode}
+                  userId={authUserId}
                   compact
                   title="Inspection AI"
                   sourceModule="Inspections"

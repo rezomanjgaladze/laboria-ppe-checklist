@@ -1611,6 +1611,7 @@ export default function IncidentManagementModule({
             <div className="mt-4">
               <OrbitAiToolStrip
                 darkMode={darkMode}
+                userId={userId}
                 compact
                 title="Incident AI"
                 sourceModule="Incident Management"

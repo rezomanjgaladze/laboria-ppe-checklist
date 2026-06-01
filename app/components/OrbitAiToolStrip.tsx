@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Coins, Lock, Sparkles } from "lucide-react";
 import OrbitAiModal from "@/app/components/OrbitAiModal";
 import {
   getOrbitAiAccount,
   getOrbitAiTool,
+  orbitAiAccountUpdatedEvent,
   type OrbitAiContext,
   type OrbitAiSourceModule,
   type OrbitAiToolId,
@@ -13,6 +14,7 @@ import {
 
 type OrbitAiToolStripProps = {
   darkMode: boolean;
+  userId?: string | null;
   toolIds: OrbitAiToolId[];
   context?: OrbitAiContext;
   title?: string;
@@ -25,6 +27,7 @@ const joinClasses = (...classes: Array<string | false | null | undefined>) =>
 
 export default function OrbitAiToolStrip({
   darkMode,
+  userId = null,
   toolIds,
   context,
   title = "Orbit AI Tools",
@@ -32,7 +35,18 @@ export default function OrbitAiToolStrip({
   sourceModule,
 }: OrbitAiToolStripProps) {
   const [activeToolId, setActiveToolId] = useState<OrbitAiToolId | null>(null);
-  const account = getOrbitAiAccount();
+  const [account, setAccount] = useState(() => getOrbitAiAccount(userId));
+
+  useEffect(() => {
+    const syncAccount = () => setAccount(getOrbitAiAccount(userId));
+
+    syncAccount();
+    window.addEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+
+    return () => {
+      window.removeEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+    };
+  }, [userId]);
 
   return (
     <>
@@ -105,6 +119,7 @@ export default function OrbitAiToolStrip({
       </div>
       <OrbitAiModal
         darkMode={darkMode}
+        userId={userId}
         toolId={activeToolId}
         context={context}
         sourceModule={sourceModule}

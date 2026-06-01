@@ -39,7 +39,9 @@ import {
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 import OrbitAiModal from "@/app/components/OrbitAiModal";
 import {
+  getOrbitAiAccount,
   getOrbitAiTool,
+  orbitAiAccountUpdatedEvent,
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
 
@@ -420,6 +422,7 @@ export default function SettingsModule({
   const [notice, setNotice] = useState("Settings are ready.");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [activeAiToolId, setActiveAiToolId] = useState<OrbitAiToolId | null>(null);
+  const [aiAccount, setAiAccount] = useState(() => getOrbitAiAccount(userId));
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const theme = getTheme(darkMode);
 
@@ -436,6 +439,17 @@ export default function SettingsModule({
 
     setSettings(alignedSettings);
   }, [darkMode, language, userId]);
+
+  useEffect(() => {
+    const syncAiAccount = () => setAiAccount(getOrbitAiAccount(userId));
+
+    syncAiAccount();
+    window.addEventListener(orbitAiAccountUpdatedEvent, syncAiAccount);
+
+    return () => {
+      window.removeEventListener(orbitAiAccountUpdatedEvent, syncAiAccount);
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (!navigationIntent || navigationIntent.moduleId !== "settings") {
@@ -1139,7 +1153,7 @@ export default function SettingsModule({
                   Current AI Credits
                 </div>
                 <div className={joinClasses("mt-3 text-4xl font-bold", theme.heading)}>
-                  0
+                  {aiAccount.credits}
                 </div>
                 <div className={joinClasses("mt-1 text-sm font-semibold", theme.soft)}>
                   Credits Available
@@ -1154,7 +1168,7 @@ export default function SettingsModule({
                 Current Plan
               </div>
               <div className={joinClasses("mt-2 text-lg font-bold", theme.heading)}>
-                Orbit Starter
+                {aiAccount.plan}
               </div>
               <p className={joinClasses("mt-2 text-sm leading-6", theme.muted)}>
                 Billing actions are UI-only for now. Payment processing and
@@ -1363,7 +1377,7 @@ export default function SettingsModule({
   const renderAiIntelligence = () => (
     <SettingsCard
       title="AI Intelligence"
-      description="Preview Orbit AI tools, workflow inputs, and credit requirements. Generation remains intentionally disabled until the AI service is activated."
+      description="Explore Orbit AI workflows and credit requirements. AI Toolbox Talks are now available; the remaining tools stay in preview mode."
       icon={Sparkles}
       theme={theme}
     >
@@ -1405,7 +1419,8 @@ export default function SettingsModule({
                     theme.badge,
                   )}
                 >
-                  {getOrbitAiTool(card.toolId).creditLabel} / Locked / Coming Soon
+                  {getOrbitAiTool(card.toolId).creditLabel} /{" "}
+                  {card.toolId === "toolbox-talk" ? "Live" : "Locked / Coming Soon"}
                 </div>
               </div>
             </button>
@@ -1586,7 +1601,9 @@ export default function SettingsModule({
       ) : null}
       <OrbitAiModal
         darkMode={darkMode}
+        userId={userId}
         toolId={activeAiToolId}
+        sourceModule="AI Intelligence"
         onClose={() => setActiveAiToolId(null)}
       />
     </div>

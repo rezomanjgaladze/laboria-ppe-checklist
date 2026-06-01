@@ -1850,7 +1850,9 @@ export default function OrbitCommandCenterModule({
       ) : null}
       <OrbitAiModal
         darkMode={darkMode}
+        userId={userId}
         toolId={aiPreviewToolId}
+        sourceModule="Command Center"
         onClose={() => setAiPreviewToolId(null)}
       />
     </section>

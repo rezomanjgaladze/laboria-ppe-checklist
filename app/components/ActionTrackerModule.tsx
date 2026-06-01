@@ -1079,6 +1079,7 @@ export default function ActionTrackerModule({
             <div className="mt-4">
               <OrbitAiToolStrip
                 darkMode={darkMode}
+                userId={userId}
                 compact
                 title="Action AI"
                 sourceModule="Action Tracker"
