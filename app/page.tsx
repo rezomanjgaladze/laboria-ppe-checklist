@@ -1697,25 +1697,24 @@ export default function Home() {
           <button
             type="button"
             onClick={() => selectWorkspaceModule("command-center")}
-            className="group relative w-full cursor-pointer overflow-hidden rounded-2xl border border-[#4DEBFF]/20 bg-white/[0.045] px-4 py-4 text-left shadow-[0_18px_46px_rgba(0,0,0,0.3)] transition duration-300 hover:border-[#4DEBFF]/45 hover:bg-[#1E90FF]/10 hover:shadow-[0_18px_52px_rgba(30,144,255,0.18)] focus:outline-none focus:ring-2 focus:ring-[#4DEBFF]/45"
+            className="group relative w-full cursor-pointer overflow-hidden rounded-xl bg-transparent px-1 py-2 text-left transition duration-300 hover:bg-white/[0.035] focus:outline-none focus:ring-2 focus:ring-[#4DEBFF]/35"
             title="Go to Command Center"
             aria-label="Go to Command Center"
           >
-            <span className="pointer-events-none absolute inset-x-8 top-2 h-14 rounded-full bg-[#1E90FF]/15 blur-2xl transition duration-300 group-hover:bg-[#4DEBFF]/20" />
-            <span className="pointer-events-none absolute -right-5 -top-7 h-20 w-20 rounded-full border border-[#4DEBFF]/15 transition duration-300 group-hover:scale-110 group-hover:border-[#4DEBFF]/30" />
-            <span className="pointer-events-none absolute -right-1 -top-3 h-12 w-12 rounded-full border border-[#1E90FF]/20 transition duration-300 group-hover:scale-110 group-hover:border-[#4DEBFF]/35" />
+            <span className="pointer-events-none absolute inset-x-6 top-3 h-16 rounded-full bg-[#1E90FF]/10 blur-2xl transition duration-300 group-hover:bg-[#4DEBFF]/15" />
+            <span className="pointer-events-none absolute -right-3 -top-5 h-16 w-16 rounded-full border border-[#4DEBFF]/10 transition duration-300 group-hover:border-[#4DEBFF]/20" />
 
-            <span className="relative flex min-h-14 items-center justify-center">
+            <span className="relative flex min-h-[4.5rem] items-center justify-center">
               <Image
                 src="/laboria-logo.png"
                 alt="Laboria"
-                width={168}
-                height={56}
-                className="max-h-12 w-auto max-w-[10.5rem] object-contain drop-shadow-[0_0_16px_rgba(77,235,255,0.18)]"
+                width={240}
+                height={80}
+                className="max-h-[4.5rem] w-full max-w-[15rem] object-contain drop-shadow-[0_0_16px_rgba(77,235,255,0.16)]"
               />
             </span>
 
-            <span className="relative mt-3 block border-t border-white/10 pt-3 text-center">
+            <span className="relative mt-1 block text-center">
               <span className="block text-sm font-semibold text-[#F5F7FA] transition group-hover:text-white">
                 Laboria Orbit
               </span>
