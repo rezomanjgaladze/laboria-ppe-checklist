@@ -1671,7 +1671,7 @@ export default function TrainingManagementModule({
                 toolIds={[
                   "toolbox-talk",
                   "training-material",
-                  "toolbox-talk-quiz",
+                  "training-quiz",
                 ]}
               />
             </div>

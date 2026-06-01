@@ -83,6 +83,8 @@ import {
   orbitAiAccountUpdatedEvent,
   orbitAiNavigationEvent,
 } from "@/app/lib/orbitAi";
+import { orbitAiGenerationsUpdatedEvent } from "@/app/lib/orbitAiGenerations";
+import { toolboxTalksUpdatedEvent } from "@/app/lib/toolboxTalks";
 import type { User } from "@supabase/supabase-js";
 
 type InspectionResult = {
@@ -802,6 +804,8 @@ export default function Home() {
 
     window.addEventListener(notificationCenterUpdatedEvent, handleNotificationUpdate);
     window.addEventListener(orbitAiAccountUpdatedEvent, refreshNotifications);
+    window.addEventListener(orbitAiGenerationsUpdatedEvent, refreshNotifications);
+    window.addEventListener(toolboxTalksUpdatedEvent, refreshNotifications);
     window.addEventListener("storage", handleStorage);
     window.addEventListener("focus", refreshNotifications);
 
@@ -813,6 +817,8 @@ export default function Home() {
         handleNotificationUpdate,
       );
       window.removeEventListener(orbitAiAccountUpdatedEvent, refreshNotifications);
+      window.removeEventListener(orbitAiGenerationsUpdatedEvent, refreshNotifications);
+      window.removeEventListener(toolboxTalksUpdatedEvent, refreshNotifications);
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("focus", refreshNotifications);
     };

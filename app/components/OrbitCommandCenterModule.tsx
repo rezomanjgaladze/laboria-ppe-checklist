@@ -2926,11 +2926,11 @@ function AiIntelligenceCenter({
               </h3>
             </div>
             <p className={joinClasses("mt-1 text-sm", theme.muted)}>
-              Future-ready AI operating layer for proactive HSE intelligence.
+              Live AI operating layer for proactive HSE intelligence.
             </p>
           </div>
           <span className="rounded-full border border-[#4DEBFF]/30 bg-[#4DEBFF]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#4DEBFF]">
-            Coming Soon
+            Live AI
           </span>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -2964,7 +2964,7 @@ function AiIntelligenceCenter({
                       {insight.detail}
                     </p>
                     <p className="mt-3 inline-flex items-center gap-1 rounded-full border border-[#4DEBFF]/20 bg-[#4DEBFF]/10 px-2 py-1 text-[10px] font-semibold text-[#4DEBFF]">
-                      {getOrbitAiTool(insight.toolId).creditLabel} / Locked
+                      {getOrbitAiTool(insight.toolId).creditLabel} / Live
                     </p>
                   </div>
                 </div>

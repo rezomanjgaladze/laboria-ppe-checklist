@@ -161,7 +161,7 @@ const settingsSections: SettingsSection[] = [
   {
     id: "ai-intelligence",
     label: "AI Intelligence",
-    description: "Preview Orbit AI tools and credit requirements.",
+    description: "Use Orbit AI tools and review credit requirements.",
     icon: Sparkles,
   },
 ];
@@ -1420,7 +1420,7 @@ export default function SettingsModule({
                   )}
                 >
                   {getOrbitAiTool(card.toolId).creditLabel} /{" "}
-                  {card.toolId === "toolbox-talk" ? "Live" : "Locked / Coming Soon"}
+                  Live
                 </div>
               </div>
             </button>

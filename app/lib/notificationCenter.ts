@@ -6,6 +6,8 @@ import {
 import type { WorkspaceNavigationRequest } from "@/app/lib/workspaceNavigation";
 import type { WorkspaceSettings } from "@/app/lib/workspaceSettings";
 import { getOrbitAiAccount } from "@/app/lib/orbitAi";
+import { readOrbitAiGenerations } from "@/app/lib/orbitAiGenerations";
+import { readToolboxTalks } from "@/app/lib/toolboxTalks";
 
 export type OrbitNotificationSeverity = "Info" | "Warning" | "Critical" | "Success";
 
@@ -789,6 +791,33 @@ const getBillingDrafts = (userId: string | null) => {
   return drafts;
 };
 
+const getAiGenerationDrafts = (userId: string | null) => [
+  ...readOrbitAiGenerations(userId).map((generation) =>
+    createDraft(
+      `orbit-ai:${generation.id}:generated`,
+      "AI / Billing",
+      "Success",
+      "Orbit AI draft generated",
+      `${generation.toolTitle} completed and was saved to AI history.`,
+      generation.createdAt,
+      { moduleId: "settings", action: "ai-intelligence" },
+      generation.id,
+    ),
+  ),
+  ...readToolboxTalks(userId).map((talk) =>
+    createDraft(
+      `orbit-ai:${talk.id}:toolbox-talk-generated`,
+      "AI / Billing",
+      "Success",
+      "AI toolbox talk generated",
+      `${talk.content.title} was generated and saved to toolbox talk history.`,
+      talk.createdAt,
+      { moduleId: "training-management", action: "new-record" },
+      talk.id,
+    ),
+  ),
+];
+
 const mergeNotifications = (
   storedNotifications: OrbitNotification[],
   drafts: NotificationDraft[],
@@ -844,6 +873,7 @@ export const syncOrbitNotifications = (
     ...getTrainingDrafts(userId, settings),
     ...getIncidentDrafts(userId),
     ...getBillingDrafts(userId),
+    ...getAiGenerationDrafts(userId),
   ];
   const dedupedDrafts = Array.from(
     new Map(drafts.map((draft) => [draft.id, draft])).values(),

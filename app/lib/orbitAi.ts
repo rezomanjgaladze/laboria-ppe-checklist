@@ -156,6 +156,15 @@ const toolCatalog = {
     getCredits: fixedCredits(8),
     inputs: commonContextInputs,
   },
+  "training-quiz": {
+    id: "training-quiz",
+    title: "AI Generate Quiz",
+    description: "Prepare a practical HSE knowledge-check quiz from a topic or verified Orbit record.",
+    sourceModule: "Training Management",
+    creditLabel: "5 Credits",
+    getCredits: fixedCredits(5),
+    inputs: commonContextInputs,
+  },
   "corrective-actions": {
     id: "corrective-actions",
     title: "AI Recommend Corrective Actions",
