@@ -18,7 +18,7 @@ type GenerateToolboxTalkRequest = {
 };
 
 const REVIEW_NOTE =
-  "Review and adapt this toolbox talk to your specific workplace conditions before use.";
+  "Review and adapt this AI-generated report to your specific workplace conditions before use.";
 const OPENAI_MODEL = process.env.OPENAI_MODEL?.trim() || "gpt-5.4-mini";
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_REQUESTS = 6;

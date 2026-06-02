@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import jsPDF from "jspdf";
 import {
   Bot,
   CheckCircle2,
@@ -44,6 +43,10 @@ import {
   parseOrbitAiStructuredRiskAssessment,
   type OrbitAiStructuredRiskAssessment,
 } from "@/app/lib/orbitAiRiskAssessment";
+import AiReportRenderer from "@/app/components/AiReportRenderer";
+import { buildOrbitAiReport } from "@/app/lib/aiReport";
+import { exportAiReportPdf } from "@/app/lib/aiReportPdf";
+import { readWorkspaceSettings } from "@/app/lib/workspaceSettings";
 
 type OrbitAiModalProps = {
   darkMode: boolean;
@@ -110,72 +113,6 @@ const OrbitAiSourcePreview = ({
   </div>
 );
 
-const exportGenerationPdf = (generation: OrbitAiGeneration) => {
-  const pdf = new jsPDF({ unit: "mm", format: "a4" });
-  const margin = 16;
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  let y = 18;
-
-  const addText = (
-    text: string,
-    options: { size?: number; bold?: boolean; gap?: number } = {},
-  ) => {
-    const size = options.size || 10;
-    pdf.setFont("helvetica", options.bold ? "bold" : "normal");
-    pdf.setFontSize(size);
-    const lines = pdf.splitTextToSize(text, pageWidth - margin * 2) as string[];
-
-    lines.forEach((line) => {
-      if (y > pageHeight - 18) {
-        pdf.addPage();
-        y = 18;
-      }
-      pdf.text(line, margin, y);
-      y += size * 0.46;
-    });
-    y += options.gap ?? 3;
-  };
-
-  pdf.setFillColor(7, 18, 37);
-  pdf.rect(0, 0, pageWidth, 36, "F");
-  pdf.setTextColor(77, 235, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(18);
-  pdf.text("Laboria Orbit", margin, 16);
-  pdf.setTextColor(245, 247, 250);
-  pdf.setFontSize(11);
-  pdf.text(generation.toolTitle, margin, 25);
-  y = 46;
-  pdf.setTextColor(20, 36, 58);
-
-  addText(generation.content.title, { size: 17, bold: true, gap: 5 });
-  addText(`Generated: ${formatDate(generation.createdAt)}`, { size: 9 });
-  addText(`Source module: ${generation.sourceModule}`, { size: 9 });
-  if (generation.sourceRecord) {
-    addText(`Source record: ${generation.sourceRecord.label}`, { size: 9, gap: 5 });
-  }
-  addText("Executive Summary", { size: 13, bold: true });
-  addText(generation.content.executiveSummary);
-
-  generation.content.sections.forEach((section) => {
-    addText(section.heading, { size: 12, bold: true });
-    addText(section.content);
-  });
-
-  addText("Recommendations", { size: 12, bold: true });
-  generation.content.recommendations.forEach((item, index) =>
-    addText(`${index + 1}. ${item}`, { gap: 1 }),
-  );
-  addText("Next Steps", { size: 12, bold: true });
-  generation.content.nextSteps.forEach((item, index) =>
-    addText(`${index + 1}. ${item}`, { gap: 1 }),
-  );
-  addText(generation.content.reviewNote, { size: 9, gap: 0 });
-
-  pdf.save(`laboria-orbit-${generation.toolId}-${generation.id.slice(0, 8)}.pdf`);
-};
-
 export default function OrbitAiModal({
   darkMode,
   userId = null,
@@ -218,6 +155,17 @@ export default function OrbitAiModal({
       : sourceRecords.find((record) => record.id === selectedSourceId);
   const toolHistory = generations.filter(
     (generation) => generation.toolId === toolId,
+  );
+  const companyProfile = useMemo(
+    () => readWorkspaceSettings(userId).companyProfile,
+    [userId],
+  );
+  const selectedReport = useMemo(
+    () =>
+      selectedGeneration
+        ? buildOrbitAiReport(selectedGeneration, companyProfile)
+        : null,
+    [companyProfile, selectedGeneration],
   );
 
   useEffect(() => {
@@ -364,6 +312,7 @@ export default function OrbitAiModal({
         inputs: formValues,
         creditsUsed: requiredCredits,
         content: payload.content,
+        structuredRiskAssessment: structuredRiskAssessment || undefined,
       };
       const updatedGenerations = appendOrbitAiGeneration(userId, generation);
       setAccount(updatedAccount);
@@ -470,20 +419,15 @@ export default function OrbitAiModal({
                 </div>
               </div>
 
-              {selectedGeneration ? (
+              {selectedGeneration && selectedReport ? (
                 <div className={joinClasses("rounded-2xl border p-4", theme.card)}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2"><FileText size={16} className="text-[#4DEBFF]" aria-hidden /><h3 className="text-sm font-semibold">Generated Result</h3></div>
-                    <button type="button" onClick={() => exportGenerationPdf(selectedGeneration)} className="inline-flex items-center gap-2 rounded-xl border border-[#4DEBFF]/30 px-3 py-2 text-xs font-semibold text-[#4DEBFF] transition hover:bg-[#4DEBFF]/10"><Download size={14} aria-hidden />Export PDF</button>
+                    <button type="button" onClick={() => exportAiReportPdf(selectedReport)} className="inline-flex items-center gap-2 rounded-xl border border-[#4DEBFF]/30 px-3 py-2 text-xs font-semibold text-[#4DEBFF] transition hover:bg-[#4DEBFF]/10"><Download size={14} aria-hidden />Export PDF</button>
                   </div>
-                  <h4 className="mt-4 text-lg font-semibold">{selectedGeneration.content.title}</h4>
-                  <p className={joinClasses("mt-2 text-sm leading-6", theme.soft)}>{selectedGeneration.content.executiveSummary}</p>
-                  {selectedGeneration.content.sections.map((section) => <div key={section.heading} className="mt-4"><h5 className="text-sm font-semibold text-[#4DEBFF]">{section.heading}</h5><p className={joinClasses("mt-1 text-sm leading-6", theme.soft)}>{section.content}</p></div>)}
-                  <h5 className="mt-4 text-sm font-semibold text-[#4DEBFF]">Recommendations</h5>
-                  <ul className={joinClasses("mt-2 list-disc space-y-1 pl-5 text-sm leading-6", theme.soft)}>{selectedGeneration.content.recommendations.map((item) => <li key={item}>{item}</li>)}</ul>
-                  <h5 className="mt-4 text-sm font-semibold text-[#4DEBFF]">Next Steps</h5>
-                  <ul className={joinClasses("mt-2 list-disc space-y-1 pl-5 text-sm leading-6", theme.soft)}>{selectedGeneration.content.nextSteps.map((item) => <li key={item}>{item}</li>)}</ul>
-                  <p className={joinClasses("mt-4 text-xs italic", theme.muted)}>{selectedGeneration.content.reviewNote}</p>
+                  <div className="mt-4">
+                    <AiReportRenderer darkMode={darkMode} report={selectedReport} />
+                  </div>
                 </div>
               ) : null}
             </div>

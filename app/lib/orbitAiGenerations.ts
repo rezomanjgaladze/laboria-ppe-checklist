@@ -8,6 +8,13 @@ import type {
   OrbitAiSourceModule,
   OrbitAiToolId,
 } from "@/app/lib/orbitAi";
+import type { OrbitAiStructuredRiskAssessment } from "@/app/lib/orbitAiRiskAssessment";
+import type {
+  AiReportAction,
+  AiReportKpi,
+  AiReportQuizItem,
+  AiReportTable,
+} from "@/app/lib/aiReport";
 
 export type OrbitAiSourceMode = "manual" | "existing_data" | "workspace_data";
 
@@ -35,12 +42,21 @@ export type OrbitAiSourceRecord = {
 export type OrbitAiGeneratedContent = {
   title: string;
   executiveSummary: string;
+  keyFindings?: string[];
+  kpis?: AiReportKpi[];
   sections: Array<{
     heading: string;
     content: string;
   }>;
+  tables?: AiReportTable[];
   recommendations: string[];
   nextSteps: string[];
+  actions?: AiReportAction[];
+  quiz?: AiReportQuizItem[];
+  metadata?: {
+    preparedFor: string;
+    reportType: string;
+  };
   reviewNote: string;
 };
 
@@ -56,6 +72,7 @@ export type OrbitAiGeneration = {
   inputs: Record<string, string>;
   creditsUsed: number;
   content: OrbitAiGeneratedContent;
+  structuredRiskAssessment?: OrbitAiStructuredRiskAssessment;
 };
 
 type InspectionRecord = {

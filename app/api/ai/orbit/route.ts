@@ -25,7 +25,7 @@ type OrbitAiRequest = {
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL?.trim() || "gpt-5.4-mini";
 const REVIEW_NOTE =
-  "Review and adapt this AI-generated draft to your specific workplace conditions before use.";
+  "Review and adapt this AI-generated report to your specific workplace conditions before use.";
 const allowedTools = new Set([
   "training-material",
   "training-quiz",
@@ -57,6 +57,23 @@ const orbitAiSchema = {
   properties: {
     title: { type: "string" },
     executiveSummary: { type: "string" },
+    keyFindings: { type: "array", items: { type: "string" } },
+    kpis: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          label: { type: "string" },
+          value: { type: "string" },
+          tone: {
+            type: "string",
+            enum: ["neutral", "info", "success", "warning", "critical"],
+          },
+        },
+        required: ["label", "value", "tone"],
+      },
+    },
     sections: {
       type: "array",
       items: {
@@ -69,16 +86,77 @@ const orbitAiSchema = {
         required: ["heading", "content"],
       },
     },
+    tables: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          title: { type: "string" },
+          headers: { type: "array", items: { type: "string" } },
+          rows: {
+            type: "array",
+            items: {
+              type: "array",
+              items: { type: "string" },
+            },
+          },
+        },
+        required: ["title", "headers", "rows"],
+      },
+    },
     recommendations: { type: "array", items: { type: "string" } },
     nextSteps: { type: "array", items: { type: "string" } },
+    actions: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          title: { type: "string" },
+          priority: { type: "string" },
+          owner: { type: "string" },
+          dueDate: { type: "string" },
+          status: { type: "string" },
+        },
+        required: ["title", "priority", "owner", "dueDate", "status"],
+      },
+    },
+    quiz: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          question: { type: "string" },
+          answer: { type: "string" },
+        },
+        required: ["question", "answer"],
+      },
+    },
+    metadata: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        preparedFor: { type: "string" },
+        reportType: { type: "string" },
+      },
+      required: ["preparedFor", "reportType"],
+    },
     reviewNote: { type: "string" },
   },
   required: [
     "title",
     "executiveSummary",
+    "keyFindings",
+    "kpis",
     "sections",
+    "tables",
     "recommendations",
     "nextSteps",
+    "actions",
+    "quiz",
+    "metadata",
     "reviewNote",
   ],
 };
@@ -282,10 +360,15 @@ Rules:
 - Clearly separate verified source facts from recommendations.
 - Keep recommendations practical, proportionate, and suitable for HSE manager review.
 - For predictive or trend tools, describe signals and limitations; do not claim certainty.
+- Return a polished report structure with executiveSummary, keyFindings, KPIs, sections, useful tables, recommendations, next steps, proposed actions, quiz items when relevant, and metadata.
+- Use empty arrays for report elements that are not relevant. Do not invent metrics, owners, deadlines, or findings.
 - For risk assessments, include hazards, consequences, controls, and review priorities.
 - For AI Generate Risk Assessment, return a complete editable 5x5 assessment. Calculate each risk score as probability multiplied by severity. Keep responsible person and completion deadline blank unless they are supplied in the source context.
 - For incident tools, distinguish observed facts, possible contributing factors, and investigation questions.
+- For incident investigation reports, include timeline, root-cause / 5 Why structure, immediate causes, underlying causes, and corrective action tables where the supplied facts support them.
+- For inspection reports, include compliance score, pass/fail summary, findings, and recommended-action tables when the supplied context supports them.
 - For training tools, provide practical learning structure and knowledge checks where appropriate.
+- For analytics and executive summaries, include operational KPIs, risk distribution, action priorities, and management recommendations where supported by source data.
 - The reviewNote field must exactly contain: "${REVIEW_NOTE}"
 
 Manual context:
