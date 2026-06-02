@@ -503,6 +503,41 @@ function CompanyProfileForm({
   );
 }
 
+function SettingsCard({
+  title,
+  description,
+  icon: Icon,
+  children,
+  theme,
+}: {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  children: ReactNode;
+  theme: ReturnType<typeof getTheme>;
+}) {
+  return (
+    <section className={joinClasses("rounded-3xl border p-5 backdrop-blur-2xl sm:p-7", theme.panel)}>
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#4DEBFF]/25 bg-[#1E90FF]/15 text-[#4DEBFF]">
+            <Icon size={22} aria-hidden />
+          </span>
+          <div>
+            <h2 className={joinClasses("text-xl font-bold tracking-tight", theme.heading)}>
+              {title}
+            </h2>
+            <p className={joinClasses("mt-2 max-w-3xl text-sm leading-6", theme.muted)}>
+              {description}
+            </p>
+          </div>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 const readBrowserWorkspaceData = (): Record<string, unknown> => {
   if (typeof window === "undefined") {
     return {};
@@ -705,12 +740,26 @@ export default function SettingsModule({
       return;
     }
 
+    console.info("[company-logo] upload started", {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+    });
+
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      console.warn("[company-logo] upload rejected: unsupported file type", {
+        name: file.name,
+        type: file.type,
+      });
       setNotice("Use a PNG, JPG, JPEG, or WEBP image.");
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
+      console.warn("[company-logo] upload rejected: file too large", {
+        name: file.name,
+        size: file.size,
+      });
       setNotice("Company logo must be 2 MB or smaller.");
       return;
     }
@@ -735,6 +784,10 @@ export default function SettingsModule({
         if (payload.error?.includes("Company logo storage is not configured")) {
           const logoDataUrl = await readFileAsDataUrl(file);
 
+          console.warn("[company-logo] cloud storage unavailable, using workspace cache", {
+            name: file.name,
+            reason: payload.error,
+          });
           updateSettings(
             (current) => ({
               ...current,
@@ -754,10 +807,18 @@ export default function SettingsModule({
           return;
         }
 
+        console.error("[company-logo] upload failed", {
+          name: file.name,
+          error: payload.error,
+        });
         setNotice(payload.error || "Could not upload the company logo.");
         return;
       }
 
+      console.info("[company-logo] upload succeeded", {
+        name: file.name,
+        logoPath: payload.logoPath,
+      });
       updateSettings(
         (current) => ({
           ...current,
@@ -774,7 +835,11 @@ export default function SettingsModule({
         logoDataUrl: payload.logoDataUrl || "",
         logoPath: payload.logoPath || "",
       }));
-    } catch {
+    } catch (error) {
+      console.error("[company-logo] upload request failed", {
+        name: file.name,
+        error,
+      });
       setNotice("Could not upload the company logo. Please try again.");
     } finally {
       setIsUpdatingLogo(false);
@@ -2040,41 +2105,6 @@ export default function SettingsModule({
           />
         </span>
       </button>
-    );
-  }
-
-  function SettingsCard({
-    title,
-    description,
-    icon: Icon,
-    children,
-    theme: cardTheme,
-  }: {
-    title: string;
-    description: string;
-    icon: LucideIcon;
-    children: ReactNode;
-    theme: ReturnType<typeof getTheme>;
-  }) {
-    return (
-      <section className={joinClasses("rounded-3xl border p-5 backdrop-blur-2xl sm:p-7", cardTheme.panel)}>
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#4DEBFF]/25 bg-[#1E90FF]/15 text-[#4DEBFF]">
-              <Icon size={22} aria-hidden />
-            </span>
-            <div>
-              <h2 className={joinClasses("text-xl font-bold tracking-tight", cardTheme.heading)}>
-                {title}
-              </h2>
-              <p className={joinClasses("mt-2 max-w-3xl text-sm leading-6", cardTheme.muted)}>
-                {description}
-              </p>
-            </div>
-          </div>
-        </div>
-        {children}
-      </section>
     );
   }
 

@@ -196,6 +196,13 @@ export async function POST(request: Request) {
   const previousLogoPath = getLogoPath(user);
   const logoPath = createLogoPath(user.id, extension);
 
+  console.info("[company-logo] upload started", {
+    userId: user.id,
+    logoPath,
+    size: logo.size,
+    type: logo.type,
+  });
+
   try {
     const storageClient = await getStorageClient(supabase);
     const { error: uploadError } = await storageClient.storage
@@ -252,6 +259,11 @@ export async function POST(request: Request) {
         });
       }
     }
+
+    console.info("[company-logo] upload succeeded", {
+      userId: user.id,
+      logoPath,
+    });
 
     return NextResponse.json({
       logoDataUrl: await toDataUrl(logo),
