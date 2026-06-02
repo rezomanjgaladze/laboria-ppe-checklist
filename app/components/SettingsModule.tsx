@@ -48,6 +48,8 @@ import {
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
 import { isOrbitAiTestCreditAdmin } from "@/app/lib/orbitAiAdmin";
+import { openOrbitPaddleCheckout } from "@/app/lib/paddleCheckout";
+import type { PaddlePurchaseKey } from "@/app/lib/paddleCatalog";
 
 type SettingsSectionId =
   | "company-profile"
@@ -77,6 +79,14 @@ type SettingsSection = {
   label: string;
   description: string;
   icon: LucideIcon;
+};
+
+type PaddleSetupState = {
+  loading: boolean;
+  checkoutEnabled: boolean;
+  environment: "sandbox" | "production";
+  missingVariables: string[];
+  invalidVariables: string[];
 };
 
 type FieldProps = {
@@ -241,6 +251,7 @@ const planCards = [
     ],
     buttonLabel: "Upgrade to Plus",
     popular: true,
+    purchaseKey: "orbit-plus" as const,
   },
   {
     name: "Orbit Pro",
@@ -260,6 +271,7 @@ const planCards = [
     ],
     buttonLabel: "Upgrade to Pro",
     premium: true,
+    purchaseKey: "orbit-pro" as const,
   },
 ];
 
@@ -269,6 +281,7 @@ const aiCreditPacks = [
     credits: "50 AI Credits",
     price: "$7",
     tone: "from-slate-500/16 to-slate-400/5",
+    purchaseKey: "starter-topup" as const,
   },
   {
     name: "Orbit Plus Discount Pack",
@@ -276,6 +289,7 @@ const aiCreditPacks = [
     price: "$8",
     tone: "from-[#1E90FF]/24 to-[#4DEBFF]/10",
     badge: "Plus",
+    purchaseKey: "plus-pack" as const,
   },
   {
     name: "Orbit Pro Best Value Pack",
@@ -283,6 +297,7 @@ const aiCreditPacks = [
     price: "$5",
     tone: "from-violet-500/26 to-[#4DEBFF]/12",
     badge: "Best Value",
+    purchaseKey: "pro-pack" as const,
   },
 ];
 
@@ -582,6 +597,15 @@ export default function SettingsModule({
   const [aiAccount, setAiAccount] = useState(() => getOrbitAiAccount(userId));
   const [isAddingTestCredits, setIsAddingTestCredits] = useState(false);
   const [isUpdatingLogo, setIsUpdatingLogo] = useState(false);
+  const [activePaddlePurchase, setActivePaddlePurchase] =
+    useState<PaddlePurchaseKey | null>(null);
+  const [paddleSetup, setPaddleSetup] = useState<PaddleSetupState>({
+    loading: true,
+    checkoutEnabled: false,
+    environment: "sandbox",
+    missingVariables: [],
+    invalidVariables: [],
+  });
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const theme = getTheme(darkMode);
   const canAddTestCredits = isOrbitAiTestCreditAdmin(userEmail);
@@ -614,6 +638,47 @@ export default function SettingsModule({
       window.removeEventListener(orbitAiAccountUpdatedEvent, syncAiAccount);
     };
   }, [userId]);
+
+  useEffect(() => {
+    let active = true;
+
+    fetch("/api/billing/paddle/config", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = (await response.json()) as Partial<PaddleSetupState>;
+
+        if (!active) {
+          return;
+        }
+
+        setPaddleSetup({
+          loading: false,
+          checkoutEnabled: Boolean(response.ok && payload.checkoutEnabled),
+          environment:
+            payload.environment === "production" ? "production" : "sandbox",
+          missingVariables: Array.isArray(payload.missingVariables)
+            ? payload.missingVariables
+            : [],
+          invalidVariables: Array.isArray(payload.invalidVariables)
+            ? payload.invalidVariables
+            : [],
+        });
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+
+        setPaddleSetup((current) => ({
+          ...current,
+          loading: false,
+          checkoutEnabled: false,
+        }));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!navigationIntent || navigationIntent.moduleId !== "settings") {
@@ -676,6 +741,28 @@ export default function SettingsModule({
       setNotice("Could not add testing credits.");
     } finally {
       setIsAddingTestCredits(false);
+    }
+  };
+
+  const startPaddleCheckout = async (purchaseKey: PaddlePurchaseKey) => {
+    if (!paddleSetup.checkoutEnabled) {
+      setNotice("Payments are being configured. Please contact Laboria.");
+      return;
+    }
+
+    setActivePaddlePurchase(purchaseKey);
+
+    try {
+      await openOrbitPaddleCheckout({ purchaseKey, darkMode });
+      setNotice("Secure Paddle checkout opened.");
+    } catch (error) {
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "Payments are being configured. Please contact Laboria.",
+      );
+    } finally {
+      setActivePaddlePurchase(null);
     }
   };
 
@@ -1483,8 +1570,9 @@ export default function SettingsModule({
                 {aiAccount.plan}
               </div>
               <p className={joinClasses("mt-2 text-sm leading-6", theme.muted)}>
-                Payment processing is not connected yet. AI credits remain
-                account-specific and update Orbit tools immediately.
+                {paddleSetup.checkoutEnabled
+                  ? "Secure Paddle checkout is ready. Plan changes and credit packs are applied only after verified payment events."
+                  : "Payments are being configured. Please contact Laboria. AI credits remain account-specific and update Orbit tools immediately."}
               </p>
             </div>
             {canAddTestCredits ? (
@@ -1537,9 +1625,39 @@ export default function SettingsModule({
                 theme.badge,
               )}
             >
-              Payments not connected
+              {paddleSetup.checkoutEnabled
+                ? `Secure Paddle checkout · ${paddleSetup.environment}`
+                : paddleSetup.loading
+                  ? "Checking payment setup"
+                  : "Payment setup required"}
             </span>
           </div>
+          {!paddleSetup.loading && !paddleSetup.checkoutEnabled ? (
+            <div
+              className={joinClasses(
+                "mt-4 rounded-2xl border p-4",
+                darkMode
+                  ? "border-amber-300/20 bg-amber-400/[0.06]"
+                  : "border-amber-400/35 bg-amber-50",
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <TriangleAlert
+                  size={18}
+                  className="mt-0.5 shrink-0 text-amber-400"
+                  aria-hidden
+                />
+                <div>
+                  <div className={joinClasses("text-sm font-bold", theme.heading)}>
+                    Payment setup required
+                  </div>
+                  <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
+                    Payments are being configured. Please contact Laboria.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -1623,15 +1741,28 @@ export default function SettingsModule({
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  setNotice(
-                    plan.current
-                      ? "Orbit Starter is the current plan."
-                      : "Plan upgrades are UI-only for now. Payments are not connected yet.",
-                  )
+                onClick={() => {
+                  if (plan.current || !plan.purchaseKey) {
+                    setNotice("Orbit Starter is the current plan.");
+                    return;
+                  }
+
+                  void startPaddleCheckout(plan.purchaseKey);
+                }}
+                disabled={
+                  Boolean(plan.purchaseKey) &&
+                  activePaddlePurchase === plan.purchaseKey
+                }
+                aria-disabled={
+                  !plan.current && !paddleSetup.checkoutEnabled
+                    ? true
+                    : undefined
                 }
                 className={joinClasses(
                   "mt-6 w-full rounded-xl border px-4 py-3 text-sm font-semibold transition",
+                  !plan.current &&
+                    !paddleSetup.checkoutEnabled &&
+                    "cursor-not-allowed opacity-70",
                   plan.popular
                     ? "border-[#1E90FF] bg-[#1E90FF] text-white hover:bg-[#1878d6]"
                     : plan.premium
@@ -1641,7 +1772,9 @@ export default function SettingsModule({
                     : theme.buttonGhost,
                 )}
               >
-                {plan.buttonLabel}
+                {plan.purchaseKey && activePaddlePurchase === plan.purchaseKey
+                  ? "Opening..."
+                  : plan.buttonLabel}
               </button>
             </div>
           </div>
@@ -1700,15 +1833,19 @@ export default function SettingsModule({
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  setNotice("AI credit purchases are UI-only for now. Payments are not connected yet.")
-                }
+                onClick={() => void startPaddleCheckout(pack.purchaseKey)}
+                disabled={activePaddlePurchase === pack.purchaseKey}
+                aria-disabled={!paddleSetup.checkoutEnabled ? true : undefined}
                 className={joinClasses(
                   "mt-5 w-full rounded-xl border px-4 py-3 text-sm font-semibold transition",
+                  !paddleSetup.checkoutEnabled &&
+                    "cursor-not-allowed opacity-70",
                   theme.buttonGhost,
                 )}
               >
-                Buy Credits
+                {activePaddlePurchase === pack.purchaseKey
+                  ? "Opening..."
+                  : "Buy Credits"}
               </button>
             </div>
           </div>

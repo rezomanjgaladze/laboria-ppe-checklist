@@ -53,6 +53,56 @@ The storage policies limit each authenticated user to their own folder. When
 `SUPABASE_SERVICE_ROLE_KEY` is configured on the server, the upload route can
 also create the private bucket automatically.
 
+## Paddle Billing Staged Mode
+
+Laboria Orbit includes a staged Paddle Billing integration. Checkout remains
+disabled until every required variable is configured and the server billing
+migration is applied. Client-side checkout success never grants a plan upgrade
+or AI credits. Only verified Paddle webhooks can update billing records and the
+AI credit ledger.
+
+Create these recurring and one-time prices in Paddle sandbox:
+
+- `Orbit Plus` subscription: `$19 / month`
+- `Orbit Pro` subscription: `$49 / month`
+- `Starter Top-Up`: `50 AI Credits` for `$7`
+- `Orbit Plus Discount Pack`: `100 AI Credits` for `$8`
+- `Orbit Pro Best Value Pack`: `100 AI Credits` for `$5`
+
+Configure these Vercel environment variables:
+
+```bash
+PADDLE_API_KEY=
+PADDLE_WEBHOOK_SECRET=
+PADDLE_ENVIRONMENT=sandbox
+NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=
+NEXT_PUBLIC_PADDLE_PRICE_ORBIT_PLUS=
+NEXT_PUBLIC_PADDLE_PRICE_ORBIT_PRO=
+NEXT_PUBLIC_PADDLE_PRICE_STARTER_TOPUP=
+NEXT_PUBLIC_PADDLE_PRICE_PLUS_PACK=
+NEXT_PUBLIC_PADDLE_PRICE_PRO_PACK=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+Apply the staged billing migration before enabling checkout:
+
+```text
+supabase/migrations/20260602_paddle_billing_staged.sql
+```
+
+Add this Paddle webhook destination:
+
+```text
+https://laboria-ppe-checklist.vercel.app/api/billing/paddle/webhook
+```
+
+Subscribe the destination to:
+
+- `transaction.completed`
+- `subscription.activated`
+- `subscription.updated`
+- `subscription.canceled`
+
 ## Production
 
 Public production URL:
