@@ -1367,7 +1367,9 @@ export default function SettingsModule({
                   plan.popular
                     ? "border-[#1E90FF] bg-[#1E90FF] text-white hover:bg-[#1878d6]"
                     : plan.premium
-                      ? "border-violet-400/45 bg-violet-500/18 text-violet-100 hover:bg-violet-500/24"
+                      ? darkMode
+                        ? "border-violet-400/45 bg-violet-500/18 text-violet-100 hover:bg-violet-500/24"
+                        : "border-violet-500/55 bg-violet-600 text-white shadow-[0_12px_28px_rgba(124,58,237,0.18)] hover:bg-violet-700"
                     : theme.buttonGhost,
                 )}
               >

@@ -1763,6 +1763,34 @@ export default function OrbitCommandCenterModule({
           ))}
         </div>
 
+        <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+          <AiIntelligenceCenter
+            darkMode={darkMode}
+            onPreview={setAiPreviewToolId}
+          />
+          <div className="space-y-5">
+            <QuickActionPanel
+              darkMode={darkMode}
+              aiCredits={aiAccount.credits}
+              onNavigate={navigate}
+              onAiPreview={() => setAiPreviewToolId("toolbox-talk")}
+            />
+            <NotificationSummaryPanel
+              darkMode={darkMode}
+              notifications={notifications}
+              onOpenNotification={onOpenNotification}
+              onOpenNotificationCenter={onOpenNotificationCenter}
+            />
+            <ChartCard
+              title="Recurring Incident Factors"
+              subtitle="Root cause patterns from incident history"
+              darkMode={darkMode}
+            >
+              <HorizontalBars data={rootCauseDistribution} darkMode={darkMode} />
+            </ChartCard>
+          </div>
+        </div>
+
         <div className="grid gap-5 xl:grid-cols-[1.35fr_0.9fr]">
           <RiskHeatmap
             risks={filteredData.risks}
@@ -1833,33 +1861,6 @@ export default function OrbitCommandCenterModule({
           </ChartCard>
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-          <AiIntelligenceCenter
-            darkMode={darkMode}
-            onPreview={setAiPreviewToolId}
-          />
-          <div className="space-y-5">
-            <QuickActionPanel
-              darkMode={darkMode}
-              aiCredits={aiAccount.credits}
-              onNavigate={navigate}
-              onAiPreview={() => setAiPreviewToolId("toolbox-talk")}
-            />
-            <NotificationSummaryPanel
-              darkMode={darkMode}
-              notifications={notifications}
-              onOpenNotification={onOpenNotification}
-              onOpenNotificationCenter={onOpenNotificationCenter}
-            />
-            <ChartCard
-              title="Recurring Incident Factors"
-              subtitle="Root cause patterns from incident history"
-              darkMode={darkMode}
-            >
-              <HorizontalBars data={rootCauseDistribution} darkMode={darkMode} />
-            </ChartCard>
-          </div>
-        </div>
       </div>
       {selectedHeatmapCell ? (
         <HeatmapRiskPanel
