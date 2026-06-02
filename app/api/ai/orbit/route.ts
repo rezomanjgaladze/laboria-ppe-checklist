@@ -8,7 +8,7 @@ type OrbitAiRequest = {
   toolTitle?: string;
   toolDescription?: string;
   sourceModule?: string;
-  sourceMode?: "manual" | "existing_data";
+  sourceMode?: "manual" | "existing_data" | "workspace_data";
   inputs?: Record<string, unknown>;
   sourceRecord?: {
     id?: unknown;
@@ -159,7 +159,7 @@ const buildPrompt = ({
   toolTitle: string;
   toolDescription: string;
   sourceModule: string;
-  sourceMode: "manual" | "existing_data";
+  sourceMode: "manual" | "existing_data" | "workspace_data";
   inputs: Record<string, string>;
   sourceRecord: {
     type: string;
@@ -173,7 +173,7 @@ Create a professional workplace health and safety operational draft.
 AI tool: ${toolTitle}
 Purpose: ${toolDescription}
 Orbit module: ${sourceModule}
-Generation mode: ${sourceMode === "existing_data" ? "Existing verified Orbit data" : "Manual operational input"}
+Generation mode: ${sourceMode === "workspace_data" ? "All available Orbit workspace data" : sourceMode === "existing_data" ? "Single verified Orbit record" : "Manual operational input"}
 
 Rules:
 - Use only the supplied context.
@@ -242,10 +242,13 @@ export async function POST(request: Request) {
   const toolTitle = sanitizeText(body.toolTitle, 180);
   const toolDescription = sanitizeText(body.toolDescription, 500);
   const sourceModule = sanitizeText(body.sourceModule, 120);
-  const sourceMode = body.sourceMode === "existing_data" ? "existing_data" : "manual";
+  const sourceMode =
+    body.sourceMode === "existing_data" || body.sourceMode === "workspace_data"
+      ? body.sourceMode
+      : "manual";
   const inputs = sanitizeInputs(body.inputs);
   const sourceRecord =
-    sourceMode === "existing_data" && body.sourceRecord
+    sourceMode !== "manual" && body.sourceRecord
       ? {
           type: sanitizeText(body.sourceRecord.type, 120),
           label: sanitizeText(body.sourceRecord.label, 240),
@@ -268,7 +271,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (sourceMode === "existing_data" && (!sourceRecord || !sourceRecord.data)) {
+  if (sourceMode !== "manual" && (!sourceRecord || !sourceRecord.data)) {
     return NextResponse.json(
       { error: "Please select an existing Orbit record before generating." },
       { status: 400 },

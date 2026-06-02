@@ -32,8 +32,11 @@ import {
   orbitAiGenerationsUpdatedEvent,
   readOrbitAiGenerations,
   readOrbitAiSourceRecords,
+  readOrbitAiWorkspaceRecord,
+  supportsOrbitAiWorkspaceData,
   type OrbitAiGeneratedContent,
   type OrbitAiGeneration,
+  type OrbitAiSourceRecord,
   type OrbitAiSourceMode,
 } from "@/app/lib/orbitAiGenerations";
 import ToolboxTalkGeneratorModal from "@/app/components/ToolboxTalkGeneratorModal";
@@ -55,6 +58,50 @@ const formatDate = (value: string) =>
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+
+const OrbitAiSourcePreview = ({
+  source,
+  theme,
+}: {
+  source: OrbitAiSourceRecord;
+  theme: { muted: string; soft: string };
+}) => (
+  <div className="mt-3 rounded-xl border border-[#4DEBFF]/20 bg-[#4DEBFF]/[0.06] p-3">
+    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[#4DEBFF]">
+      <Database size={14} aria-hidden />
+      {source.type === "workspace-summary" ? "Workspace Data Preview" : "Selected Orbit Data"}
+    </div>
+    <p className="mt-2 text-sm font-semibold">{source.label}</p>
+    <p className={joinClasses("mt-1 text-xs", theme.muted)}>{source.description}</p>
+    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+      {source.preview.fields.map((field) => (
+        <div key={`${field.label}-${field.value}`} className="rounded-lg border border-white/10 bg-white/[0.04] p-2.5">
+          <div className={joinClasses("text-[10px] font-bold uppercase tracking-[0.1em]", theme.muted)}>
+            {field.label}
+          </div>
+          <div className={joinClasses("mt-1 text-xs font-semibold leading-5", theme.soft)}>
+            {field.value}
+          </div>
+        </div>
+      ))}
+    </div>
+    {source.preview.lists?.map((section) => (
+      <div key={section.label} className="mt-3 rounded-lg border border-white/10 bg-white/[0.04] p-2.5">
+        <div className={joinClasses("text-[10px] font-bold uppercase tracking-[0.1em]", theme.muted)}>
+          {section.label}
+        </div>
+        <ul className={joinClasses("mt-1.5 space-y-1 text-xs leading-5", theme.soft)}>
+          {section.items.map((item, index) => (
+            <li key={`${section.label}-${index}-${item}`} className="flex gap-2">
+              <span className="text-[#4DEBFF]">•</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+);
 
 const exportGenerationPdf = (generation: OrbitAiGeneration) => {
   const pdf = new jsPDF({ unit: "mm", format: "a4" });
@@ -150,9 +197,17 @@ export default function OrbitAiModal({
     () => (toolId ? readOrbitAiSourceRecords(userId, toolId) : []),
     [toolId, userId],
   );
-  const selectedSource = sourceRecords.find(
-    (record) => record.id === selectedSourceId,
+  const supportsWorkspaceData = Boolean(
+    toolId && supportsOrbitAiWorkspaceData(toolId),
   );
+  const workspaceSource = useMemo(
+    () => (supportsWorkspaceData ? readOrbitAiWorkspaceRecord(userId) : null),
+    [supportsWorkspaceData, userId],
+  );
+  const selectedSource =
+    sourceMode === "workspace_data"
+      ? workspaceSource
+      : sourceRecords.find((record) => record.id === selectedSourceId);
   const toolHistory = generations.filter(
     (generation) => generation.toolId === toolId,
   );
@@ -228,7 +283,7 @@ export default function OrbitAiModal({
       setError("Please add operational context before generating.");
       return;
     }
-    if (sourceMode === "existing_data" && !selectedSource) {
+    if (sourceMode !== "manual" && !selectedSource) {
       setError("Please select an existing Orbit record before generating.");
       return;
     }
@@ -275,7 +330,7 @@ export default function OrbitAiModal({
         toolTitle: tool.title,
         sourceModule: sourceModule || tool.sourceModule,
         sourceMode,
-        sourceRecord: selectedSource,
+        sourceRecord: selectedSource || undefined,
         inputs: formValues,
         creditsUsed: requiredCredits,
         content: payload.content,
@@ -342,9 +397,10 @@ export default function OrbitAiModal({
             <div className="space-y-5">
               <div className={joinClasses("rounded-2xl border p-4", theme.card)}>
                 <h3 className="text-sm font-semibold">Generation source</h3>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className={joinClasses("mt-3 grid gap-2", supportsWorkspaceData ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
                   <button type="button" onClick={() => setSourceMode("manual")} className={joinClasses("rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition", sourceMode === "manual" ? "border-[#4DEBFF]/50 bg-[#4DEBFF]/10 text-[#4DEBFF]" : theme.card)}>Manual Input</button>
-                  <button type="button" onClick={() => setSourceMode("existing_data")} className={joinClasses("rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition", sourceMode === "existing_data" ? "border-[#4DEBFF]/50 bg-[#4DEBFF]/10 text-[#4DEBFF]" : theme.card)}>From Existing Orbit Data</button>
+                  <button type="button" onClick={() => setSourceMode("existing_data")} className={joinClasses("rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition", sourceMode === "existing_data" ? "border-[#4DEBFF]/50 bg-[#4DEBFF]/10 text-[#4DEBFF]" : theme.card)}>Single Existing Record</button>
+                  {supportsWorkspaceData ? <button type="button" onClick={() => setSourceMode("workspace_data")} className={joinClasses("rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition", sourceMode === "workspace_data" ? "border-[#4DEBFF]/50 bg-[#4DEBFF]/10 text-[#4DEBFF]" : theme.card)}>All Workspace Data</button> : null}
                 </div>
                 {sourceMode === "existing_data" ? (
                   <div className="mt-3">
@@ -353,16 +409,10 @@ export default function OrbitAiModal({
                       <option value="">Select saved operational data...</option>
                       {sourceRecords.map((record) => <option key={record.id} value={record.id}>{record.label} · {record.description}</option>)}
                     </select>
-                    {selectedSource ? (
-                      <div className="mt-3 rounded-xl border border-[#4DEBFF]/20 bg-[#4DEBFF]/[0.06] p-3">
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[#4DEBFF]"><Database size={14} aria-hidden />Selected Orbit Data</div>
-                        <p className="mt-2 text-sm font-semibold">{selectedSource.label}</p>
-                        <p className={joinClasses("mt-1 text-xs", theme.muted)}>{selectedSource.description}</p>
-                        <pre className={joinClasses("mt-3 max-h-36 overflow-auto whitespace-pre-wrap text-[11px] leading-5", theme.muted)}>{selectedSource.data.slice(0, 1600)}</pre>
-                      </div>
-                    ) : null}
+                    {selectedSource ? <OrbitAiSourcePreview source={selectedSource} theme={theme} /> : null}
                   </div>
                 ) : null}
+                {sourceMode === "workspace_data" && selectedSource ? <OrbitAiSourcePreview source={selectedSource} theme={theme} /> : null}
               </div>
 
               <div>
