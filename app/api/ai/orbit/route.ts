@@ -2,6 +2,10 @@ import OpenAI from "openai";
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import {
+  orbitAiControlHierarchyOptions,
+  parseOrbitAiStructuredRiskAssessment,
+} from "@/app/lib/orbitAiRiskAssessment";
 
 type OrbitAiRequest = {
   toolId?: string;
@@ -77,6 +81,103 @@ const orbitAiSchema = {
     "nextSteps",
     "reviewNote",
   ],
+};
+
+const orbitAiRiskAssessmentSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    content: orbitAiSchema,
+    structuredRiskAssessment: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        header: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            company: { type: "string" },
+            site: { type: "string" },
+            department: { type: "string" },
+            title: { type: "string" },
+            assessor: { type: "string" },
+            assessmentDate: { type: "string" },
+            sector: { type: "string" },
+            activity: { type: "string" },
+          },
+          required: [
+            "company",
+            "site",
+            "department",
+            "title",
+            "assessor",
+            "assessmentDate",
+            "sector",
+            "activity",
+          ],
+        },
+        hazards: {
+          type: "array",
+          minItems: 1,
+          maxItems: 30,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              workplaceActivity: { type: "string" },
+              hazardDescription: { type: "string" },
+              whoMayBeHarmed: { type: "string" },
+              possibleConsequence: { type: "string" },
+              existingMeasures: { type: "string" },
+              initialProbability: { type: "integer", minimum: 1, maximum: 5 },
+              initialSeverity: { type: "integer", minimum: 1, maximum: 5 },
+              initialRiskScore: { type: "integer", minimum: 1, maximum: 25 },
+              additionalMeasures: { type: "string" },
+              controlHierarchy: {
+                type: "array",
+                minItems: 1,
+                items: {
+                  type: "string",
+                  enum: orbitAiControlHierarchyOptions,
+                },
+              },
+              residualProbability: { type: "integer", minimum: 1, maximum: 5 },
+              residualSeverity: { type: "integer", minimum: 1, maximum: 5 },
+              residualRiskScore: { type: "integer", minimum: 1, maximum: 25 },
+              responsiblePerson: { type: "string" },
+              completionDeadline: { type: "string" },
+              status: {
+                type: "string",
+                enum: ["Open", "In Progress", "Closed"],
+              },
+              comments: { type: "string" },
+            },
+            required: [
+              "workplaceActivity",
+              "hazardDescription",
+              "whoMayBeHarmed",
+              "possibleConsequence",
+              "existingMeasures",
+              "initialProbability",
+              "initialSeverity",
+              "initialRiskScore",
+              "additionalMeasures",
+              "controlHierarchy",
+              "residualProbability",
+              "residualSeverity",
+              "residualRiskScore",
+              "responsiblePerson",
+              "completionDeadline",
+              "status",
+              "comments",
+            ],
+          },
+        },
+      },
+      required: ["header", "hazards"],
+    },
+  },
+  required: ["content", "structuredRiskAssessment"],
 };
 
 const sanitizeText = (value: unknown, maxLength = 1200) =>
@@ -182,6 +283,7 @@ Rules:
 - Keep recommendations practical, proportionate, and suitable for HSE manager review.
 - For predictive or trend tools, describe signals and limitations; do not claim certainty.
 - For risk assessments, include hazards, consequences, controls, and review priorities.
+- For AI Generate Risk Assessment, return a complete editable 5x5 assessment. Calculate each risk score as probability multiplied by severity. Keep responsible person and completion deadline blank unless they are supplied in the source context.
 - For incident tools, distinguish observed facts, possible contributing factors, and investigation questions.
 - For training tools, provide practical learning structure and knowledge checks where appropriate.
 - The reviewNote field must exactly contain: "${REVIEW_NOTE}"
@@ -301,12 +403,18 @@ export async function POST(request: Request) {
       text: {
         format: {
           type: "json_schema",
-          name: "laboria_orbit_ai_generation",
+          name:
+            toolId === "risk-assessment-basic"
+              ? "laboria_orbit_ai_risk_assessment"
+              : "laboria_orbit_ai_generation",
           strict: true,
-          schema: orbitAiSchema,
+          schema:
+            toolId === "risk-assessment-basic"
+              ? orbitAiRiskAssessmentSchema
+              : orbitAiSchema,
         },
       },
-      max_output_tokens: 5200,
+      max_output_tokens: toolId === "risk-assessment-basic" ? 9000 : 5200,
     });
 
     if (!response.output_text) {
@@ -320,7 +428,43 @@ export async function POST(request: Request) {
       responseId: response.id,
     });
 
-    return NextResponse.json({ content: JSON.parse(response.output_text) });
+    const parsed = JSON.parse(response.output_text) as unknown;
+
+    if (toolId === "risk-assessment-basic") {
+      const structuredResponse =
+        parsed && typeof parsed === "object"
+          ? (parsed as {
+              content?: unknown;
+              structuredRiskAssessment?: unknown;
+            })
+          : null;
+      const structuredRiskAssessment = parseOrbitAiStructuredRiskAssessment(
+        structuredResponse?.structuredRiskAssessment,
+      );
+
+      if (!structuredResponse?.content || !structuredRiskAssessment) {
+        console.error("Orbit AI structured risk assessment validation failed", {
+          configuration,
+          userId: user.id,
+          toolId,
+          responseId: response.id,
+        });
+        return NextResponse.json(
+          {
+            error:
+              "AI returned an incomplete risk assessment structure. No AI credits were deducted. Please try again.",
+          },
+          { status: 502 },
+        );
+      }
+
+      return NextResponse.json({
+        content: structuredResponse.content,
+        structuredRiskAssessment,
+      });
+    }
+
+    return NextResponse.json({ content: parsed });
   } catch (error) {
     const errorDetails = getErrorDetails(error);
     console.error("Orbit AI generation failed", {

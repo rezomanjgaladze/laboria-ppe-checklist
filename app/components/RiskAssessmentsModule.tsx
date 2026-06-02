@@ -30,6 +30,7 @@ import {
 } from "@/app/lib/workspaceSettings";
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
+import type { OrbitAiStructuredRiskAssessment } from "@/app/lib/orbitAiRiskAssessment";
 
 type RiskValue = 1 | 2 | 3 | 4 | 5;
 type RiskLevel = "Low" | "Medium" | "High";
@@ -9211,6 +9212,97 @@ export default function RiskAssessmentsModule({
     setNotice("Risk assessment generated from Laboria HSE Library.");
   };
 
+  const importAiRiskAssessment = (
+    generatedAssessment: OrbitAiStructuredRiskAssessment,
+  ) => {
+    if (hazards.length > 0 && hasEnteredHazardData) {
+      const shouldReplace = window.confirm(
+        "This will replace current hazard rows with the AI-generated risk assessment. Continue?",
+      );
+
+      if (!shouldReplace) {
+        return false;
+      }
+    }
+
+    try {
+      const companyProfile = workspaceSettings.companyProfile;
+      const generatedHeader: RiskAssessmentHeader = {
+        company:
+          generatedAssessment.header.company ||
+          header.company ||
+          companyProfile.companyName,
+        site:
+          generatedAssessment.header.site ||
+          header.site ||
+          companyProfile.mainSiteLocation,
+        department:
+          generatedAssessment.header.department || header.department,
+        title: generatedAssessment.header.title,
+        assessor:
+          generatedAssessment.header.assessor || header.assessor || createdBy,
+        assessmentDate:
+          generatedAssessment.header.assessmentDate || header.assessmentDate || today(),
+        sector:
+          generatedAssessment.header.sector ||
+          header.sector ||
+          companyProfile.industrySector,
+        activity: generatedAssessment.header.activity || header.activity,
+      };
+      const generatedHazards = generatedAssessment.hazards.map((hazard) =>
+        createLibraryHazard({
+          workplaceActivity: hazard.workplaceActivity,
+          hazardDescription: hazard.hazardDescription,
+          whoMayBeHarmed: hazard.whoMayBeHarmed,
+          possibleConsequence: hazard.possibleConsequence,
+          existingMeasures: hazard.existingMeasures,
+          initialProbability: hazard.initialProbability as RiskValue,
+          initialSeverity: hazard.initialSeverity as RiskValue,
+          additionalMeasures: hazard.additionalMeasures,
+          controlHierarchy: hazard.controlHierarchy as ControlHierarchy[],
+          residualProbability: hazard.residualProbability as RiskValue,
+          residualSeverity: hazard.residualSeverity as RiskValue,
+          responsiblePerson: hazard.responsiblePerson,
+          completionDeadline: hazard.completionDeadline,
+          status: hazard.status,
+          comments: hazard.comments,
+        }),
+      );
+      const assessment: SavedRiskAssessment = {
+        id: Date.now(),
+        header: generatedHeader,
+        hazards: generatedHazards,
+        savedAt: new Date().toISOString(),
+      };
+      const updated = mergeSavedRiskAssessments([assessment, ...savedAssessments]);
+      const nextActivities = activitiesBySector[generatedHeader.sector] ?? [];
+
+      writeRiskAssessments(userId, updated);
+      setSavedAssessments(updated);
+      setHeader(generatedHeader);
+      setHazards(generatedHazards);
+      setCurrentAssessmentId(assessment.id);
+      setHighRiskOnly(false);
+      setCustomSectorMode(
+        Boolean(generatedHeader.sector) &&
+          !sectorOptions.includes(generatedHeader.sector),
+      );
+      setCustomActivityMode(
+        Boolean(generatedHeader.activity) &&
+          !nextActivities.includes(generatedHeader.activity),
+      );
+      setNotice("AI-generated editable risk assessment created and saved.");
+      window.requestAnimationFrame(() =>
+        window.scrollTo({ top: 0, behavior: "smooth" }),
+      );
+
+      return true;
+    } catch {
+      setNotice("Could not import the AI-generated risk assessment.");
+      return false;
+    }
+  };
+
   const newAssessment = () => {
     setHeader({
       ...createEmptyHeader(),
@@ -9561,6 +9653,7 @@ export default function RiskAssessmentsModule({
                 title="Risk Assessment AI"
                 sourceModule="Risk Assessments"
                 context={{ hazardCount: hazards.length }}
+                onRiskAssessmentGenerated={importAiRiskAssessment}
                 toolIds={[
                   "risk-assessment-basic",
                   "suggest-hazards",

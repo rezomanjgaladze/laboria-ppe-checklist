@@ -11,6 +11,7 @@ import {
   type OrbitAiSourceModule,
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
+import type { OrbitAiStructuredRiskAssessment } from "@/app/lib/orbitAiRiskAssessment";
 
 type OrbitAiToolStripProps = {
   darkMode: boolean;
@@ -20,6 +21,9 @@ type OrbitAiToolStripProps = {
   title?: string;
   compact?: boolean;
   sourceModule?: OrbitAiSourceModule;
+  onRiskAssessmentGenerated?: (
+    assessment: OrbitAiStructuredRiskAssessment,
+  ) => boolean;
 };
 
 const joinClasses = (...classes: Array<string | false | null | undefined>) =>
@@ -33,6 +37,7 @@ export default function OrbitAiToolStrip({
   title = "Orbit AI Tools",
   compact = false,
   sourceModule,
+  onRiskAssessmentGenerated,
 }: OrbitAiToolStripProps) {
   const [activeToolId, setActiveToolId] = useState<OrbitAiToolId | null>(null);
   const [account, setAccount] = useState(() => getOrbitAiAccount(userId));
@@ -123,6 +128,7 @@ export default function OrbitAiToolStrip({
         toolId={activeToolId}
         context={context}
         sourceModule={sourceModule}
+        onRiskAssessmentGenerated={onRiskAssessmentGenerated}
         onClose={() => setActiveToolId(null)}
       />
     </>

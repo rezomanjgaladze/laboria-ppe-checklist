@@ -40,6 +40,10 @@ import {
   type OrbitAiSourceMode,
 } from "@/app/lib/orbitAiGenerations";
 import ToolboxTalkGeneratorModal from "@/app/components/ToolboxTalkGeneratorModal";
+import {
+  parseOrbitAiStructuredRiskAssessment,
+  type OrbitAiStructuredRiskAssessment,
+} from "@/app/lib/orbitAiRiskAssessment";
 
 type OrbitAiModalProps = {
   darkMode: boolean;
@@ -47,6 +51,9 @@ type OrbitAiModalProps = {
   toolId: OrbitAiToolId | null;
   context?: OrbitAiContext;
   sourceModule?: OrbitAiSourceModule;
+  onRiskAssessmentGenerated?: (
+    assessment: OrbitAiStructuredRiskAssessment,
+  ) => boolean;
   onClose: () => void;
 };
 
@@ -175,6 +182,7 @@ export default function OrbitAiModal({
   toolId,
   context,
   sourceModule,
+  onRiskAssessmentGenerated,
   onClose,
 }: OrbitAiModalProps) {
   const tool = toolId ? getOrbitAiTool(toolId) : null;
@@ -305,6 +313,7 @@ export default function OrbitAiModal({
       });
       const payload = (await response.json()) as {
         content?: OrbitAiGeneratedContent;
+        structuredRiskAssessment?: unknown;
         error?: string;
       };
 
@@ -312,6 +321,27 @@ export default function OrbitAiModal({
         throw new Error(
           payload.error ||
             "Could not generate this Orbit AI draft. No AI credits were deducted.",
+        );
+      }
+
+      const structuredRiskAssessment =
+        tool.id === "risk-assessment-basic"
+          ? parseOrbitAiStructuredRiskAssessment(payload.structuredRiskAssessment)
+          : null;
+
+      if (tool.id === "risk-assessment-basic" && !structuredRiskAssessment) {
+        throw new Error(
+          "AI returned an incomplete risk assessment structure. No AI credits were deducted. Please try again.",
+        );
+      }
+
+      if (
+        structuredRiskAssessment &&
+        onRiskAssessmentGenerated &&
+        !onRiskAssessmentGenerated(structuredRiskAssessment)
+      ) {
+        throw new Error(
+          "Risk assessment import was cancelled. No AI credits were deducted.",
         );
       }
 
@@ -339,7 +369,11 @@ export default function OrbitAiModal({
       setAccount(updatedAccount);
       setGenerations(updatedGenerations);
       setSelectedGeneration(generation);
-      setMessage("Orbit AI draft generated and saved to your AI history.");
+      setMessage(
+        structuredRiskAssessment && onRiskAssessmentGenerated
+          ? "Editable risk assessment created, saved, and added to the Hazard Register."
+          : "Orbit AI draft generated and saved to your AI history.",
+      );
     } catch (generationError) {
       setError(
         generationError instanceof Error
