@@ -44,7 +44,9 @@ import {
   getOrbitAiAccount,
   getOrbitAiTool,
   orbitAiAccountUpdatedEvent,
+  refreshOrbitAiAccount,
   type OrbitAiCreditTopUp,
+  type OrbitAiAccount,
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
 import { isOrbitAiTestCreditAdmin } from "@/app/lib/orbitAiAdmin";
@@ -567,12 +569,20 @@ export default function SettingsModule({
 
   useEffect(() => {
     const syncAiAccount = () => setAiAccount(getOrbitAiAccount(userId));
+    const loadBillingAccount = () => {
+      void refreshOrbitAiAccount(userId).catch(() => {
+        setAiAccount(getOrbitAiAccount(userId));
+      });
+    };
 
     syncAiAccount();
+    loadBillingAccount();
     window.addEventListener(orbitAiAccountUpdatedEvent, syncAiAccount);
+    window.addEventListener("focus", loadBillingAccount);
 
     return () => {
       window.removeEventListener(orbitAiAccountUpdatedEvent, syncAiAccount);
+      window.removeEventListener("focus", loadBillingAccount);
     };
   }, [userId]);
 
@@ -659,14 +669,19 @@ export default function SettingsModule({
       const payload = (await response.json()) as {
         error?: string;
         topUp?: OrbitAiCreditTopUp;
+        account?: OrbitAiAccount;
       };
 
-      if (!response.ok || !payload.topUp) {
+      if (!response.ok || !payload.topUp || !payload.account) {
         setNotice(payload.error || "Could not add testing credits.");
         return;
       }
 
-      const result = applyAuthorizedOrbitAiTestCreditTopUp(userId, payload.topUp);
+      const result = applyAuthorizedOrbitAiTestCreditTopUp(
+        userId,
+        payload.topUp,
+        payload.account,
+      );
       if (!result) {
         setNotice("Could not apply testing credits.");
         return;

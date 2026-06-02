@@ -84,6 +84,7 @@ import {
   getOrbitAiAccount,
   orbitAiAccountUpdatedEvent,
   orbitAiNavigationEvent,
+  refreshOrbitAiAccount,
 } from "@/app/lib/orbitAi";
 import {
   ORBIT_PLUS_PLAN,
@@ -863,12 +864,20 @@ export default function Home() {
 
   useEffect(() => {
     const syncAccount = () => setOrbitAiAccount(getOrbitAiAccount(authUserId));
+    const loadBillingAccount = () => {
+      void refreshOrbitAiAccount(authUserId).catch(() => {
+        setOrbitAiAccount(getOrbitAiAccount(authUserId));
+      });
+    };
 
     syncAccount();
+    loadBillingAccount();
     window.addEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+    window.addEventListener("focus", loadBillingAccount);
 
     return () => {
       window.removeEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+      window.removeEventListener("focus", loadBillingAccount);
     };
   }, [authUserId]);
 

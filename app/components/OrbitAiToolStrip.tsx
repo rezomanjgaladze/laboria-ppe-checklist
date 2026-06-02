@@ -8,6 +8,7 @@ import {
   getOrbitAiAccount,
   getOrbitAiTool,
   orbitAiAccountUpdatedEvent,
+  refreshOrbitAiAccount,
   type OrbitAiContext,
   type OrbitAiSourceModule,
   type OrbitAiToolId,
@@ -45,12 +46,20 @@ export default function OrbitAiToolStrip({
 
   useEffect(() => {
     const syncAccount = () => setAccount(getOrbitAiAccount(userId));
+    const loadBillingAccount = () => {
+      void refreshOrbitAiAccount(userId).catch(() => {
+        setAccount(getOrbitAiAccount(userId));
+      });
+    };
 
     syncAccount();
+    loadBillingAccount();
     window.addEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+    window.addEventListener("focus", loadBillingAccount);
 
     return () => {
       window.removeEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+      window.removeEventListener("focus", loadBillingAccount);
     };
   }, [userId]);
 

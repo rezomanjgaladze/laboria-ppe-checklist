@@ -37,6 +37,7 @@ import {
   getOrbitAiAccount,
   getOrbitAiTool,
   orbitAiAccountUpdatedEvent,
+  refreshOrbitAiAccount,
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
 import {
@@ -1391,16 +1392,22 @@ export default function OrbitCommandCenterModule({
 
   useEffect(() => {
     const syncAiAccount = () => setAiAccount(getOrbitAiAccount(userId));
+    const loadBillingAccount = () => {
+      void refreshOrbitAiAccount(userId).catch(() => {
+        setAiAccount(getOrbitAiAccount(userId));
+      });
+    };
 
     syncAiAccount();
+    loadBillingAccount();
     window.addEventListener(orbitAiAccountUpdatedEvent, syncAiAccount);
     window.addEventListener("storage", syncAiAccount);
-    window.addEventListener("focus", syncAiAccount);
+    window.addEventListener("focus", loadBillingAccount);
 
     return () => {
       window.removeEventListener(orbitAiAccountUpdatedEvent, syncAiAccount);
       window.removeEventListener("storage", syncAiAccount);
-      window.removeEventListener("focus", syncAiAccount);
+      window.removeEventListener("focus", loadBillingAccount);
     };
   }, [userId]);
 

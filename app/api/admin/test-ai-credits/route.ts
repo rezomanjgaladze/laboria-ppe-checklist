@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createPaddleSupabaseAdminClient } from "@/app/lib/paddleBilling";
 import { createClient } from "@/lib/supabase/server";
 import { isOrbitAiTestCreditAdmin } from "@/app/lib/orbitAiAdmin";
 import type { OrbitAiCreditTopUp } from "@/app/lib/orbitAi";
@@ -23,5 +24,33 @@ export async function POST() {
     reason: "testing",
   };
 
-  return NextResponse.json({ topUp });
+  const adminClient = createPaddleSupabaseAdminClient();
+
+  if (!adminClient) {
+    return NextResponse.json(
+      { error: "Billing persistence is not configured." },
+      { status: 503 },
+    );
+  }
+
+  const { data, error } = await adminClient.rpc("grant_orbit_ai_credits", {
+    p_user_id: user.id,
+    p_credits: topUp.creditsAdded,
+    p_reason: "Testing AI credit top-up",
+    p_entry_key: `testing:${topUp.id}`,
+    p_paddle_transaction_id: null,
+  });
+
+  if (error) {
+    console.error("[admin-test-ai-credits] could not add test credits", {
+      userId: user.id,
+      error,
+    });
+    return NextResponse.json(
+      { error: "Could not add testing credits." },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ topUp, account: data });
 }

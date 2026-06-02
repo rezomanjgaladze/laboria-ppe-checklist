@@ -19,6 +19,7 @@ import {
 import {
   getOrbitAiAccount,
   orbitAiAccountUpdatedEvent,
+  refreshOrbitAiAccount,
   requestOrbitAiNavigation,
   spendOrbitAiCredits,
   type OrbitAiAccount,
@@ -168,19 +169,27 @@ export default function ToolboxTalkGeneratorModal({
 
   useEffect(() => {
     const syncAccount = () => setAccount(getOrbitAiAccount(userId));
+    const loadBillingAccount = () => {
+      void refreshOrbitAiAccount(userId).catch(() => {
+        setAccount(getOrbitAiAccount(userId));
+      });
+    };
     const syncTalks = () => setTalks(readToolboxTalks(userId));
     const syncRiskAssessments = () =>
       setRiskAssessments(readToolboxTalkRiskAssessments(userId));
 
     syncAccount();
+    loadBillingAccount();
     syncTalks();
     syncRiskAssessments();
     window.addEventListener(orbitAiAccountUpdatedEvent, syncAccount);
     window.addEventListener(toolboxTalksUpdatedEvent, syncTalks);
+    window.addEventListener("focus", loadBillingAccount);
 
     return () => {
       window.removeEventListener(orbitAiAccountUpdatedEvent, syncAccount);
       window.removeEventListener(toolboxTalksUpdatedEvent, syncTalks);
+      window.removeEventListener("focus", loadBillingAccount);
     };
   }, [userId]);
 
@@ -281,7 +290,7 @@ export default function ToolboxTalkGeneratorModal({
         );
       }
 
-      const updatedAccount = spendOrbitAiCredits(userId, requiredCredits);
+      const updatedAccount = await spendOrbitAiCredits(userId, requiredCredits);
 
       if (!updatedAccount) {
         throw new Error(

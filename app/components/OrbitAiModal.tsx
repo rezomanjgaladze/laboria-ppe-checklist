@@ -20,6 +20,7 @@ import {
   getOrbitAiAccount,
   getOrbitAiTool,
   orbitAiAccountUpdatedEvent,
+  refreshOrbitAiAccount,
   requestOrbitAiNavigation,
   spendOrbitAiCredits,
   type OrbitAiContext,
@@ -175,10 +176,20 @@ export default function OrbitAiModal({
 
   useEffect(() => {
     const syncAccount = () => setAccount(getOrbitAiAccount(userId));
+    const loadBillingAccount = () => {
+      void refreshOrbitAiAccount(userId).catch(() => {
+        setAccount(getOrbitAiAccount(userId));
+      });
+    };
+
     syncAccount();
+    loadBillingAccount();
     window.addEventListener(orbitAiAccountUpdatedEvent, syncAccount);
-    return () =>
+    window.addEventListener("focus", loadBillingAccount);
+    return () => {
       window.removeEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+      window.removeEventListener("focus", loadBillingAccount);
+    };
   }, [userId]);
 
   useEffect(() => {
@@ -302,7 +313,7 @@ export default function OrbitAiModal({
         );
       }
 
-      const updatedAccount = spendOrbitAiCredits(userId, requiredCredits);
+      const updatedAccount = await spendOrbitAiCredits(userId, requiredCredits);
       if (!updatedAccount) {
         throw new Error(
           "Your AI credit balance changed before this draft could be saved. No AI credits were deducted.",

@@ -31,7 +31,11 @@ import {
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
 import type { OrbitAiStructuredRiskAssessment } from "@/app/lib/orbitAiRiskAssessment";
-import { getOrbitAiAccount } from "@/app/lib/orbitAi";
+import {
+  getOrbitAiAccount,
+  orbitAiAccountUpdatedEvent,
+  refreshOrbitAiAccount,
+} from "@/app/lib/orbitAi";
 import {
   ORBIT_PLUS_PLAN,
   getOrbitPlan,
@@ -8844,13 +8848,33 @@ export default function RiskAssessmentsModule({
   const [customActivityMode, setCustomActivityMode] = useState(false);
   const [createdActionLinks, setCreatedActionLinks] = useState<string[]>([]);
   const [highRiskOnly, setHighRiskOnly] = useState(false);
+  const [orbitAiAccount, setOrbitAiAccount] = useState(() =>
+    getOrbitAiAccount(userId),
+  );
   const [workspaceSettings, setWorkspaceSettings] =
     useState<WorkspaceSettings>(defaultWorkspaceSettings);
-  const orbitPlan = getOrbitPlan(getOrbitAiAccount(userId).plan);
+  const orbitPlan = getOrbitPlan(orbitAiAccount.plan);
   const canCreateSavedRiskAssessment = hasOrbitLimitCapacity(
     orbitPlan.limits.riskAssessments,
     savedAssessments.length,
   );
+
+  useEffect(() => {
+    const syncAccount = () => setOrbitAiAccount(getOrbitAiAccount(userId));
+    const loadBillingAccount = () => {
+      void refreshOrbitAiAccount(userId).catch(syncAccount);
+    };
+
+    syncAccount();
+    loadBillingAccount();
+    window.addEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+    window.addEventListener("focus", loadBillingAccount);
+
+    return () => {
+      window.removeEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+      window.removeEventListener("focus", loadBillingAccount);
+    };
+  }, [userId]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {

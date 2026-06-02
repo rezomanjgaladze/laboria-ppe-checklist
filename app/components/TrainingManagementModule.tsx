@@ -28,7 +28,11 @@ import {
 } from "@/app/lib/actionTracker";
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
-import { getOrbitAiAccount } from "@/app/lib/orbitAi";
+import {
+  getOrbitAiAccount,
+  orbitAiAccountUpdatedEvent,
+  refreshOrbitAiAccount,
+} from "@/app/lib/orbitAi";
 import {
   ORBIT_PLUS_PLAN,
   getOrbitPlan,
@@ -856,14 +860,34 @@ export default function TrainingManagementModule({
   const [matrixSearch, setMatrixSearch] = useState("");
   const [matrixFilters, setMatrixFilters] =
     useState<MatrixFilters>(emptyMatrixFilters);
+  const [orbitAiAccount, setOrbitAiAccount] = useState(() =>
+    getOrbitAiAccount(userId),
+  );
   const [activeTrainingActionKeys, setActiveTrainingActionKeys] = useState<
     string[]
   >([]);
-  const orbitPlan = getOrbitPlan(getOrbitAiAccount(userId).plan);
+  const orbitPlan = getOrbitPlan(orbitAiAccount.plan);
   const canAddEmployee = hasOrbitLimitCapacity(
     orbitPlan.limits.trainingEmployees,
     employees.length,
   );
+
+  useEffect(() => {
+    const syncAccount = () => setOrbitAiAccount(getOrbitAiAccount(userId));
+    const loadBillingAccount = () => {
+      void refreshOrbitAiAccount(userId).catch(syncAccount);
+    };
+
+    syncAccount();
+    loadBillingAccount();
+    window.addEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+    window.addEventListener("focus", loadBillingAccount);
+
+    return () => {
+      window.removeEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+      window.removeEventListener("focus", loadBillingAccount);
+    };
+  }, [userId]);
 
   const persistData = (nextData: TrainingData) => {
     writeTrainingData(userId, nextData);

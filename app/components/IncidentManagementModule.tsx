@@ -26,7 +26,11 @@ import {
 } from "@/app/lib/actionTracker";
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
-import { getOrbitAiAccount } from "@/app/lib/orbitAi";
+import {
+  getOrbitAiAccount,
+  orbitAiAccountUpdatedEvent,
+  refreshOrbitAiAccount,
+} from "@/app/lib/orbitAi";
 import {
   ORBIT_PLUS_PLAN,
   getOrbitPlan,
@@ -897,7 +901,10 @@ export default function IncidentManagementModule({
   const [expandedSuggestionGroups, setExpandedSuggestionGroups] = useState<
     SuggestionGroup[]
   >(["Management Review"]);
-  const orbitPlan = getOrbitPlan(getOrbitAiAccount(userId).plan);
+  const [orbitAiAccount, setOrbitAiAccount] = useState(() =>
+    getOrbitAiAccount(userId),
+  );
+  const orbitPlan = getOrbitPlan(orbitAiAccount.plan);
   const currentMonthIncidentCount = incidents.filter((incident) => {
     const createdAt = new Date(incident.createdAt);
     const now = new Date();
@@ -911,6 +918,23 @@ export default function IncidentManagementModule({
     orbitPlan.limits.incidentInvestigationsPerMonth,
     currentMonthIncidentCount,
   );
+
+  useEffect(() => {
+    const syncAccount = () => setOrbitAiAccount(getOrbitAiAccount(userId));
+    const loadBillingAccount = () => {
+      void refreshOrbitAiAccount(userId).catch(syncAccount);
+    };
+
+    syncAccount();
+    loadBillingAccount();
+    window.addEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+    window.addEventListener("focus", loadBillingAccount);
+
+    return () => {
+      window.removeEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+      window.removeEventListener("focus", loadBillingAccount);
+    };
+  }, [userId]);
 
   const selectedIncident = useMemo(
     () =>

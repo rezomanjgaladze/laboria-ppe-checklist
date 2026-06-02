@@ -399,14 +399,6 @@ export const canUseOrbitAiTool = (
   toolId: OrbitAiToolId,
 ) => isOrbitAiToolAvailableForPlan(account.plan, toolId);
 
-const getOrbitAiAccountStorageKey = (userId: string | null) =>
-  userId
-    ? `laboria_${encodeURIComponent(userId)}_orbit_ai_account`
-    : "laboria_orbit_ai_account";
-
-const getOrbitAiCreditTopUpStorageKey = (userId: string) =>
-  `laboria_${encodeURIComponent(userId)}_orbit_ai_credit_topups`;
-
 const getDefaultOrbitAiCredits = () => {
   return getOrbitPlan(ORBIT_STARTER_PLAN).includedAiCreditsMonthly;
 };
@@ -435,80 +427,103 @@ const normalizeOrbitAiAccount = (value: unknown): OrbitAiAccount => {
   return { plan, credits };
 };
 
+const orbitAiAccountCache = new Map<string, OrbitAiAccount>();
+
+const getOrbitAiAccountCacheKey = (userId: string | null = null) =>
+  userId || "anonymous";
+
 export const getOrbitAiAccount = (
   userId: string | null = null,
 ): OrbitAiAccount => {
-  if (typeof window === "undefined") {
-    return defaultOrbitAiAccount();
-  }
-
-  const stored = window.localStorage.getItem(getOrbitAiAccountStorageKey(userId));
-
-  if (!stored) {
-    return defaultOrbitAiAccount();
-  }
-
-  try {
-    return normalizeOrbitAiAccount(JSON.parse(stored));
-  } catch {
-    return defaultOrbitAiAccount();
-  }
+  return (
+    orbitAiAccountCache.get(getOrbitAiAccountCacheKey(userId)) ||
+    defaultOrbitAiAccount()
+  );
 };
 
 export const writeOrbitAiAccount = (
   userId: string | null,
   account: OrbitAiAccount,
 ) => {
+  const normalized = normalizeOrbitAiAccount(account);
+  orbitAiAccountCache.set(getOrbitAiAccountCacheKey(userId), normalized);
+
   if (typeof window === "undefined") return;
 
-  const normalized = normalizeOrbitAiAccount(account);
-  window.localStorage.setItem(
-    getOrbitAiAccountStorageKey(userId),
-    JSON.stringify(normalized),
-  );
   window.dispatchEvent(
     new CustomEvent(orbitAiAccountUpdatedEvent, { detail: normalized }),
   );
 };
 
-export const spendOrbitAiCredits = (
+export const refreshOrbitAiAccount = async (userId: string | null) => {
+  if (!userId || typeof window === "undefined") {
+    const account = defaultOrbitAiAccount();
+    writeOrbitAiAccount(userId, account);
+    return account;
+  }
+
+  const response = await fetch("/api/billing/orbit-account", {
+    cache: "no-store",
+  });
+  const payload = (await response.json().catch(() => null)) as {
+    account?: OrbitAiAccount;
+    error?: string;
+  } | null;
+
+  if (!response.ok || !payload?.account) {
+    throw new Error(payload?.error || "Could not load Orbit billing account.");
+  }
+
+  writeOrbitAiAccount(userId, payload.account);
+  return payload.account;
+};
+
+export const spendOrbitAiCredits = async (
   userId: string | null,
   credits: number,
 ) => {
-  const account = getOrbitAiAccount(userId);
-
-  if (!Number.isFinite(credits) || credits <= 0 || account.credits < credits) {
+  if (!userId || typeof window === "undefined") {
     return null;
   }
 
-  const updatedAccount = {
-    ...account,
-    credits: account.credits - Math.floor(credits),
-  };
-  writeOrbitAiAccount(userId, updatedAccount);
+  const normalizedCredits = Math.floor(credits);
+  if (!Number.isFinite(normalizedCredits) || normalizedCredits <= 0) {
+    return null;
+  }
 
-  return updatedAccount;
+  const response = await fetch("/api/billing/ai-credits/spend", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      credits: normalizedCredits,
+      reason: "Orbit AI generation",
+      entryKey: `ai-spend:${crypto.randomUUID()}`,
+    }),
+  });
+  const payload = (await response.json().catch(() => null)) as {
+    account?: OrbitAiAccount;
+    error?: string;
+  } | null;
+
+  if (!response.ok || !payload?.account) {
+    return null;
+  }
+
+  writeOrbitAiAccount(userId, payload.account);
+  return payload.account;
 };
 
 export const readOrbitAiCreditTopUps = (
   userId: string | null,
 ): OrbitAiCreditTopUp[] => {
-  if (typeof window === "undefined" || !userId) return [];
-
-  const stored = window.localStorage.getItem(getOrbitAiCreditTopUpStorageKey(userId));
-  if (!stored) return [];
-
-  try {
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? (parsed as OrbitAiCreditTopUp[]) : [];
-  } catch {
-    return [];
-  }
+  void userId;
+  return [];
 };
 
 export const applyAuthorizedOrbitAiTestCreditTopUp = (
   userId: string | null,
   topUp: OrbitAiCreditTopUp,
+  account?: OrbitAiAccount,
 ) => {
   if (
     typeof window === "undefined" ||
@@ -520,25 +535,14 @@ export const applyAuthorizedOrbitAiTestCreditTopUp = (
     return null;
   }
 
-  const existingTopUps = readOrbitAiCreditTopUps(userId);
-  if (existingTopUps.some((existingTopUp) => existingTopUp.id === topUp.id)) {
+  if (!account) {
     return null;
   }
 
-  const account = getOrbitAiAccount(userId);
-  const updatedAccount = {
-    ...account,
-    credits: account.credits + topUp.creditsAdded,
-  };
-  const topUps = [topUp, ...existingTopUps].slice(0, 100);
+  const normalized = normalizeOrbitAiAccount(account);
+  writeOrbitAiAccount(userId, normalized);
 
-  window.localStorage.setItem(
-    getOrbitAiCreditTopUpStorageKey(userId),
-    JSON.stringify(topUps),
-  );
-  writeOrbitAiAccount(userId, updatedAccount);
-
-  return { account: updatedAccount, topUp };
+  return { account: normalized, topUp };
 };
 
 export const requestOrbitAiNavigation = (
