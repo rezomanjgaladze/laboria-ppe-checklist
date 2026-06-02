@@ -31,6 +31,12 @@ import {
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
 import type { OrbitAiStructuredRiskAssessment } from "@/app/lib/orbitAiRiskAssessment";
+import { getOrbitAiAccount } from "@/app/lib/orbitAi";
+import {
+  ORBIT_PLUS_PLAN,
+  getOrbitPlan,
+  hasOrbitLimitCapacity,
+} from "@/app/lib/orbitPlans";
 
 type RiskValue = 1 | 2 | 3 | 4 | 5;
 type RiskLevel = "Low" | "Medium" | "High";
@@ -8840,6 +8846,11 @@ export default function RiskAssessmentsModule({
   const [highRiskOnly, setHighRiskOnly] = useState(false);
   const [workspaceSettings, setWorkspaceSettings] =
     useState<WorkspaceSettings>(defaultWorkspaceSettings);
+  const orbitPlan = getOrbitPlan(getOrbitAiAccount(userId).plan);
+  const canCreateSavedRiskAssessment = hasOrbitLimitCapacity(
+    orbitPlan.limits.riskAssessments,
+    savedAssessments.length,
+  );
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -9215,6 +9226,13 @@ export default function RiskAssessmentsModule({
   const importAiRiskAssessment = (
     generatedAssessment: OrbitAiStructuredRiskAssessment,
   ) => {
+    if (!canCreateSavedRiskAssessment) {
+      setNotice(
+        `${orbitPlan.name} includes ${orbitPlan.limits.riskAssessments} saved risk assessment. Upgrade to ${ORBIT_PLUS_PLAN} for unlimited assessments.`,
+      );
+      return false;
+    }
+
     if (hazards.length > 0 && hasEnteredHazardData) {
       const shouldReplace = window.confirm(
         "This will replace current hazard rows with the AI-generated risk assessment. Continue?",
@@ -9304,6 +9322,13 @@ export default function RiskAssessmentsModule({
   };
 
   const newAssessment = () => {
+    if (!canCreateSavedRiskAssessment && currentAssessmentId === null) {
+      setNotice(
+        `${orbitPlan.name} includes ${orbitPlan.limits.riskAssessments} saved risk assessment. Upgrade to ${ORBIT_PLUS_PLAN} for unlimited assessments.`,
+      );
+      return;
+    }
+
     setHeader({
       ...createEmptyHeader(),
       company: workspaceCompanyProfile.companyName,
@@ -9323,6 +9348,13 @@ export default function RiskAssessmentsModule({
 
   const saveAssessment = () => {
     try {
+      if (currentAssessmentId === null && !canCreateSavedRiskAssessment) {
+        setNotice(
+          `${orbitPlan.name} includes ${orbitPlan.limits.riskAssessments} saved risk assessment. Upgrade to ${ORBIT_PLUS_PLAN} for unlimited assessments.`,
+        );
+        return;
+      }
+
       const assessment: SavedRiskAssessment = {
         id: currentAssessmentId ?? Date.now(),
         header,

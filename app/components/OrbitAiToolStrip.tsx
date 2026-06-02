@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Coins, Lock, Sparkles } from "lucide-react";
 import OrbitAiModal from "@/app/components/OrbitAiModal";
 import {
+  canUseOrbitAiTool,
   getOrbitAiAccount,
   getOrbitAiTool,
   orbitAiAccountUpdatedEvent,
@@ -77,7 +78,8 @@ export default function OrbitAiToolStrip({
           {toolIds.map((toolId) => {
             const tool = getOrbitAiTool(toolId);
             const credits = tool.getCredits(context);
-            const available = account.credits >= credits;
+            const availableForPlan = canUseOrbitAiTool(account, tool.id);
+            const available = availableForPlan && account.credits >= credits;
 
             return (
               <button
@@ -115,7 +117,11 @@ export default function OrbitAiToolStrip({
                       : "border-amber-400/25 bg-amber-500/10 text-amber-500",
                   )}
                 >
-                  {available ? "Available" : "Locked"}
+                  {available
+                    ? "Available"
+                    : availableForPlan
+                      ? "Locked"
+                      : "Pro only"}
                 </span>
               </button>
             );

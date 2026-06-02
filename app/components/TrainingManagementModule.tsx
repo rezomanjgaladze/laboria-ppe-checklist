@@ -28,6 +28,12 @@ import {
 } from "@/app/lib/actionTracker";
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
+import { getOrbitAiAccount } from "@/app/lib/orbitAi";
+import {
+  ORBIT_PLUS_PLAN,
+  getOrbitPlan,
+  hasOrbitLimitCapacity,
+} from "@/app/lib/orbitPlans";
 
 const employeeStatusOptions = ["Active", "Inactive"] as const;
 const trainingRiskOptions = ["Low", "Medium", "High"] as const;
@@ -853,6 +859,11 @@ export default function TrainingManagementModule({
   const [activeTrainingActionKeys, setActiveTrainingActionKeys] = useState<
     string[]
   >([]);
+  const orbitPlan = getOrbitPlan(getOrbitAiAccount(userId).plan);
+  const canAddEmployee = hasOrbitLimitCapacity(
+    orbitPlan.limits.trainingEmployees,
+    employees.length,
+  );
 
   const persistData = (nextData: TrainingData) => {
     writeTrainingData(userId, nextData);
@@ -1150,8 +1161,16 @@ export default function TrainingManagementModule({
     });
   };
 
-  const openNewEmployee = () =>
+  const openNewEmployee = () => {
+    if (!canAddEmployee) {
+      setNotice(
+        `${orbitPlan.name} supports up to ${orbitPlan.limits.trainingEmployees} employees. Upgrade to ${ORBIT_PLUS_PLAN} for unlimited training management.`,
+      );
+      return;
+    }
+
     setModal({ type: "employee", mode: "new", draft: createEmptyEmployee() });
+  };
 
   const openNewTrainingType = () =>
     setModal({
@@ -1311,6 +1330,13 @@ export default function TrainingManagementModule({
     }
 
     if (modal.type === "employee") {
+      if (modal.mode === "new" && !canAddEmployee) {
+        setNotice(
+          `${orbitPlan.name} supports up to ${orbitPlan.limits.trainingEmployees} employees. Upgrade to ${ORBIT_PLUS_PLAN} for unlimited training management.`,
+        );
+        return;
+      }
+
       const employee = normalizeEmployee(modal.draft);
       const missing = [
         ["Employee name", employee.name],

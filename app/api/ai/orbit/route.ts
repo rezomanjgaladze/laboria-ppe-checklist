@@ -6,6 +6,10 @@ import {
   orbitAiControlHierarchyOptions,
   parseOrbitAiStructuredRiskAssessment,
 } from "@/app/lib/orbitAiRiskAssessment";
+import {
+  ORBIT_PRO_PLAN,
+  orbitProOnlyAiToolIds,
+} from "@/app/lib/orbitPlans";
 
 type OrbitAiRequest = {
   toolId?: string;
@@ -447,6 +451,29 @@ export async function POST(request: Request) {
       { error: "This Orbit AI tool is not available." },
       { status: 400 },
     );
+  }
+
+  if (orbitProOnlyAiToolIds.has(toolId)) {
+    const { data: billingAccount, error: billingAccountError } = await supabase
+      .from("orbit_billing_accounts")
+      .select("plan")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (billingAccountError) {
+      console.warn("Orbit AI Pro entitlement lookup failed", {
+        userId: user.id,
+        toolId,
+        error: billingAccountError,
+      });
+    }
+
+    if (billingAccount?.plan !== ORBIT_PRO_PLAN) {
+      return NextResponse.json(
+        { error: `${ORBIT_PRO_PLAN} is required for this AI feature.` },
+        { status: 403 },
+      );
+    }
   }
 
   if (sourceMode === "manual" && Object.keys(inputs).length === 0) {

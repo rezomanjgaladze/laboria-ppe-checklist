@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  canUseOrbitAiTool,
   getOrbitAiAccount,
   getOrbitAiTool,
   orbitAiAccountUpdatedEvent,
@@ -25,6 +26,7 @@ import {
   type OrbitAiSourceModule,
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
+import { getOrbitAiToolRequiredPlan } from "@/app/lib/orbitPlans";
 import {
   appendOrbitAiGeneration,
   createOrbitAiGenerationId,
@@ -137,7 +139,10 @@ export default function OrbitAiModal({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requiredCredits = tool?.getCredits(context) ?? 0;
+  const hasPlanAccess = tool ? canUseOrbitAiTool(account, tool.id) : true;
   const hasEnoughCredits = account.credits >= requiredCredits;
+  const canGenerate = hasPlanAccess && hasEnoughCredits;
+  const requiredPlan = tool ? getOrbitAiToolRequiredPlan(tool.id) : null;
   const sourceRecords = useMemo(
     () => (toolId ? readOrbitAiSourceRecords(userId, toolId) : []),
     [toolId, userId],
@@ -231,6 +236,10 @@ export default function OrbitAiModal({
     setError(null);
     setMessage(null);
 
+    if (!hasPlanAccess) {
+      setError(`${requiredPlan || "A higher Orbit plan"} is required for this AI feature.`);
+      return;
+    }
     if (!hasEnoughCredits) {
       setError("Not enough AI credits. Upgrade or buy credits.");
       return;
@@ -441,15 +450,15 @@ export default function OrbitAiModal({
                   <div className="flex justify-between gap-3"><span className={theme.muted}>Plan</span><span className="text-right font-semibold">{account.plan}</span></div>
                 </div>
               </div>
-              <div className={joinClasses("rounded-2xl border p-4 text-xs leading-5", hasEnoughCredits ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-300" : "border-amber-400/25 bg-amber-500/10 text-amber-200")}>
-                <div className="flex items-center gap-2 font-semibold">{hasEnoughCredits ? <CheckCircle2 size={15} aria-hidden /> : <Lock size={15} aria-hidden />}{hasEnoughCredits ? "Credits available" : "Locked by credit balance"}</div>
-                {!hasEnoughCredits ? <p className="mt-2">Not enough AI credits. Upgrade or buy credits.</p> : null}
+              <div className={joinClasses("rounded-2xl border p-4 text-xs leading-5", canGenerate ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-300" : "border-amber-400/25 bg-amber-500/10 text-amber-200")}>
+                <div className="flex items-center gap-2 font-semibold">{canGenerate ? <CheckCircle2 size={15} aria-hidden /> : <Lock size={15} aria-hidden />}{canGenerate ? "Credits available" : hasPlanAccess ? "Locked by credit balance" : `${requiredPlan} feature`}</div>
+                {!hasPlanAccess ? <p className="mt-2">Upgrade to {requiredPlan} to use this intelligence tool.</p> : !hasEnoughCredits ? <p className="mt-2">Not enough AI credits. Upgrade or buy credits.</p> : null}
               </div>
               <button type="button" disabled={isGenerating} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1E90FF] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1878d6] disabled:cursor-wait disabled:opacity-70" onClick={() => void generate()}>
                 {isGenerating ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : <Sparkles size={16} aria-hidden />}
                 {isGenerating ? "Generating..." : `Generate · ${requiredCredits} Credits`}
               </button>
-              {!hasEnoughCredits ? <button type="button" className={joinClasses("flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition hover:border-[#4DEBFF]/45", theme.card)} onClick={() => { closeModal(); requestOrbitAiNavigation("billing"); }}><CreditCard size={16} aria-hidden />Upgrade / Buy Credits</button> : null}
+              {!canGenerate ? <button type="button" className={joinClasses("flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition hover:border-[#4DEBFF]/45", theme.card)} onClick={() => { closeModal(); requestOrbitAiNavigation("billing"); }}><CreditCard size={16} aria-hidden />Upgrade / Buy Credits</button> : null}
               {message ? <p className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-300">{message}</p> : null}
               {error ? <p className="rounded-xl border border-rose-400/25 bg-rose-500/10 p-3 text-xs leading-5 text-rose-200">{error}</p> : null}
             </aside>

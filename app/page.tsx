@@ -81,9 +81,15 @@ import {
   type OrbitNotification,
 } from "@/app/lib/notificationCenter";
 import {
+  getOrbitAiAccount,
   orbitAiAccountUpdatedEvent,
   orbitAiNavigationEvent,
 } from "@/app/lib/orbitAi";
+import {
+  ORBIT_PLUS_PLAN,
+  ORBIT_PRO_PLAN,
+  isOrbitInspectionTemplateAvailable,
+} from "@/app/lib/orbitPlans";
 import { orbitAiGenerationsUpdatedEvent } from "@/app/lib/orbitAiGenerations";
 import { toolboxTalksUpdatedEvent } from "@/app/lib/toolboxTalks";
 import type { User } from "@supabase/supabase-js";
@@ -635,6 +641,9 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [authProfile, setAuthProfile] = useState<AuthProfile | null>(null);
+  const [orbitAiAccount, setOrbitAiAccount] = useState(() =>
+    getOrbitAiAccount(null),
+  );
   const [workspaceSettings, setWorkspaceSettings] =
     useState<WorkspaceSettings>(defaultWorkspaceSettings);
   const [history, setHistory] = useState<SavedInspection[]>([]);
@@ -851,6 +860,17 @@ export default function Home() {
 
     return () => window.clearTimeout(timeoutId);
   }, [activeChecklistId, authUserId]);
+
+  useEffect(() => {
+    const syncAccount = () => setOrbitAiAccount(getOrbitAiAccount(authUserId));
+
+    syncAccount();
+    window.addEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+
+    return () => {
+      window.removeEventListener(orbitAiAccountUpdatedEvent, syncAccount);
+    };
+  }, [authUserId]);
 
   useEffect(() => {
     isDraftLoadedRef.current = false;
@@ -2342,6 +2362,19 @@ export default function Home() {
                   <button
                     key={checklist.id}
                     onClick={() => {
+                      if (
+                        !isOrbitInspectionTemplateAvailable(
+                          orbitAiAccount.plan,
+                          checklist.id,
+                        )
+                      ) {
+                        setHistoryNotice({
+                          type: "error",
+                          message: `This inspection template is available on ${ORBIT_PLUS_PLAN} and ${ORBIT_PRO_PLAN}.`,
+                        });
+                        return;
+                      }
+
                       setActiveChecklistId(checklist.id);
                       setAnswers({});
                       setRisk({});
@@ -2365,6 +2398,14 @@ export default function Home() {
                           ? "border-white/10 bg-white/[0.04] text-slate-300 hover:border-[#4DEBFF]/35 hover:text-white"
                           : "border-slate-200 bg-white text-slate-600 hover:border-[#1E90FF]/35 hover:text-slate-900"
                     }`}
+                    title={
+                      isOrbitInspectionTemplateAvailable(
+                        orbitAiAccount.plan,
+                        checklist.id,
+                        )
+                        ? undefined
+                        : `Available on ${ORBIT_PLUS_PLAN} and ${ORBIT_PRO_PLAN}`
+                    }
                   >
                     <span className="flex items-center gap-2 whitespace-nowrap">
                       {(() => {
@@ -2374,6 +2415,14 @@ export default function Home() {
                       {inspectionLang === "EN"
                         ? checklist.headerTitleEN
                         : checklist.headerTitleKA}
+                      {!isOrbitInspectionTemplateAvailable(
+                        orbitAiAccount.plan,
+                        checklist.id,
+                      ) ? (
+                        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[9px] uppercase text-amber-400">
+                          Plus
+                        </span>
+                      ) : null}
                     </span>
                   </button>
                 ))}

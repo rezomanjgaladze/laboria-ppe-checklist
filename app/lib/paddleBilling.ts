@@ -7,16 +7,20 @@ import {
 } from "@/app/lib/paddleCatalog";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 
+const paddlePriceEnvironmentVariables = Array.from(
+  new Set(
+    Object.values(paddlePurchaseCatalog).map(
+      (purchase) => purchase.priceEnvironmentVariable,
+    ),
+  ),
+);
+
 export const paddleRequiredEnvironmentVariables = [
   "PADDLE_API_KEY",
   "PADDLE_WEBHOOK_SECRET",
   "PADDLE_ENVIRONMENT",
   "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN",
-  "NEXT_PUBLIC_PADDLE_PRICE_ORBIT_PLUS",
-  "NEXT_PUBLIC_PADDLE_PRICE_ORBIT_PRO",
-  "NEXT_PUBLIC_PADDLE_PRICE_STARTER_TOPUP",
-  "NEXT_PUBLIC_PADDLE_PRICE_PLUS_PACK",
-  "NEXT_PUBLIC_PADDLE_PRICE_PRO_PACK",
+  ...paddlePriceEnvironmentVariables,
 ] as const;
 
 export const paddleInfrastructureEnvironmentVariables = [

@@ -1,3 +1,11 @@
+import {
+  ORBIT_STARTER_PLAN,
+  getOrbitPlan,
+  isOrbitAiToolAvailableForPlan,
+  isOrbitPlanName,
+  type OrbitPlanName,
+} from "@/app/lib/orbitPlans";
+
 export type OrbitAiSourceModule =
   | "Command Center"
   | "Action Tracker"
@@ -34,7 +42,7 @@ export type OrbitAiTool = {
 };
 
 export type OrbitAiAccount = {
-  plan: "Orbit Starter" | "Orbit Plus" | "Orbit Pro";
+  plan: OrbitPlanName;
   credits: number;
 };
 
@@ -386,6 +394,11 @@ export const orbitAiTools = toolCatalog as Record<OrbitAiToolId, OrbitAiTool>;
 
 export const getOrbitAiTool = (toolId: OrbitAiToolId) => orbitAiTools[toolId];
 
+export const canUseOrbitAiTool = (
+  account: OrbitAiAccount,
+  toolId: OrbitAiToolId,
+) => isOrbitAiToolAvailableForPlan(account.plan, toolId);
+
 const getOrbitAiAccountStorageKey = (userId: string | null) =>
   userId
     ? `laboria_${encodeURIComponent(userId)}_orbit_ai_account`
@@ -395,17 +408,11 @@ const getOrbitAiCreditTopUpStorageKey = (userId: string) =>
   `laboria_${encodeURIComponent(userId)}_orbit_ai_credit_topups`;
 
 const getDefaultOrbitAiCredits = () => {
-  const configuredCredits = Number(
-    process.env.NEXT_PUBLIC_ORBIT_AI_DEFAULT_CREDITS || "0",
-  );
-
-  return Number.isFinite(configuredCredits) && configuredCredits > 0
-    ? Math.floor(configuredCredits)
-    : 0;
+  return getOrbitPlan(ORBIT_STARTER_PLAN).includedAiCreditsMonthly;
 };
 
 const defaultOrbitAiAccount = (): OrbitAiAccount => ({
-  plan: "Orbit Starter",
+  plan: ORBIT_STARTER_PLAN,
   credits: getDefaultOrbitAiCredits(),
 });
 
@@ -415,10 +422,9 @@ const normalizeOrbitAiAccount = (value: unknown): OrbitAiAccount => {
   }
 
   const candidate = value as Partial<OrbitAiAccount>;
-  const plan =
-    candidate.plan === "Orbit Plus" || candidate.plan === "Orbit Pro"
-      ? candidate.plan
-      : "Orbit Starter";
+  const plan = isOrbitPlanName(candidate.plan)
+    ? candidate.plan
+    : ORBIT_STARTER_PLAN;
   const credits =
     typeof candidate.credits === "number" &&
     Number.isFinite(candidate.credits) &&

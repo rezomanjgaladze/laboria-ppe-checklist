@@ -7,6 +7,10 @@ import {
   getPaddleSetupStatus,
 } from "@/app/lib/paddleBilling";
 import { isPaddlePurchaseKey } from "@/app/lib/paddleCatalog";
+import {
+  ORBIT_STARTER_PLAN,
+  isOrbitPlanName,
+} from "@/app/lib/orbitPlans";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -62,6 +66,41 @@ export async function POST(request: Request) {
   }
 
   const purchase = getPaddlePurchase(body.purchaseKey);
+
+  if (purchase.eligiblePlans?.length) {
+    const { data: billingAccount, error: billingAccountError } =
+      await adminClient
+        .from("orbit_billing_accounts")
+        .select("plan")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+    if (billingAccountError) {
+      console.error("[paddle-checkout] could not read billing account", {
+        userId: user.id,
+        purchaseKey: purchase.key,
+        error: billingAccountError,
+      });
+      return NextResponse.json(
+        { error: paymentSetupMessage, checkoutEnabled: false },
+        { status: 503 },
+      );
+    }
+
+    const currentPlan = isOrbitPlanName(billingAccount?.plan)
+      ? billingAccount.plan
+      : ORBIT_STARTER_PLAN;
+
+    if (!purchase.eligiblePlans.includes(currentPlan)) {
+      return NextResponse.json(
+        {
+          error: `This AI credit pack is available for ${purchase.eligiblePlans.join(", ")}.`,
+        },
+        { status: 403 },
+      );
+    }
+  }
+
   const checkoutAttemptId = crypto.randomUUID();
   const { error } = await adminClient
     .from("orbit_paddle_checkout_attempts")

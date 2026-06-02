@@ -26,6 +26,12 @@ import {
 } from "@/app/lib/actionTracker";
 import type { WorkspaceNavigationIntent } from "@/app/lib/workspaceNavigation";
 import OrbitAiToolStrip from "@/app/components/OrbitAiToolStrip";
+import { getOrbitAiAccount } from "@/app/lib/orbitAi";
+import {
+  ORBIT_PLUS_PLAN,
+  getOrbitPlan,
+  hasOrbitLimitCapacity,
+} from "@/app/lib/orbitPlans";
 
 const eventTypeOptions = [
   "Incident",
@@ -891,6 +897,20 @@ export default function IncidentManagementModule({
   const [expandedSuggestionGroups, setExpandedSuggestionGroups] = useState<
     SuggestionGroup[]
   >(["Management Review"]);
+  const orbitPlan = getOrbitPlan(getOrbitAiAccount(userId).plan);
+  const currentMonthIncidentCount = incidents.filter((incident) => {
+    const createdAt = new Date(incident.createdAt);
+    const now = new Date();
+
+    return (
+      createdAt.getFullYear() === now.getFullYear() &&
+      createdAt.getMonth() === now.getMonth()
+    );
+  }).length;
+  const canAddIncident = hasOrbitLimitCapacity(
+    orbitPlan.limits.incidentInvestigationsPerMonth,
+    currentMonthIncidentCount,
+  );
 
   const selectedIncident = useMemo(
     () =>
@@ -979,10 +999,21 @@ export default function IncidentManagementModule({
     });
   };
 
-  const openNewIncident = () => {
+  const openNewIncident = useCallback(() => {
+    if (!canAddIncident) {
+      setNotice(
+        `${orbitPlan.name} includes ${orbitPlan.limits.incidentInvestigationsPerMonth} incident investigation per month. Upgrade to ${ORBIT_PLUS_PLAN} for unlimited workflows.`,
+      );
+      return;
+    }
+
     setDraftIncident(createEmptyIncident());
     setModalMode("new");
-  };
+  }, [
+    canAddIncident,
+    orbitPlan.limits.incidentInvestigationsPerMonth,
+    orbitPlan.name,
+  ]);
 
   const openEditIncident = (incident: IncidentEvent) => {
     setDraftIncident({ ...incident, rootCauses: [...incident.rootCauses] });
@@ -1010,8 +1041,7 @@ export default function IncidentManagementModule({
       }
 
       if (navigationIntent.action === "new") {
-        setDraftIncident(createEmptyIncident());
-        setModalMode("new");
+        openNewIncident();
         onNavigationIntentHandled?.();
         return;
       }
@@ -1023,10 +1053,17 @@ export default function IncidentManagementModule({
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [navigationIntent, onNavigationIntentHandled]);
+  }, [navigationIntent, onNavigationIntentHandled, openNewIncident]);
 
   const saveDraftIncident = () => {
     if (!draftIncident) {
+      return;
+    }
+
+    if (modalMode === "new" && !canAddIncident) {
+      setNotice(
+        `${orbitPlan.name} includes ${orbitPlan.limits.incidentInvestigationsPerMonth} incident investigation per month. Upgrade to ${ORBIT_PLUS_PLAN} for unlimited workflows.`,
+      );
       return;
     }
 

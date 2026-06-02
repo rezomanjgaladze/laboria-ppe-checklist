@@ -50,6 +50,17 @@ import {
 import { isOrbitAiTestCreditAdmin } from "@/app/lib/orbitAiAdmin";
 import { openOrbitPaddleCheckout } from "@/app/lib/paddleCheckout";
 import type { PaddlePurchaseKey } from "@/app/lib/paddleCatalog";
+import {
+  ORBIT_PRO_PLAN,
+  ORBIT_STARTER_PLAN,
+  getOrbitPlanPriceLabel,
+  isOrbitAiToolAvailableForPlan,
+  isOrbitCreditPackAvailableForPlan,
+  orbitCreditPackOrder,
+  orbitCreditPacks,
+  orbitPlanOrder,
+  orbitPlans,
+} from "@/app/lib/orbitPlans";
 
 type SettingsSectionId =
   | "company-profile"
@@ -212,94 +223,20 @@ const incidentStatusOptions = [
   { value: "Pending Verification", label: "Pending Verification" },
 ];
 
-const planCards = [
-  {
-    name: "Orbit Starter",
-    price: "FREE",
-    badge: "Current Plan",
-    tone: "from-slate-500/18 to-slate-400/6",
-    description: "Core HSE operations for small teams getting started with Laboria Orbit.",
-    features: [
-      "Full Action Tracker",
-      "3 Inspection Templates: General, PPE, Fire",
-      "1 Risk Assessment",
-      "Training Management up to 5 Employees",
-      "1 Incident Investigation per Month",
-      "Full HSE Analytics Access",
-      "0 AI Credits Included",
-      "AI Top-Up available: 50 Credits for $7",
-    ],
-    buttonLabel: "Current Plan",
-    current: true,
-  },
-  {
-    name: "Orbit Plus",
-    price: "$19",
-    period: "/ month",
-    badge: "Most Popular",
-    tone: "from-[#1E90FF]/34 to-[#4DEBFF]/16",
-    description: "Unlimited operational workflows for active HSE teams.",
-    features: [
-      "Full Action Tracker",
-      "Unlimited Inspections",
-      "Unlimited Risk Assessments",
-      "Unlimited Training Management",
-      "Unlimited Incident Workflows",
-      "Full HSE Analytics",
-      "100 AI Credits / Month Included",
-      "Discounted AI Top-Ups: 100 Credits for $8",
-    ],
-    buttonLabel: "Upgrade to Plus",
-    popular: true,
-    purchaseKey: "orbit-plus" as const,
-  },
-  {
-    name: "Orbit Pro",
-    price: "$49",
-    period: "/ month",
-    badge: "AI Powered",
-    tone: "from-violet-500/30 via-[#1E90FF]/18 to-[#4DEBFF]/12",
-    description: "Advanced AI operations and enterprise intelligence for mature HSE programs.",
-    features: [
-      "Everything in Orbit Plus",
-      "300 AI Credits / Month Included",
-      "Advanced AI Operations",
-      "Predictive AI Features",
-      "Enterprise Intelligence",
-      "Priority AI Processing",
-      "Best AI Credit Pricing: 100 Credits for $5",
-    ],
-    buttonLabel: "Upgrade to Pro",
-    premium: true,
-    purchaseKey: "orbit-pro" as const,
-  },
-];
+const planCards = orbitPlanOrder.map((planName) => {
+  const plan = orbitPlans[planName];
 
-const aiCreditPacks = [
-  {
-    name: "Starter Top-Up",
-    credits: "50 AI Credits",
-    price: "$7",
-    tone: "from-slate-500/16 to-slate-400/5",
-    purchaseKey: "starter-topup" as const,
-  },
-  {
-    name: "Orbit Plus Discount Pack",
-    credits: "100 AI Credits",
-    price: "$8",
-    tone: "from-[#1E90FF]/24 to-[#4DEBFF]/10",
-    badge: "Plus",
-    purchaseKey: "plus-pack" as const,
-  },
-  {
-    name: "Orbit Pro Best Value Pack",
-    credits: "100 AI Credits",
-    price: "$5",
-    tone: "from-violet-500/26 to-[#4DEBFF]/12",
-    badge: "Best Value",
-    purchaseKey: "pro-pack" as const,
-  },
-];
+  return {
+    ...plan,
+    price: getOrbitPlanPriceLabel(plan),
+    period: plan.monthlyPriceUsd > 0 ? "/ month" : undefined,
+    purchaseKey: plan.paddlePurchaseKey,
+  };
+});
+
+const aiCreditPacks = orbitCreditPackOrder.map(
+  (packKey) => orbitCreditPacks[packKey],
+);
 
 const aiCards = [
   {
@@ -1693,7 +1630,7 @@ export default function SettingsModule({
                       theme.badge,
                     )}
                   >
-                    {plan.badge}
+                    {plan.name === aiAccount.plan ? "Current Plan" : plan.badge}
                   </div>
                 </div>
                 {plan.premium ? (
@@ -1742,8 +1679,14 @@ export default function SettingsModule({
               <button
                 type="button"
                 onClick={() => {
-                  if (plan.current || !plan.purchaseKey) {
-                    setNotice("Orbit Starter is the current plan.");
+                  if (plan.name === aiAccount.plan) {
+                    setNotice(`${plan.name} is the current plan.`);
+                    return;
+                  }
+                  if (!plan.purchaseKey) {
+                    setNotice(
+                      `${ORBIT_STARTER_PLAN} is the free plan. Subscription management will be available after Paddle activation.`,
+                    );
                     return;
                   }
 
@@ -1754,13 +1697,13 @@ export default function SettingsModule({
                   activePaddlePurchase === plan.purchaseKey
                 }
                 aria-disabled={
-                  !plan.current && !paddleSetup.checkoutEnabled
+                  plan.name !== aiAccount.plan && !paddleSetup.checkoutEnabled
                     ? true
                     : undefined
                 }
                 className={joinClasses(
                   "mt-6 w-full rounded-xl border px-4 py-3 text-sm font-semibold transition",
-                  !plan.current &&
+                  plan.name !== aiAccount.plan &&
                     !paddleSetup.checkoutEnabled &&
                     "cursor-not-allowed opacity-70",
                   plan.popular
@@ -1772,9 +1715,13 @@ export default function SettingsModule({
                     : theme.buttonGhost,
                 )}
               >
-                {plan.purchaseKey && activePaddlePurchase === plan.purchaseKey
-                  ? "Opening..."
-                  : plan.buttonLabel}
+                {plan.name === aiAccount.plan
+                  ? "Current Plan"
+                  : plan.purchaseKey && activePaddlePurchase === plan.purchaseKey
+                    ? "Opening..."
+                    : plan.purchaseKey
+                      ? plan.buttonLabel
+                      : "Free tier"}
               </button>
             </div>
           </div>
@@ -1826,26 +1773,44 @@ export default function SettingsModule({
                 </span>
               </div>
               <div className={joinClasses("mt-5 text-2xl font-bold", theme.heading)}>
-                {pack.credits}
+                {pack.credits} AI Credits
               </div>
               <div className={joinClasses("mt-1 text-lg font-semibold", theme.soft)}>
-                {pack.price}
+                ${pack.priceUsd}
+              </div>
+              <div className={joinClasses("mt-2 text-xs font-semibold", theme.muted)}>
+                Available for {pack.eligiblePlan}
               </div>
               <button
                 type="button"
-                onClick={() => void startPaddleCheckout(pack.purchaseKey)}
-                disabled={activePaddlePurchase === pack.purchaseKey}
-                aria-disabled={!paddleSetup.checkoutEnabled ? true : undefined}
+                onClick={() => {
+                  if (!isOrbitCreditPackAvailableForPlan(aiAccount.plan, pack)) {
+                    setNotice(`This AI credit pack is available for ${pack.eligiblePlan}.`);
+                    return;
+                  }
+
+                  void startPaddleCheckout(pack.key);
+                }}
+                disabled={activePaddlePurchase === pack.key}
+                aria-disabled={
+                  !paddleSetup.checkoutEnabled ||
+                  !isOrbitCreditPackAvailableForPlan(aiAccount.plan, pack)
+                    ? true
+                    : undefined
+                }
                 className={joinClasses(
                   "mt-5 w-full rounded-xl border px-4 py-3 text-sm font-semibold transition",
-                  !paddleSetup.checkoutEnabled &&
+                  (!paddleSetup.checkoutEnabled ||
+                    !isOrbitCreditPackAvailableForPlan(aiAccount.plan, pack)) &&
                     "cursor-not-allowed opacity-70",
                   theme.buttonGhost,
                 )}
               >
-                {activePaddlePurchase === pack.purchaseKey
+                {activePaddlePurchase === pack.key
                   ? "Opening..."
-                  : "Buy Credits"}
+                  : isOrbitCreditPackAvailableForPlan(aiAccount.plan, pack)
+                    ? "Buy Credits"
+                    : `${pack.eligiblePlan} pack`}
               </button>
             </div>
           </div>
@@ -1865,6 +1830,10 @@ export default function SettingsModule({
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {aiCards.map((card) => {
           const Icon = card.icon;
+          const availableForPlan = isOrbitAiToolAvailableForPlan(
+            aiAccount.plan,
+            card.toolId,
+          );
 
           return (
             <button
@@ -1885,7 +1854,7 @@ export default function SettingsModule({
                     <Icon size={21} aria-hidden />
                   </span>
                   <span className="rounded-full border border-violet-300/30 bg-violet-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-violet-300">
-                    Enterprise AI
+                    {availableForPlan ? "Orbit AI" : ORBIT_PRO_PLAN}
                   </span>
                 </div>
                 <h3 className={joinClasses("mt-4 text-base font-bold", theme.heading)}>
@@ -1901,7 +1870,7 @@ export default function SettingsModule({
                   )}
                 >
                   {getOrbitAiTool(card.toolId).creditLabel} /{" "}
-                  Live
+                  {availableForPlan ? "Live" : "Pro only"}
                 </div>
               </div>
             </button>

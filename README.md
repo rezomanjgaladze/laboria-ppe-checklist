@@ -30,13 +30,6 @@ OPENAI_MODEL=gpt-5.4-mini
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-During the pre-payment beta, an optional per-browser starter balance can be set
-for signed-in users:
-
-```bash
-NEXT_PUBLIC_ORBIT_AI_DEFAULT_CREDITS=0
-```
-
 The AI Toolbox Talk Generator uses `OPENAI_API_KEY` only from its authenticated
 server route. AI credits are deducted after a successful generation.
 
@@ -61,13 +54,20 @@ migration is applied. Client-side checkout success never grants a plan upgrade
 or AI credits. Only verified Paddle webhooks can update billing records and the
 AI credit ledger.
 
+The approved Orbit package structure, operational limits, AI entitlements,
+credit packs, and Paddle purchase catalog live in one source file:
+
+```text
+app/lib/orbitPlans.ts
+```
+
 Create these recurring and one-time prices in Paddle sandbox:
 
 - `Orbit Plus` subscription: `$19 / month`
 - `Orbit Pro` subscription: `$49 / month`
-- `Starter Top-Up`: `50 AI Credits` for `$7`
-- `Orbit Plus Discount Pack`: `100 AI Credits` for `$8`
-- `Orbit Pro Best Value Pack`: `100 AI Credits` for `$5`
+- `Starter Top-Up`: `50 AI Credits` for `$9`
+- `Orbit Plus Discount Pack`: `100 AI Credits` for `$12`
+- `Orbit Pro Best Value Pack`: `100 AI Credits` for `$8`
 
 Configure these Vercel environment variables:
 

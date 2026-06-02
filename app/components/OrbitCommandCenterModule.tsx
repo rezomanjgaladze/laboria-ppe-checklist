@@ -40,6 +40,11 @@ import {
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
 import {
+  ORBIT_PRO_PLAN,
+  isOrbitAiToolAvailableForPlan,
+  type OrbitPlanName,
+} from "@/app/lib/orbitPlans";
+import {
   readActionTrackerActions,
   type HseAction,
 } from "@/app/lib/actionTracker";
@@ -1766,6 +1771,7 @@ export default function OrbitCommandCenterModule({
         <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
           <AiIntelligenceCenter
             darkMode={darkMode}
+            plan={aiAccount.plan}
             onPreview={setAiPreviewToolId}
           />
           <div className="space-y-5">
@@ -2874,9 +2880,11 @@ function HeatmapRiskPanel({
 
 function AiIntelligenceCenter({
   darkMode,
+  plan,
   onPreview,
 }: {
   darkMode: boolean;
+  plan: OrbitPlanName;
   onPreview: (toolId: OrbitAiToolId) => void;
 }) {
   const theme = getTheme(darkMode);
@@ -2937,6 +2945,10 @@ function AiIntelligenceCenter({
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {insights.map((insight) => {
             const Icon = insight.icon;
+            const availableForPlan = isOrbitAiToolAvailableForPlan(
+              plan,
+              insight.toolId,
+            );
             return (
               <button
                 type="button"
@@ -2958,14 +2970,15 @@ function AiIntelligenceCenter({
                       </h4>
                       <span className="inline-flex items-center gap-1 rounded-full bg-[#1E90FF]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#4DEBFF]">
                         <Lock size={10} aria-hidden />
-                        Enterprise AI
+                        {availableForPlan ? ORBIT_PRO_PLAN : "Pro only"}
                       </span>
                     </div>
                     <p className={joinClasses("mt-2 text-xs leading-5", theme.muted)}>
                       {insight.detail}
                     </p>
                     <p className="mt-3 inline-flex items-center gap-1 rounded-full border border-[#4DEBFF]/20 bg-[#4DEBFF]/10 px-2 py-1 text-[10px] font-semibold text-[#4DEBFF]">
-                      {getOrbitAiTool(insight.toolId).creditLabel} / Live
+                      {getOrbitAiTool(insight.toolId).creditLabel} /{" "}
+                      {availableForPlan ? "Live" : "Upgrade required"}
                     </p>
                   </div>
                 </div>
