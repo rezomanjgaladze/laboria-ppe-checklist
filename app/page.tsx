@@ -60,6 +60,7 @@ import {
 import {
   defaultWorkspaceSettings,
   hasCompanyBranding,
+  loadWorkspaceCompanyLogo,
   readWorkspaceSettings,
   workspaceSettingsUpdatedEvent,
   writeWorkspaceSettings,
@@ -690,6 +691,8 @@ export default function Home() {
   }, [supabase]);
 
   useEffect(() => {
+    let isActive = true;
+
     const loadWorkspaceSettings = (applyDefaultModule = false) => {
       const storedSettings = readWorkspaceSettings(authUserId);
       setWorkspaceSettings(storedSettings);
@@ -727,6 +730,14 @@ export default function Home() {
 
     loadWorkspaceSettings(true);
 
+    if (authUserId) {
+      void loadWorkspaceCompanyLogo(authUserId).then((syncedSettings) => {
+        if (isActive) {
+          setWorkspaceSettings(syncedSettings);
+        }
+      });
+    }
+
     const handleSettingsUpdate = (event: Event) => {
       const customEvent = event as CustomEvent<WorkspaceSettings>;
 
@@ -753,6 +764,7 @@ export default function Home() {
     window.addEventListener("storage", handleStorage);
 
     return () => {
+      isActive = false;
       window.removeEventListener(
         workspaceSettingsUpdatedEvent,
         handleSettingsUpdate,

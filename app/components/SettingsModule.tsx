@@ -13,6 +13,7 @@ import {
   Download,
   FileText,
   GraduationCap,
+  LoaderCircle,
   Moon,
   Save,
   Settings,
@@ -429,6 +430,7 @@ export default function SettingsModule({
   const [activeAiToolId, setActiveAiToolId] = useState<OrbitAiToolId | null>(null);
   const [aiAccount, setAiAccount] = useState(() => getOrbitAiAccount(userId));
   const [isAddingTestCredits, setIsAddingTestCredits] = useState(false);
+  const [isUpdatingLogo, setIsUpdatingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const theme = getTheme(darkMode);
   const canAddTestCredits = isOrbitAiTestCreditAdmin(userEmail);
@@ -569,31 +571,97 @@ export default function SettingsModule({
     updatePreference("language", value);
   };
 
-  const handleLogoUpload = (fileList: FileList | null) => {
+  const handleLogoUpload = async (fileList: FileList | null) => {
     const file = fileList?.[0];
 
     if (!file) {
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      setNotice("Please choose an image file for the company logo.");
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setNotice("Use a PNG, JPG, JPEG, or WEBP image.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
+    if (file.size > 2 * 1024 * 1024) {
+      setNotice("Company logo must be 2 MB or smaller.");
+      return;
+    }
 
-      if (typeof result !== "string") {
-        setNotice("Could not read the selected logo file.");
+    setIsUpdatingLogo(true);
+    setNotice("Uploading company logo...");
+
+    try {
+      const body = new FormData();
+      body.append("logo", file);
+      const response = await fetch("/api/workspace/company-logo", {
+        method: "POST",
+        body,
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        logoDataUrl?: string;
+        logoPath?: string;
+      };
+
+      if (!response.ok || !payload.logoDataUrl) {
+        setNotice(payload.error || "Could not upload the company logo.");
         return;
       }
 
-      updateCompanyProfile("logoDataUrl", result);
-      setNotice("Company logo saved.");
-    };
-    reader.readAsDataURL(file);
+      updateSettings(
+        (current) => ({
+          ...current,
+          companyProfile: {
+            ...current.companyProfile,
+            logoDataUrl: payload.logoDataUrl || "",
+            logoPath: payload.logoPath || "",
+          },
+        }),
+        "Company logo uploaded and saved.",
+      );
+    } catch {
+      setNotice("Could not upload the company logo. Please try again.");
+    } finally {
+      setIsUpdatingLogo(false);
+
+      if (logoInputRef.current) {
+        logoInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleLogoRemove = async () => {
+    setIsUpdatingLogo(true);
+    setNotice("Removing company logo...");
+
+    try {
+      const response = await fetch("/api/workspace/company-logo", {
+        method: "DELETE",
+      });
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        setNotice(payload.error || "Could not remove the company logo.");
+        return;
+      }
+
+      updateSettings(
+        (current) => ({
+          ...current,
+          companyProfile: {
+            ...current.companyProfile,
+            logoDataUrl: "",
+            logoPath: "",
+          },
+        }),
+        "Company logo removed.",
+      );
+    } catch {
+      setNotice("Could not remove the company logo. Please try again.");
+    } finally {
+      setIsUpdatingLogo(false);
+    }
   };
 
   const workspaceData = readBrowserWorkspaceData();
@@ -729,7 +797,7 @@ export default function SettingsModule({
           <input
             ref={logoInputRef}
             type="file"
-            accept="image/*"
+            accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
             className="hidden"
             onChange={(event) => handleLogoUpload(event.target.files)}
           />
@@ -738,27 +806,38 @@ export default function SettingsModule({
             <button
               type="button"
               onClick={() => logoInputRef.current?.click()}
+              disabled={isUpdatingLogo}
               className={joinClasses(
                 "inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition",
                 theme.buttonGhost,
+                isUpdatingLogo && "cursor-wait opacity-70",
               )}
             >
-              <Upload size={16} aria-hidden />
-              Upload Company Logo
+              {isUpdatingLogo ? (
+                <LoaderCircle size={16} className="animate-spin" aria-hidden />
+              ) : (
+                <Upload size={16} aria-hidden />
+              )}
+              {isUpdatingLogo ? "Updating Logo..." : "Upload Company Logo"}
             </button>
             {settings.companyProfile.logoDataUrl ? (
               <button
                 type="button"
-                onClick={() => updateCompanyProfile("logoDataUrl", "")}
+                onClick={handleLogoRemove}
+                disabled={isUpdatingLogo}
                 className={joinClasses(
                   "inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition",
                   theme.destructive,
+                  isUpdatingLogo && "cursor-wait opacity-70",
                 )}
               >
                 <Trash2 size={16} aria-hidden />
                 Remove Logo
               </button>
             ) : null}
+            <div className={joinClasses("text-center text-[11px] leading-5", theme.muted)}>
+              PNG, JPG, JPEG, or WEBP. Maximum file size: 2 MB.
+            </div>
           </div>
         </div>
       </div>

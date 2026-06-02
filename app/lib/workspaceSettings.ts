@@ -15,6 +15,7 @@ export type ThemeModePreference = "light" | "dark";
 export type CompanyProfileSettings = {
   companyName: string;
   logoDataUrl: string;
+  logoPath: string;
   industrySector: string;
   mainSiteLocation: string;
   contactEmail: string;
@@ -90,6 +91,7 @@ export const defaultWorkspaceSettings: WorkspaceSettings = {
   companyProfile: {
     companyName: "",
     logoDataUrl: "",
+    logoPath: "",
     industrySector: "",
     mainSiteLocation: "",
     contactEmail: "",
@@ -172,6 +174,7 @@ export const normalizeWorkspaceSettings = (
   companyProfile: {
     companyName: toStringValue(value?.companyProfile?.companyName),
     logoDataUrl: toStringValue(value?.companyProfile?.logoDataUrl),
+    logoPath: toStringValue(value?.companyProfile?.logoPath),
     industrySector: toStringValue(value?.companyProfile?.industrySector),
     mainSiteLocation: toStringValue(value?.companyProfile?.mainSiteLocation),
     contactEmail: toStringValue(value?.companyProfile?.contactEmail),
@@ -338,6 +341,62 @@ export const writeWorkspaceSettings = (
       detail: normalizedSettings,
     }),
   );
+};
+
+type WorkspaceCompanyLogoPayload = {
+  logoDataUrl?: unknown;
+  logoPath?: unknown;
+};
+
+export const cacheWorkspaceCompanyLogo = (
+  userId: string | null,
+  payload: WorkspaceCompanyLogoPayload,
+) => {
+  const currentSettings = readWorkspaceSettings(userId);
+  const logoDataUrl = toStringValue(payload.logoDataUrl);
+  const logoPath = toStringValue(payload.logoPath);
+
+  if (
+    currentSettings.companyProfile.logoDataUrl === logoDataUrl &&
+    currentSettings.companyProfile.logoPath === logoPath
+  ) {
+    return currentSettings;
+  }
+
+  const nextSettings: WorkspaceSettings = {
+    ...currentSettings,
+    companyProfile: {
+      ...currentSettings.companyProfile,
+      logoDataUrl,
+      logoPath,
+    },
+  };
+
+  writeWorkspaceSettings(userId, nextSettings);
+  return normalizeWorkspaceSettings(nextSettings);
+};
+
+export const loadWorkspaceCompanyLogo = async (userId: string | null) => {
+  const currentSettings = readWorkspaceSettings(userId);
+
+  if (!userId || typeof window === "undefined") {
+    return currentSettings;
+  }
+
+  try {
+    const response = await fetch("/api/workspace/company-logo", {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return currentSettings;
+    }
+
+    const payload = (await response.json()) as WorkspaceCompanyLogoPayload;
+    return cacheWorkspaceCompanyLogo(userId, payload);
+  } catch {
+    return currentSettings;
+  }
 };
 
 export const hasCompanyBranding = (settings: WorkspaceSettings) => {
