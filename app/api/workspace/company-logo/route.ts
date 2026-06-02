@@ -104,6 +104,17 @@ const getAuthenticatedUser = async () => {
 const storageSetupMessage =
   "Company logo storage is not configured. Apply the company-logos Supabase storage migration or configure SUPABASE_SERVICE_ROLE_KEY.";
 
+const isStorageSetupError = (message: string) => {
+  const normalizedMessage = message.toLowerCase();
+
+  return (
+    normalizedMessage.includes("bucket") ||
+    normalizedMessage.includes("row-level security") ||
+    normalizedMessage.includes("policy") ||
+    normalizedMessage.includes("not found")
+  );
+};
+
 export async function GET() {
   const { supabase, user } = await getAuthenticatedUser();
 
@@ -203,7 +214,7 @@ export async function POST(request: Request) {
       });
       return NextResponse.json(
         {
-          error: uploadError.message.toLowerCase().includes("bucket")
+          error: isStorageSetupError(uploadError.message)
             ? storageSetupMessage
             : "Could not upload the company logo. Please try again.",
         },

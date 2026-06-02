@@ -393,6 +393,15 @@ export const loadWorkspaceCompanyLogo = async (userId: string | null) => {
     }
 
     const payload = (await response.json()) as WorkspaceCompanyLogoPayload;
+
+    if (
+      !toStringValue(payload.logoPath) &&
+      currentSettings.companyProfile.logoDataUrl &&
+      !currentSettings.companyProfile.logoPath
+    ) {
+      return currentSettings;
+    }
+
     return cacheWorkspaceCompanyLogo(userId, payload);
   } catch {
     return currentSettings;

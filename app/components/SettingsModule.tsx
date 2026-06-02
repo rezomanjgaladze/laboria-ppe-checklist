@@ -389,6 +389,120 @@ const getTheme = (darkMode: boolean) => ({
 const cloneSettings = (settings: WorkspaceSettings): WorkspaceSettings =>
   JSON.parse(JSON.stringify(settings)) as WorkspaceSettings;
 
+const readFileAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error("Could not read the selected logo file."));
+    };
+    reader.onerror = () => reject(new Error("Could not read the selected logo file."));
+    reader.readAsDataURL(file);
+  });
+
+function CompanyProfileForm({
+  profile,
+  onChange,
+  theme,
+}: {
+  profile: CompanyProfileSettings;
+  onChange: (key: keyof CompanyProfileSettings, value: string) => void;
+  theme: ReturnType<typeof getTheme>;
+}) {
+  const fieldClass = joinClasses(
+    "w-full rounded-xl border px-4 py-3 text-sm outline-none ring-2 ring-transparent transition",
+    theme.input,
+  );
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <label className="block">
+        <span className={joinClasses("mb-2 block text-xs font-bold uppercase tracking-[0.14em]", theme.label)}>
+          Company Name
+        </span>
+        <input
+          value={profile.companyName}
+          onChange={(event) => onChange("companyName", event.target.value)}
+          placeholder="Enter company name"
+          className={fieldClass}
+        />
+      </label>
+
+      <label className="block">
+        <span className={joinClasses("mb-2 block text-xs font-bold uppercase tracking-[0.14em]", theme.label)}>
+          Industry/Sector
+        </span>
+        <select
+          value={profile.industrySector}
+          onChange={(event) => onChange("industrySector", event.target.value)}
+          className={fieldClass}
+        >
+          {industryOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="block">
+        <span className={joinClasses("mb-2 block text-xs font-bold uppercase tracking-[0.14em]", theme.label)}>
+          Main Site/Location
+        </span>
+        <input
+          value={profile.mainSiteLocation}
+          onChange={(event) => onChange("mainSiteLocation", event.target.value)}
+          placeholder="Head office, plant, project, or site"
+          className={fieldClass}
+        />
+      </label>
+
+      <label className="block">
+        <span className={joinClasses("mb-2 block text-xs font-bold uppercase tracking-[0.14em]", theme.label)}>
+          Contact Email
+        </span>
+        <input
+          type="email"
+          value={profile.contactEmail}
+          onChange={(event) => onChange("contactEmail", event.target.value)}
+          placeholder="hse@example.com"
+          className={fieldClass}
+        />
+      </label>
+
+      <label className="block">
+        <span className={joinClasses("mb-2 block text-xs font-bold uppercase tracking-[0.14em]", theme.label)}>
+          Phone
+        </span>
+        <input
+          value={profile.phone}
+          onChange={(event) => onChange("phone", event.target.value)}
+          placeholder="+995 ..."
+          className={fieldClass}
+        />
+      </label>
+
+      <label className="block">
+        <span className={joinClasses("mb-2 block text-xs font-bold uppercase tracking-[0.14em]", theme.label)}>
+          Address
+        </span>
+        <textarea
+          value={profile.address}
+          onChange={(event) => onChange("address", event.target.value)}
+          placeholder="Company address"
+          rows={3}
+          className={joinClasses(fieldClass, "resize-y leading-6")}
+        />
+      </label>
+    </div>
+  );
+}
+
 const readBrowserWorkspaceData = (): Record<string, unknown> => {
   if (typeof window === "undefined") {
     return {};
@@ -425,6 +539,8 @@ export default function SettingsModule({
   const [settings, setSettings] = useState<WorkspaceSettings>(
     defaultWorkspaceSettings,
   );
+  const [companyProfileDraft, setCompanyProfileDraft] =
+    useState<CompanyProfileSettings>(defaultWorkspaceSettings.companyProfile);
   const [notice, setNotice] = useState("Settings are ready.");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [activeAiToolId, setActiveAiToolId] = useState<OrbitAiToolId | null>(null);
@@ -437,17 +553,21 @@ export default function SettingsModule({
 
   useEffect(() => {
     const storedSettings = readWorkspaceSettings(userId);
-    const alignedSettings: WorkspaceSettings = {
-      ...storedSettings,
+
+    setSettings(storedSettings);
+    setCompanyProfileDraft(storedSettings.companyProfile);
+  }, [userId]);
+
+  useEffect(() => {
+    setSettings((current) => ({
+      ...current,
       preferences: {
-        ...storedSettings.preferences,
+        ...current.preferences,
         language,
         themeMode: darkMode ? "dark" : "light",
       },
-    };
-
-    setSettings(alignedSettings);
-  }, [darkMode, language, userId]);
+    }));
+  }, [darkMode, language]);
 
   useEffect(() => {
     const syncAiAccount = () => setAiAccount(getOrbitAiAccount(userId));
@@ -532,17 +652,24 @@ export default function SettingsModule({
     persistSettings(nextSettings, message);
   };
 
-  const updateCompanyProfile = (
+  const updateCompanyProfileDraft = (
     key: keyof CompanyProfileSettings,
     value: string,
   ) => {
-    updateSettings((current) => ({
+    setCompanyProfileDraft((current) => ({
       ...current,
-      companyProfile: {
-        ...current.companyProfile,
-        [key]: value,
-      },
+      [key]: value,
     }));
+  };
+
+  const saveSettings = () => {
+    persistSettings(
+      {
+        ...settings,
+        companyProfile: companyProfileDraft,
+      },
+      "Settings saved successfully.",
+    );
   };
 
   const updatePreference = <T extends keyof WorkspaceSettings["preferences"]>(
@@ -605,6 +732,28 @@ export default function SettingsModule({
       };
 
       if (!response.ok || !payload.logoDataUrl) {
+        if (payload.error?.includes("Company logo storage is not configured")) {
+          const logoDataUrl = await readFileAsDataUrl(file);
+
+          updateSettings(
+            (current) => ({
+              ...current,
+              companyProfile: {
+                ...companyProfileDraft,
+                logoDataUrl,
+                logoPath: "",
+              },
+            }),
+            "Company logo saved for this workspace. Cloud logo storage still needs Supabase setup.",
+          );
+          setCompanyProfileDraft((current) => ({
+            ...current,
+            logoDataUrl,
+            logoPath: "",
+          }));
+          return;
+        }
+
         setNotice(payload.error || "Could not upload the company logo.");
         return;
       }
@@ -613,13 +762,18 @@ export default function SettingsModule({
         (current) => ({
           ...current,
           companyProfile: {
-            ...current.companyProfile,
+            ...companyProfileDraft,
             logoDataUrl: payload.logoDataUrl || "",
             logoPath: payload.logoPath || "",
           },
         }),
         "Company logo uploaded and saved.",
       );
+      setCompanyProfileDraft((current) => ({
+        ...current,
+        logoDataUrl: payload.logoDataUrl || "",
+        logoPath: payload.logoPath || "",
+      }));
     } catch {
       setNotice("Could not upload the company logo. Please try again.");
     } finally {
@@ -650,13 +804,18 @@ export default function SettingsModule({
         (current) => ({
           ...current,
           companyProfile: {
-            ...current.companyProfile,
+            ...companyProfileDraft,
             logoDataUrl: "",
             logoPath: "",
           },
         }),
         "Company logo removed.",
       );
+      setCompanyProfileDraft((current) => ({
+        ...current,
+        logoDataUrl: "",
+        logoPath: "",
+      }));
     } catch {
       setNotice("Could not remove the company logo. Please try again.");
     } finally {
@@ -718,46 +877,11 @@ export default function SettingsModule({
       theme={theme}
     >
       <div className="grid gap-5 xl:grid-cols-[1fr_18rem]">
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field
-            label="Company Name"
-            value={settings.companyProfile.companyName}
-            onChange={(value) => updateCompanyProfile("companyName", value)}
-            placeholder="Enter company name"
-          />
-          <SelectInput
-            label="Industry/Sector"
-            value={settings.companyProfile.industrySector}
-            onChange={(value) => updateCompanyProfile("industrySector", value)}
-            options={industryOptions}
-          />
-          <Field
-            label="Main Site/Location"
-            value={settings.companyProfile.mainSiteLocation}
-            onChange={(value) => updateCompanyProfile("mainSiteLocation", value)}
-            placeholder="Head office, plant, project, or site"
-          />
-          <Field
-            label="Contact Email"
-            value={settings.companyProfile.contactEmail}
-            onChange={(value) => updateCompanyProfile("contactEmail", value)}
-            placeholder="hse@example.com"
-            type="email"
-          />
-          <Field
-            label="Phone"
-            value={settings.companyProfile.phone}
-            onChange={(value) => updateCompanyProfile("phone", value)}
-            placeholder="+995 ..."
-          />
-          <Field
-            label="Address"
-            value={settings.companyProfile.address}
-            onChange={(value) => updateCompanyProfile("address", value)}
-            placeholder="Company address"
-            multiline
-          />
-        </div>
+        <CompanyProfileForm
+          profile={companyProfileDraft}
+          onChange={updateCompanyProfileDraft}
+          theme={theme}
+        />
 
         <div className={joinClasses("rounded-3xl border p-5", theme.panelSoft)}>
           <div
@@ -768,9 +892,9 @@ export default function SettingsModule({
                 : "border-slate-200 bg-white",
             )}
           >
-            {settings.companyProfile.logoDataUrl ? (
+            {companyProfileDraft.logoDataUrl ? (
               <Image
-                src={settings.companyProfile.logoDataUrl}
+                src={companyProfileDraft.logoDataUrl}
                 alt="Company logo"
                 width={220}
                 height={96}
@@ -820,7 +944,7 @@ export default function SettingsModule({
               )}
               {isUpdatingLogo ? "Updating Logo..." : "Upload Company Logo"}
             </button>
-            {settings.companyProfile.logoDataUrl ? (
+            {companyProfileDraft.logoDataUrl ? (
               <button
                 type="button"
                 onClick={handleLogoRemove}
@@ -1643,9 +1767,7 @@ export default function SettingsModule({
                 </span>
                 <button
                   type="button"
-                  onClick={() =>
-                    persistSettings(settings, "Settings saved successfully.")
-                  }
+                  onClick={saveSettings}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#1E90FF] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(30,144,255,0.24)] transition hover:bg-[#1878d6]"
                 >
                   <Save size={16} aria-hidden />
