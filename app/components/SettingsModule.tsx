@@ -100,6 +100,45 @@ type PaddleSetupState = {
   environment: "sandbox" | "production";
   missingVariables: string[];
   invalidVariables: string[];
+  diagnostics: PaddleDiagnostics;
+};
+
+type PaddleDiagnostics = {
+  checkoutEnabled: boolean;
+  clientTokenPresent: boolean;
+  plusPricePresent: boolean;
+  proPricePresent: boolean;
+  starterTopupPricePresent: boolean;
+  plusPackPricePresent: boolean;
+  proPackPricePresent: boolean;
+};
+
+const emptyPaddleDiagnostics: PaddleDiagnostics = {
+  checkoutEnabled: false,
+  clientTokenPresent: false,
+  plusPricePresent: false,
+  proPricePresent: false,
+  starterTopupPricePresent: false,
+  plusPackPricePresent: false,
+  proPackPricePresent: false,
+};
+
+const normalizePaddleDiagnostics = (value: unknown): PaddleDiagnostics => {
+  if (!value || typeof value !== "object") {
+    return emptyPaddleDiagnostics;
+  }
+
+  const candidate = value as Partial<Record<keyof PaddleDiagnostics, unknown>>;
+
+  return {
+    checkoutEnabled: Boolean(candidate.checkoutEnabled),
+    clientTokenPresent: Boolean(candidate.clientTokenPresent),
+    plusPricePresent: Boolean(candidate.plusPricePresent),
+    proPricePresent: Boolean(candidate.proPricePresent),
+    starterTopupPricePresent: Boolean(candidate.starterTopupPricePresent),
+    plusPackPricePresent: Boolean(candidate.plusPackPricePresent),
+    proPackPricePresent: Boolean(candidate.proPackPricePresent),
+  };
 };
 
 type FieldProps = {
@@ -544,10 +583,36 @@ export default function SettingsModule({
     environment: "sandbox",
     missingVariables: [],
     invalidVariables: [],
+    diagnostics: emptyPaddleDiagnostics,
   });
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const theme = getTheme(darkMode);
   const canAddTestCredits = isOrbitAiTestCreditAdmin(userEmail);
+  const paddleSetupMessage = [
+    paddleSetup.missingVariables.length
+      ? `missing ${paddleSetup.missingVariables.join(", ")}`
+      : "",
+    paddleSetup.invalidVariables.length
+      ? `invalid ${paddleSetup.invalidVariables.join(", ")}`
+      : "",
+  ].filter(Boolean);
+  const paddleSetupDiagnosticMessage = paddleSetupMessage.length
+    ? `Paddle checkout is not configured: ${paddleSetupMessage.join("; ")}.`
+    : paddleSetup.checkoutEnabled
+      ? "Paddle checkout is configured."
+      : "Paddle checkout is not configured.";
+  const paddleDiagnosticRows = [
+    ["checkoutEnabled", paddleSetup.diagnostics.checkoutEnabled],
+    ["clientTokenPresent", paddleSetup.diagnostics.clientTokenPresent],
+    ["plusPricePresent", paddleSetup.diagnostics.plusPricePresent],
+    ["proPricePresent", paddleSetup.diagnostics.proPricePresent],
+    [
+      "starterTopupPricePresent",
+      paddleSetup.diagnostics.starterTopupPricePresent,
+    ],
+    ["plusPackPricePresent", paddleSetup.diagnostics.plusPackPricePresent],
+    ["proPackPricePresent", paddleSetup.diagnostics.proPackPricePresent],
+  ] as const;
 
   useEffect(() => {
     const storedSettings = readWorkspaceSettings(userId);
@@ -608,6 +673,7 @@ export default function SettingsModule({
           invalidVariables: Array.isArray(payload.invalidVariables)
             ? payload.invalidVariables
             : [],
+          diagnostics: normalizePaddleDiagnostics(payload.diagnostics),
         });
       })
       .catch(() => {
@@ -619,6 +685,10 @@ export default function SettingsModule({
           ...current,
           loading: false,
           checkoutEnabled: false,
+          diagnostics: {
+            ...current.diagnostics,
+            checkoutEnabled: false,
+          },
         }));
       });
 
@@ -697,11 +767,6 @@ export default function SettingsModule({
   };
 
   const startPaddleCheckout = async (purchaseKey: PaddlePurchaseKey) => {
-    if (!paddleSetup.checkoutEnabled) {
-      setNotice("Payments are being configured. Please contact Laboria.");
-      return;
-    }
-
     setActivePaddlePurchase(purchaseKey);
 
     try {
@@ -1604,12 +1669,40 @@ export default function SettingsModule({
                     Payment setup required
                   </div>
                   <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
-                    Payments are being configured. Please contact Laboria.
+                    {paddleSetupDiagnosticMessage}
                   </p>
                 </div>
               </div>
             </div>
           ) : null}
+          <div className={joinClasses("mt-4 rounded-2xl border p-4", theme.panelSoft)}>
+            <div className={joinClasses("text-xs font-bold uppercase tracking-[0.16em]", theme.label)}>
+              Safe billing diagnostics
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {paddleDiagnosticRows.map(([label, value]) => (
+                <div
+                  key={label}
+                  className={joinClasses(
+                    "flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs",
+                    darkMode
+                      ? "border-white/10 bg-white/[0.04]"
+                      : "border-slate-200 bg-white",
+                  )}
+                >
+                  <span className={theme.muted}>{label}</span>
+                  <span
+                    className={joinClasses(
+                      "font-bold",
+                      value ? "text-emerald-400" : "text-amber-400",
+                    )}
+                  >
+                    {String(value)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1711,16 +1804,8 @@ export default function SettingsModule({
                   Boolean(plan.purchaseKey) &&
                   activePaddlePurchase === plan.purchaseKey
                 }
-                aria-disabled={
-                  plan.name !== aiAccount.plan && !paddleSetup.checkoutEnabled
-                    ? true
-                    : undefined
-                }
                 className={joinClasses(
                   "mt-6 w-full rounded-xl border px-4 py-3 text-sm font-semibold transition",
-                  plan.name !== aiAccount.plan &&
-                    !paddleSetup.checkoutEnabled &&
-                    "cursor-not-allowed opacity-70",
                   plan.popular
                     ? "border-[#1E90FF] bg-[#1E90FF] text-white hover:bg-[#1878d6]"
                     : plan.premium
@@ -1807,17 +1892,8 @@ export default function SettingsModule({
                   void startPaddleCheckout(pack.key);
                 }}
                 disabled={activePaddlePurchase === pack.key}
-                aria-disabled={
-                  !paddleSetup.checkoutEnabled ||
-                  !isOrbitCreditPackAvailableForPlan(aiAccount.plan, pack)
-                    ? true
-                    : undefined
-                }
                 className={joinClasses(
                   "mt-5 w-full rounded-xl border px-4 py-3 text-sm font-semibold transition",
-                  (!paddleSetup.checkoutEnabled ||
-                    !isOrbitCreditPackAvailableForPlan(aiAccount.plan, pack)) &&
-                    "cursor-not-allowed opacity-70",
                   theme.buttonGhost,
                 )}
               >

@@ -28,6 +28,8 @@ export const paddleInfrastructureEnvironmentVariables = [
 ] as const;
 
 const readEnvironmentValue = (name: string) => process.env[name]?.trim() || "";
+const isEnvironmentValuePresent = (name: string) =>
+  Boolean(readEnvironmentValue(name));
 
 export const getPaddleEnvironment = () =>
   readEnvironmentValue("PADDLE_ENVIRONMENT") === "production"
@@ -93,7 +95,47 @@ export const getPaddleSetupStatus = () => {
     missingPaddleVariables,
     missingInfrastructureVariables,
     invalidVariables,
+    diagnostics: {
+      checkoutEnabled:
+        missingVariables.length === 0 && invalidVariables.length === 0,
+      clientTokenPresent: isEnvironmentValuePresent(
+        "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN",
+      ),
+      plusPricePresent: isEnvironmentValuePresent(
+        "NEXT_PUBLIC_PADDLE_PRICE_ORBIT_PLUS",
+      ),
+      proPricePresent: isEnvironmentValuePresent(
+        "NEXT_PUBLIC_PADDLE_PRICE_ORBIT_PRO",
+      ),
+      starterTopupPricePresent: isEnvironmentValuePresent(
+        "NEXT_PUBLIC_PADDLE_PRICE_STARTER_TOPUP",
+      ),
+      plusPackPricePresent: isEnvironmentValuePresent(
+        "NEXT_PUBLIC_PADDLE_PRICE_PLUS_PACK",
+      ),
+      proPackPricePresent: isEnvironmentValuePresent(
+        "NEXT_PUBLIC_PADDLE_PRICE_PRO_PACK",
+      ),
+    },
   };
+};
+
+export const formatPaddleSetupDiagnosticMessage = (status: {
+  missingVariables: string[];
+  invalidVariables: string[];
+}) => {
+  const details = [
+    status.missingVariables.length
+      ? `missing ${status.missingVariables.join(", ")}`
+      : "",
+    status.invalidVariables.length
+      ? `invalid ${status.invalidVariables.join(", ")}`
+      : "",
+  ].filter(Boolean);
+
+  return details.length
+    ? `Paddle checkout is not configured: ${details.join("; ")}.`
+    : "Paddle checkout is not configured.";
 };
 
 export const getPaddleClientToken = () =>

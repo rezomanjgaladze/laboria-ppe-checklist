@@ -11,5 +11,6 @@ export async function GET() {
     environment: status.environment,
     missingVariables: status.missingVariables,
     invalidVariables: status.invalidVariables,
+    diagnostics: status.diagnostics,
   });
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   createPaddleSupabaseAdminClient,
+  formatPaddleSetupDiagnosticMessage,
   getPaddleClientToken,
   getPaddleEnvironment,
   getPaddlePurchase,
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
   const status = getPaddleSetupStatus();
 
   if (!status.checkoutEnabled) {
+    const diagnosticMessage = formatPaddleSetupDiagnosticMessage(status);
     console.warn("[paddle-checkout] setup incomplete", {
       userId: user.id,
       missingVariables: status.missingVariables,
@@ -38,8 +40,11 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(
       {
-        error: paymentSetupMessage,
+        error: diagnosticMessage,
         checkoutEnabled: false,
+        missingVariables: status.missingVariables,
+        invalidVariables: status.invalidVariables,
+        diagnostics: status.diagnostics,
       },
       { status: 503 },
     );

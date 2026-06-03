@@ -15,6 +15,8 @@ type PaddleCheckoutResponse = {
   environment?: Environments;
   priceId?: string;
   customerEmail?: string;
+  missingVariables?: string[];
+  invalidVariables?: string[];
 };
 
 type OpenOrbitPaddleCheckoutOptions = {
@@ -58,8 +60,20 @@ export const openOrbitPaddleCheckout = async ({
     !payload.environment ||
     !payload.priceId
   ) {
+    const diagnosticDetails = [
+      payload.missingVariables?.length
+        ? `missing ${payload.missingVariables.join(", ")}`
+        : "",
+      payload.invalidVariables?.length
+        ? `invalid ${payload.invalidVariables.join(", ")}`
+        : "",
+    ].filter(Boolean);
+
     throw new Error(
-      payload.error || "Payments are being configured. Please contact Laboria.",
+      payload.error ||
+        (diagnosticDetails.length
+          ? `Paddle checkout is not configured: ${diagnosticDetails.join("; ")}.`
+          : "Payments are being configured. Please contact Laboria."),
     );
   }
 
