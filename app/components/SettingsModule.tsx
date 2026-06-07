@@ -577,6 +577,10 @@ export default function SettingsModule({
   const [isUpdatingLogo, setIsUpdatingLogo] = useState(false);
   const [activePaddlePurchase, setActivePaddlePurchase] =
     useState<PaddlePurchaseKey | null>(null);
+  const [paddleCheckoutFeedback, setPaddleCheckoutFeedback] = useState<{
+    message: string;
+    type: "error" | "info" | "success";
+  } | null>(null);
   const [paddleSetup, setPaddleSetup] = useState<PaddleSetupState>({
     loading: true,
     checkoutEnabled: false,
@@ -768,16 +772,29 @@ export default function SettingsModule({
 
   const startPaddleCheckout = async (purchaseKey: PaddlePurchaseKey) => {
     setActivePaddlePurchase(purchaseKey);
+    setPaddleCheckoutFeedback({
+      message: "Opening secure Paddle checkout...",
+      type: "info",
+    });
 
     try {
       await openOrbitPaddleCheckout({ purchaseKey, darkMode });
+      setPaddleCheckoutFeedback({
+        message: "Secure Paddle checkout opened.",
+        type: "success",
+      });
       setNotice("Secure Paddle checkout opened.");
     } catch (error) {
-      setNotice(
+      const message =
         error instanceof Error
           ? error.message
-          : "Payments are being configured. Please contact Laboria.",
-      );
+          : "Payments are being configured. Please contact Laboria.";
+
+      setPaddleCheckoutFeedback({
+        message,
+        type: "error",
+      });
+      setNotice(message);
     } finally {
       setActivePaddlePurchase(null);
     }
@@ -1670,6 +1687,54 @@ export default function SettingsModule({
                   </div>
                   <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
                     {paddleSetupDiagnosticMessage}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {paddleCheckoutFeedback ? (
+            <div
+              className={joinClasses(
+                "mt-4 rounded-2xl border p-4",
+                paddleCheckoutFeedback.type === "error"
+                  ? darkMode
+                    ? "border-rose-300/20 bg-rose-400/[0.07]"
+                    : "border-rose-300 bg-rose-50"
+                  : paddleCheckoutFeedback.type === "success"
+                    ? darkMode
+                      ? "border-emerald-300/20 bg-emerald-400/[0.07]"
+                      : "border-emerald-300 bg-emerald-50"
+                    : darkMode
+                      ? "border-[#4DEBFF]/20 bg-[#4DEBFF]/[0.06]"
+                      : "border-[#1E90FF]/20 bg-[#1E90FF]/5",
+              )}
+            >
+              <div className="flex items-start gap-3">
+                {paddleCheckoutFeedback.type === "error" ? (
+                  <TriangleAlert
+                    size={18}
+                    className="mt-0.5 shrink-0 text-rose-400"
+                    aria-hidden
+                  />
+                ) : paddleCheckoutFeedback.type === "success" ? (
+                  <CheckCircle2
+                    size={18}
+                    className="mt-0.5 shrink-0 text-emerald-400"
+                    aria-hidden
+                  />
+                ) : (
+                  <LoaderCircle
+                    size={18}
+                    className="mt-0.5 shrink-0 animate-spin text-[#4DEBFF]"
+                    aria-hidden
+                  />
+                )}
+                <div>
+                  <div className={joinClasses("text-sm font-bold", theme.heading)}>
+                    Paddle checkout
+                  </div>
+                  <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
+                    {paddleCheckoutFeedback.message}
                   </p>
                 </div>
               </div>

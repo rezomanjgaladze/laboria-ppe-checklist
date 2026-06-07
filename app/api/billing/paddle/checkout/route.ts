@@ -29,27 +29,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
-  const status = getPaddleSetupStatus();
-
-  if (!status.checkoutEnabled) {
-    const diagnosticMessage = formatPaddleSetupDiagnosticMessage(status);
-    console.warn("[paddle-checkout] setup incomplete", {
-      userId: user.id,
-      missingVariables: status.missingVariables,
-      invalidVariables: status.invalidVariables,
-    });
-    return NextResponse.json(
-      {
-        error: diagnosticMessage,
-        checkoutEnabled: false,
-        missingVariables: status.missingVariables,
-        invalidVariables: status.invalidVariables,
-        diagnostics: status.diagnostics,
-      },
-      { status: 503 },
-    );
-  }
-
   const body = (await request.json().catch(() => null)) as {
     purchaseKey?: unknown;
   } | null;
@@ -61,6 +40,33 @@ export async function POST(request: Request) {
     );
   }
 
+  const purchase = getPaddlePurchase(body.purchaseKey);
+  const status = getPaddleSetupStatus();
+
+  if (!status.checkoutEnabled) {
+    const diagnosticMessage = formatPaddleSetupDiagnosticMessage(status);
+    console.warn("[paddle-checkout] setup incomplete", {
+      userId: user.id,
+      purchaseKey: purchase.key,
+      selectedPriceKey: purchase.priceEnvironmentVariable,
+      selectedPriceIdPresent: Boolean(purchase.priceId),
+      missingVariables: status.missingVariables,
+      invalidVariables: status.invalidVariables,
+    });
+    return NextResponse.json(
+      {
+        error: diagnosticMessage,
+        checkoutEnabled: false,
+        missingVariables: status.missingVariables,
+        invalidVariables: status.invalidVariables,
+        diagnostics: status.diagnostics,
+        priceEnvironmentVariable: purchase.priceEnvironmentVariable,
+        selectedPriceIdPresent: Boolean(purchase.priceId),
+      },
+      { status: 503 },
+    );
+  }
+
   const adminClient = createPaddleSupabaseAdminClient();
 
   if (!adminClient) {
@@ -69,8 +75,6 @@ export async function POST(request: Request) {
       { status: 503 },
     );
   }
-
-  const purchase = getPaddlePurchase(body.purchaseKey);
 
   if (purchase.eligiblePlans?.length) {
     const { data: billingAccount, error: billingAccountError } =
@@ -144,6 +148,7 @@ export async function POST(request: Request) {
     clientToken: getPaddleClientToken(),
     environment: getPaddleEnvironment(),
     priceId: purchase.priceId,
+    priceEnvironmentVariable: purchase.priceEnvironmentVariable,
     customerEmail: user.email || "",
   });
 }
