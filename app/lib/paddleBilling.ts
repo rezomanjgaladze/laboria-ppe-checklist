@@ -37,10 +37,12 @@ export type SupabaseAdminValidationStep =
   | "SUPABASE_SERVICE_ROLE_KEY_INVALID_FORMAT"
   | "SUPABASE_SERVICE_ROLE_KEY_JWT_DECODE_FAILED"
   | "SUPABASE_SERVICE_ROLE_KEY_NOT_SERVICE_ROLE"
+  | "SUPABASE_SERVICE_ROLE_KEY_EXPIRED"
   | "NEXT_PUBLIC_SUPABASE_URL_MISSING"
   | "NEXT_PUBLIC_SUPABASE_URL_INVALID"
   | "SUPABASE_URL_PROJECT_REF_MISMATCH"
-  | "SUPABASE_ADMIN_CLIENT_CREATE_FAILED";
+  | "SUPABASE_ADMIN_CLIENT_CREATE_FAILED"
+  | "SUPABASE_DATABASE_AUTHORIZATION_FAILED";
 
 export type SupabaseAdminDiagnostics = {
   serviceRoleKeyPresent: boolean;
@@ -83,7 +85,7 @@ const decodeJwtPayload = (token: string) => {
     return JSON.parse(
       Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64")
         .toString("utf8"),
-    ) as { ref?: unknown; role?: unknown };
+    ) as { exp?: unknown; ref?: unknown; role?: unknown };
   } catch {
     return null;
   }
@@ -118,6 +120,8 @@ export const getSupabaseAdminValidationMessage = (
       return "Supabase service role key format is invalid: use the legacy service_role JWT key that starts with eyJ.";
     case "SUPABASE_SERVICE_ROLE_KEY_NOT_SERVICE_ROLE":
       return "Supabase service role key is invalid: expected a legacy service_role JWT key.";
+    case "SUPABASE_SERVICE_ROLE_KEY_EXPIRED":
+      return "Supabase service role key is expired: create a fresh legacy service_role JWT key for the same Supabase project.";
     case "NEXT_PUBLIC_SUPABASE_URL_MISSING":
       return "Paddle checkout is not configured: missing NEXT_PUBLIC_SUPABASE_URL.";
     case "NEXT_PUBLIC_SUPABASE_URL_INVALID":
@@ -126,6 +130,8 @@ export const getSupabaseAdminValidationMessage = (
       return "Supabase URL mismatch or wrong project.";
     case "SUPABASE_ADMIN_CLIENT_CREATE_FAILED":
       return "Supabase admin client could not be created.";
+    case "SUPABASE_DATABASE_AUTHORIZATION_FAILED":
+      return "Supabase database authorization failed after admin client validation. Check that SUPABASE_SERVICE_ROLE_KEY belongs to NEXT_PUBLIC_SUPABASE_URL and is active for this Supabase project.";
     default:
       return "Billing database authorization failed: Supabase service role key is missing, invalid, or not active in this Vercel environment.";
   }
@@ -294,6 +300,20 @@ export const createPaddleSupabaseAdminClientWithDiagnostics = () => {
       diagnostics: withFailedStep(
         diagnostics,
         "SUPABASE_SERVICE_ROLE_KEY_NOT_SERVICE_ROLE",
+      ),
+    };
+  }
+
+  if (
+    typeof jwtPayload.exp === "number" &&
+    Number.isFinite(jwtPayload.exp) &&
+    jwtPayload.exp * 1000 <= Date.now()
+  ) {
+    return {
+      adminClient: null,
+      diagnostics: withFailedStep(
+        diagnostics,
+        "SUPABASE_SERVICE_ROLE_KEY_EXPIRED",
       ),
     };
   }

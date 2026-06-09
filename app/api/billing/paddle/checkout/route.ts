@@ -99,9 +99,7 @@ const getBillingPersistenceMessage = (
   if (isServiceRoleRejectedError(error)) {
     if (
       supabaseAdminDiagnostics?.validationStepFailed &&
-      supabaseAdminDiagnostics.validationStepFailed !== "none" &&
-      supabaseAdminDiagnostics.validationStepFailed !==
-        "SUPABASE_DATABASE_AUTHORIZATION_FAILED"
+      supabaseAdminDiagnostics.validationStepFailed !== "none"
     ) {
       return getSupabaseAdminValidationMessage(
         supabaseAdminDiagnostics as SupabaseAdminDiagnostics,

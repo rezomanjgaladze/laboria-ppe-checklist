@@ -22,6 +22,13 @@ type PaddleCheckoutResponse = {
   customerEmail?: string;
   missingVariables?: string[];
   invalidVariables?: string[];
+  supabaseAdminDiagnostics?: {
+    serviceRoleKeyPresent?: boolean;
+    serviceRoleKeyStartsWithEyJ?: boolean;
+    supabaseUrlPresent?: boolean;
+    supabaseAdminClientCreated?: boolean;
+    validationStepFailed?: string;
+  } | null;
 };
 
 type OpenOrbitPaddleCheckoutOptions = {
@@ -98,6 +105,26 @@ const getPaddle = (clientToken: string, environment: Environments) => {
   return paddlePromise;
 };
 
+const formatSupabaseAdminDiagnostics = (
+  diagnostics: PaddleCheckoutResponse["supabaseAdminDiagnostics"],
+) => {
+  if (!diagnostics) {
+    return "";
+  }
+
+  return [
+    `serviceRoleKeyPresent=${Boolean(diagnostics.serviceRoleKeyPresent)}`,
+    `serviceRoleKeyStartsWithEyJ=${Boolean(
+      diagnostics.serviceRoleKeyStartsWithEyJ,
+    )}`,
+    `supabaseUrlPresent=${Boolean(diagnostics.supabaseUrlPresent)}`,
+    `supabaseAdminClientCreated=${Boolean(
+      diagnostics.supabaseAdminClientCreated,
+    )}`,
+    `validationStepFailed=${diagnostics.validationStepFailed || "unknown"}`,
+  ].join("; ");
+};
+
 export const openOrbitPaddleCheckout = async ({
   purchaseKey,
   darkMode,
@@ -149,6 +176,9 @@ export const openOrbitPaddleCheckout = async ({
     !payload.checkoutAttemptId ||
     !payload.environment
   ) {
+    const supabaseAdminDiagnosticText = formatSupabaseAdminDiagnostics(
+      payload.supabaseAdminDiagnostics,
+    );
     const diagnosticDetails = [
       payload.missingVariables?.length
         ? `missing ${payload.missingVariables.join(", ")}`
@@ -157,12 +187,15 @@ export const openOrbitPaddleCheckout = async ({
         ? `invalid ${payload.invalidVariables.join(", ")}`
         : "",
     ].filter(Boolean);
+    const fallbackMessage = diagnosticDetails.length
+      ? `Paddle checkout is not configured: ${diagnosticDetails.join("; ")}.`
+      : "Paddle checkout cannot open: backend returned an incomplete checkout response.";
+    const message = payload.error || fallbackMessage;
 
     throw new Error(
-      payload.error ||
-        (diagnosticDetails.length
-          ? `Paddle checkout is not configured: ${diagnosticDetails.join("; ")}.`
-          : "Paddle checkout cannot open: backend returned an incomplete checkout response."),
+      supabaseAdminDiagnosticText
+        ? `${message} Diagnostics: ${supabaseAdminDiagnosticText}.`
+        : message,
     );
   }
 
