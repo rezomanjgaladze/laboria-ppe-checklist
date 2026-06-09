@@ -47,23 +47,58 @@ export type SupabaseAdminValidationStep =
 export type SupabaseAdminDiagnostics = {
   serviceRoleKeyPresent: boolean;
   serviceRoleKeyStartsWithEyJ: boolean;
+  serviceRoleJwtRole: "service_role" | "anon" | "missing" | "unreadable";
+  serviceRoleJwtProjectRef: string;
   supabaseUrlPresent: boolean;
+  supabaseProjectRef: string;
   supabaseAdminClientCreated: boolean;
   validationStepFailed: SupabaseAdminValidationStep;
+};
+
+const normalizeJwtRole = (
+  role: unknown,
+): SupabaseAdminDiagnostics["serviceRoleJwtRole"] => {
+  if (role === "service_role" || role === "anon") {
+    return role;
+  }
+
+  return "unreadable";
 };
 
 const emptySupabaseAdminDiagnostics = (): SupabaseAdminDiagnostics => {
   const serviceRoleKey = readEnvironmentValue("SUPABASE_SERVICE_ROLE_KEY");
   const supabaseUrl = readEnvironmentValue("NEXT_PUBLIC_SUPABASE_URL");
+  const supabaseProjectRef = supabaseUrl
+    ? getSupabaseProjectRefFromUrl(supabaseUrl) || "invalid"
+    : "missing";
 
   return {
     serviceRoleKeyPresent: Boolean(serviceRoleKey),
     serviceRoleKeyStartsWithEyJ: serviceRoleKey.startsWith("eyJ"),
+    serviceRoleJwtRole: serviceRoleKey ? "unreadable" : "missing",
+    serviceRoleJwtProjectRef: "missing",
     supabaseUrlPresent: Boolean(supabaseUrl),
+    supabaseProjectRef,
     supabaseAdminClientCreated: false,
     validationStepFailed: "none",
   };
 };
+
+const withJwtPayloadDiagnostics = (
+  diagnostics: SupabaseAdminDiagnostics,
+  jwtPayload: { ref?: unknown; role?: unknown } | null,
+): SupabaseAdminDiagnostics => ({
+  ...diagnostics,
+  serviceRoleJwtRole: jwtPayload
+    ? normalizeJwtRole(jwtPayload.role)
+    : diagnostics.serviceRoleKeyPresent
+      ? "unreadable"
+      : "missing",
+  serviceRoleJwtProjectRef:
+    typeof jwtPayload?.ref === "string" && jwtPayload.ref
+      ? jwtPayload.ref
+      : "missing",
+});
 
 const withFailedStep = (
   diagnostics: SupabaseAdminDiagnostics,
@@ -283,12 +318,16 @@ export const createPaddleSupabaseAdminClientWithDiagnostics = () => {
   }
 
   const jwtPayload = decodeJwtPayload(serviceRoleKey);
+  const diagnosticsWithJwtPayload = withJwtPayloadDiagnostics(
+    diagnostics,
+    jwtPayload,
+  );
 
   if (!jwtPayload) {
     return {
       adminClient: null,
       diagnostics: withFailedStep(
-        diagnostics,
+        diagnosticsWithJwtPayload,
         "SUPABASE_SERVICE_ROLE_KEY_JWT_DECODE_FAILED",
       ),
     };
@@ -298,7 +337,7 @@ export const createPaddleSupabaseAdminClientWithDiagnostics = () => {
     return {
       adminClient: null,
       diagnostics: withFailedStep(
-        diagnostics,
+        diagnosticsWithJwtPayload,
         "SUPABASE_SERVICE_ROLE_KEY_NOT_SERVICE_ROLE",
       ),
     };
@@ -312,7 +351,7 @@ export const createPaddleSupabaseAdminClientWithDiagnostics = () => {
     return {
       adminClient: null,
       diagnostics: withFailedStep(
-        diagnostics,
+        diagnosticsWithJwtPayload,
         "SUPABASE_SERVICE_ROLE_KEY_EXPIRED",
       ),
     };
@@ -359,7 +398,7 @@ export const createPaddleSupabaseAdminClientWithDiagnostics = () => {
         },
       }),
       diagnostics: {
-        ...diagnostics,
+        ...diagnosticsWithJwtPayload,
         supabaseAdminClientCreated: true,
         validationStepFailed: "none" as const,
       },

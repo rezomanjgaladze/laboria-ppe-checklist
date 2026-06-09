@@ -38,6 +38,14 @@ type CheckoutSupabaseAdminDiagnostics =
     validationStepFailed: string;
   };
 
+type SupabaseAdminTestResult = {
+  ok: boolean;
+  table: "orbit_billing_accounts";
+  code: string | null;
+  status: number | null;
+  message: string | null;
+};
+
 const getErrorText = (error: SafeSupabaseError) =>
   [error.code, error.message, error.details, error.hint]
     .filter(Boolean)
@@ -116,6 +124,16 @@ const getBillingPersistenceMessage = (
   return `Billing database check failed: could not create ${objectName} record.`;
 };
 
+const toSupabaseAdminTestResult = (
+  error: SafeSupabaseError | null | undefined,
+): SupabaseAdminTestResult => ({
+  ok: !error,
+  table: "orbit_billing_accounts",
+  code: error?.code || null,
+  status: error?.status || null,
+  message: error?.message || null,
+});
+
 const logBillingPersistenceError = ({
   userId,
   purchaseKey,
@@ -123,6 +141,7 @@ const logBillingPersistenceError = ({
   objectName,
   error,
   supabaseAdminDiagnostics,
+  supabaseAdminTest,
 }: {
   userId: string;
   purchaseKey: string;
@@ -130,6 +149,7 @@ const logBillingPersistenceError = ({
   objectName: string;
   error: SafeSupabaseError;
   supabaseAdminDiagnostics?: CheckoutSupabaseAdminDiagnostics;
+  supabaseAdminTest?: SupabaseAdminTestResult | null;
 }) => {
   console.error("[paddle-checkout] billing persistence readiness failed", {
     userId,
@@ -146,6 +166,7 @@ const logBillingPersistenceError = ({
     supabaseErrorCode: error.code || null,
     supabaseErrorStatus: error.status || null,
     supabaseAdminDiagnostics: supabaseAdminDiagnostics || null,
+    supabaseAdminTest: supabaseAdminTest || null,
   });
 };
 
@@ -156,6 +177,7 @@ const billingPersistenceErrorResponse = ({
   objectName,
   error,
   supabaseAdminDiagnostics,
+  supabaseAdminTest,
 }: {
   userId: string;
   purchaseKey: string;
@@ -163,6 +185,7 @@ const billingPersistenceErrorResponse = ({
   objectName: string;
   error: SafeSupabaseError;
   supabaseAdminDiagnostics?: CheckoutSupabaseAdminDiagnostics;
+  supabaseAdminTest?: SupabaseAdminTestResult | null;
 }) => {
   logBillingPersistenceError({
     userId,
@@ -171,6 +194,7 @@ const billingPersistenceErrorResponse = ({
     objectName,
     error,
     supabaseAdminDiagnostics,
+    supabaseAdminTest,
   });
 
   const responseDiagnostics =
@@ -197,9 +221,21 @@ const billingPersistenceErrorResponse = ({
       databaseObject: objectName,
       migrationRequired: stagedBillingMigrationFile,
       supabaseAdminDiagnostics: responseDiagnostics || null,
+      supabaseAdminTest: supabaseAdminTest || null,
     },
     { status: 503 },
   );
+};
+
+const runSupabaseAdminPreflight = async (adminClient: NonNullable<
+  ReturnType<typeof createPaddleSupabaseAdminClientWithDiagnostics>["adminClient"]
+>) => {
+  const { error } = await adminClient
+    .from("orbit_billing_accounts")
+    .select("user_id")
+    .limit(1);
+
+  return toSupabaseAdminTestResult(error);
 };
 
 export async function POST(request: Request) {
@@ -272,6 +308,26 @@ export async function POST(request: Request) {
     );
   }
 
+  const supabaseAdminTest = await runSupabaseAdminPreflight(adminClient);
+
+  if (!supabaseAdminTest.ok) {
+    const preflightError: SafeSupabaseError = {
+      code: supabaseAdminTest.code || undefined,
+      message: supabaseAdminTest.message || undefined,
+      status: supabaseAdminTest.status || undefined,
+    };
+
+    return billingPersistenceErrorResponse({
+      userId: user.id,
+      purchaseKey: purchase.key,
+      operation: "read_billing_account",
+      objectName: "orbit_billing_accounts",
+      error: preflightError,
+      supabaseAdminDiagnostics,
+      supabaseAdminTest,
+    });
+  }
+
   if (purchase.eligiblePlans?.length) {
     const { data: billingAccount, error: billingAccountError } =
       await adminClient
@@ -288,6 +344,7 @@ export async function POST(request: Request) {
         objectName: "orbit_billing_accounts",
         error: billingAccountError,
         supabaseAdminDiagnostics,
+        supabaseAdminTest,
       });
     }
 
@@ -327,6 +384,7 @@ export async function POST(request: Request) {
       objectName: "orbit_paddle_checkout_attempts",
       error,
       supabaseAdminDiagnostics,
+      supabaseAdminTest,
     });
   }
 
@@ -338,6 +396,7 @@ export async function POST(request: Request) {
     selectedPriceKey: purchase.priceEnvironmentVariable,
     selectedPriceIdPresent: Boolean(purchase.priceId),
     supabaseAdminDiagnostics,
+    supabaseAdminTest,
   });
 
   return NextResponse.json({

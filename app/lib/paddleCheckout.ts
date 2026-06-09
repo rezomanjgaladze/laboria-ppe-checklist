@@ -25,9 +25,19 @@ type PaddleCheckoutResponse = {
   supabaseAdminDiagnostics?: {
     serviceRoleKeyPresent?: boolean;
     serviceRoleKeyStartsWithEyJ?: boolean;
+    serviceRoleJwtRole?: string;
+    serviceRoleJwtProjectRef?: string;
     supabaseUrlPresent?: boolean;
+    supabaseProjectRef?: string;
     supabaseAdminClientCreated?: boolean;
     validationStepFailed?: string;
+  } | null;
+  supabaseAdminTest?: {
+    ok?: boolean;
+    table?: string;
+    code?: string | null;
+    status?: number | null;
+    message?: string | null;
   } | null;
 };
 
@@ -117,11 +127,35 @@ const formatSupabaseAdminDiagnostics = (
     `serviceRoleKeyStartsWithEyJ=${Boolean(
       diagnostics.serviceRoleKeyStartsWithEyJ,
     )}`,
+    `serviceRoleJwtRole=${diagnostics.serviceRoleJwtRole || "unknown"}`,
+    `serviceRoleJwtProjectRef=${
+      diagnostics.serviceRoleJwtProjectRef || "unknown"
+    }`,
     `supabaseUrlPresent=${Boolean(diagnostics.supabaseUrlPresent)}`,
+    `supabaseProjectRef=${diagnostics.supabaseProjectRef || "unknown"}`,
     `supabaseAdminClientCreated=${Boolean(
       diagnostics.supabaseAdminClientCreated,
     )}`,
     `validationStepFailed=${diagnostics.validationStepFailed || "unknown"}`,
+  ].join("; ");
+};
+
+const formatSupabaseAdminTest = (
+  test: PaddleCheckoutResponse["supabaseAdminTest"],
+) => {
+  if (!test) {
+    return "";
+  }
+
+  if (test.ok) {
+    return `adminQuery=${test.table || "orbit_billing_accounts"} ok`;
+  }
+
+  return [
+    `adminQuery=${test.table || "orbit_billing_accounts"} failed`,
+    `code=${test.code || "unknown"}`,
+    `status=${test.status ?? "unknown"}`,
+    `message=${test.message || "unknown"}`,
   ].join("; ");
 };
 
@@ -179,6 +213,9 @@ export const openOrbitPaddleCheckout = async ({
     const supabaseAdminDiagnosticText = formatSupabaseAdminDiagnostics(
       payload.supabaseAdminDiagnostics,
     );
+    const supabaseAdminTestText = formatSupabaseAdminTest(
+      payload.supabaseAdminTest,
+    );
     const diagnosticDetails = [
       payload.missingVariables?.length
         ? `missing ${payload.missingVariables.join(", ")}`
@@ -193,8 +230,14 @@ export const openOrbitPaddleCheckout = async ({
     const message = payload.error || fallbackMessage;
 
     throw new Error(
-      supabaseAdminDiagnosticText
-        ? `${message} Diagnostics: ${supabaseAdminDiagnosticText}.`
+      [supabaseAdminDiagnosticText, supabaseAdminTestText].filter(Boolean)
+        .length
+        ? `${message} Diagnostics: ${[
+            supabaseAdminDiagnosticText,
+            supabaseAdminTestText,
+          ]
+            .filter(Boolean)
+            .join("; ")}.`
         : message,
     );
   }
