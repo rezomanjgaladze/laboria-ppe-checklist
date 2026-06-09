@@ -16,8 +16,151 @@ import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-const paymentSetupMessage =
-  "Payments are being configured. Please contact Laboria.";
+const stagedBillingMigrationFile =
+  "supabase/migrations/20260602_paddle_billing_staged.sql";
+
+type BillingPersistenceOperation =
+  | "read_billing_account"
+  | "create_checkout_attempt";
+
+type SafeSupabaseError = {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
+  status?: number;
+};
+
+const getErrorText = (error: SafeSupabaseError) =>
+  [error.code, error.message, error.details, error.hint]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+const isTableMissingError = (error: SafeSupabaseError) => {
+  const text = getErrorText(error);
+
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    text.includes("could not find the table") ||
+    (text.includes("relation") && text.includes("does not exist")) ||
+    text.includes("schema cache")
+  );
+};
+
+const isColumnMissingError = (error: SafeSupabaseError) => {
+  const text = getErrorText(error);
+
+  return (
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    (text.includes("could not find the") && text.includes("column")) ||
+    (text.includes("column") && text.includes("does not exist"))
+  );
+};
+
+const isServiceRoleRejectedError = (error: SafeSupabaseError) => {
+  const text = getErrorText(error);
+
+  return (
+    error.status === 401 ||
+    error.status === 403 ||
+    error.code === "42501" ||
+    text.includes("invalid api key") ||
+    text.includes("invalid jwt") ||
+    (text.includes("jwt") && text.includes("invalid")) ||
+    text.includes("permission denied") ||
+    text.includes("row-level security")
+  );
+};
+
+const getBillingPersistenceMessage = (
+  operation: BillingPersistenceOperation,
+  objectName: string,
+  error: SafeSupabaseError,
+) => {
+  if (isTableMissingError(error)) {
+    return `Billing database migration missing: ${objectName} table not found. Apply ${stagedBillingMigrationFile}.`;
+  }
+
+  if (isColumnMissingError(error)) {
+    return `Billing database migration incomplete: ${objectName} table schema is missing required columns. Re-apply ${stagedBillingMigrationFile}.`;
+  }
+
+  if (isServiceRoleRejectedError(error)) {
+    return "Billing database authorization failed: Supabase service role key is missing, invalid, or not active in this Vercel environment.";
+  }
+
+  if (operation === "read_billing_account") {
+    return `Billing database check failed: could not read ${objectName}.`;
+  }
+
+  return `Billing database check failed: could not create ${objectName} record.`;
+};
+
+const logBillingPersistenceError = ({
+  userId,
+  purchaseKey,
+  operation,
+  objectName,
+  error,
+}: {
+  userId: string;
+  purchaseKey: string;
+  operation: BillingPersistenceOperation;
+  objectName: string;
+  error: SafeSupabaseError;
+}) => {
+  console.error("[paddle-checkout] billing persistence readiness failed", {
+    userId,
+    purchaseKey,
+    operation,
+    objectName,
+    failedReadinessChecks: [
+      isTableMissingError(error) ? `${objectName}_table_missing` : "",
+      isColumnMissingError(error) ? `${objectName}_schema_incomplete` : "",
+      isServiceRoleRejectedError(error)
+        ? "supabase_service_role_authorization_failed"
+        : "",
+    ].filter(Boolean),
+    supabaseErrorCode: error.code || null,
+    supabaseErrorStatus: error.status || null,
+  });
+};
+
+const billingPersistenceErrorResponse = ({
+  userId,
+  purchaseKey,
+  operation,
+  objectName,
+  error,
+}: {
+  userId: string;
+  purchaseKey: string;
+  operation: BillingPersistenceOperation;
+  objectName: string;
+  error: SafeSupabaseError;
+}) => {
+  logBillingPersistenceError({
+    userId,
+    purchaseKey,
+    operation,
+    objectName,
+    error,
+  });
+
+  return NextResponse.json(
+    {
+      error: getBillingPersistenceMessage(operation, objectName, error),
+      checkoutEnabled: false,
+      failedReadinessCheck: operation,
+      databaseObject: objectName,
+      migrationRequired: stagedBillingMigrationFile,
+    },
+    { status: 503 },
+  );
+};
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -70,8 +213,18 @@ export async function POST(request: Request) {
   const adminClient = createPaddleSupabaseAdminClient();
 
   if (!adminClient) {
+    console.error("[paddle-checkout] setup incomplete", {
+      userId: user.id,
+      purchaseKey: purchase.key,
+      failedReadinessChecks: ["SUPABASE_SERVICE_ROLE_KEY"],
+    });
     return NextResponse.json(
-      { error: paymentSetupMessage, checkoutEnabled: false },
+      {
+        error:
+          "Paddle checkout is not configured: missing SUPABASE_SERVICE_ROLE_KEY.",
+        checkoutEnabled: false,
+        missingVariables: ["SUPABASE_SERVICE_ROLE_KEY"],
+      },
       { status: 503 },
     );
   }
@@ -85,15 +238,13 @@ export async function POST(request: Request) {
         .maybeSingle();
 
     if (billingAccountError) {
-      console.error("[paddle-checkout] could not read billing account", {
+      return billingPersistenceErrorResponse({
         userId: user.id,
         purchaseKey: purchase.key,
+        operation: "read_billing_account",
+        objectName: "orbit_billing_accounts",
         error: billingAccountError,
       });
-      return NextResponse.json(
-        { error: paymentSetupMessage, checkoutEnabled: false },
-        { status: 503 },
-      );
     }
 
     const currentPlan = isOrbitPlanName(billingAccount?.plan)
@@ -125,21 +276,22 @@ export async function POST(request: Request) {
     });
 
   if (error) {
-    console.error("[paddle-checkout] could not create checkout attempt", {
+    return billingPersistenceErrorResponse({
       userId: user.id,
       purchaseKey: purchase.key,
+      operation: "create_checkout_attempt",
+      objectName: "orbit_paddle_checkout_attempts",
       error,
     });
-    return NextResponse.json(
-      { error: paymentSetupMessage, checkoutEnabled: false },
-      { status: 503 },
-    );
   }
 
   console.info("[paddle-checkout] checkout attempt created", {
     userId: user.id,
     purchaseKey: purchase.key,
     checkoutAttemptId,
+    environment: getPaddleEnvironment(),
+    selectedPriceKey: purchase.priceEnvironmentVariable,
+    selectedPriceIdPresent: Boolean(purchase.priceId),
   });
 
   return NextResponse.json({

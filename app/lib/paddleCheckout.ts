@@ -162,7 +162,7 @@ export const openOrbitPaddleCheckout = async ({
       payload.error ||
         (diagnosticDetails.length
           ? `Paddle checkout is not configured: ${diagnosticDetails.join("; ")}.`
-          : "Payments are being configured. Please contact Laboria."),
+          : "Paddle checkout cannot open: backend returned an incomplete checkout response."),
     );
   }
 
@@ -171,7 +171,15 @@ export const openOrbitPaddleCheckout = async ({
   const priceId = payload.priceId;
 
   if (!clientToken || !environment || !priceId) {
-    throw new Error("Payments are being configured. Please contact Laboria.");
+    const missingFields = [
+      !clientToken ? "client token" : "",
+      !environment ? "environment" : "",
+      !priceId ? "price ID" : "",
+    ].filter(Boolean);
+
+    throw new Error(
+      `Paddle checkout cannot open: missing ${missingFields.join(", ")} in backend response.`,
+    );
   }
 
   let paddle: Paddle | undefined;
