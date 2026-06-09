@@ -5,7 +5,6 @@ import {
   paddlePurchaseCatalog,
   type PaddlePurchaseKey,
 } from "@/app/lib/paddleCatalog";
-import { getSupabaseConfig } from "@/lib/supabase/config";
 
 const paddlePriceEnvironmentVariables = Array.from(
   new Set(
@@ -30,6 +29,107 @@ export const paddleInfrastructureEnvironmentVariables = [
 const readEnvironmentValue = (name: string) => process.env[name]?.trim() || "";
 const isEnvironmentValuePresent = (name: string) =>
   Boolean(readEnvironmentValue(name));
+
+export type SupabaseAdminValidationStep =
+  | "none"
+  | "SUPABASE_SERVICE_ROLE_KEY_MISSING"
+  | "SUPABASE_SERVICE_ROLE_KEY_UNSUPPORTED_SB_SECRET"
+  | "SUPABASE_SERVICE_ROLE_KEY_INVALID_FORMAT"
+  | "SUPABASE_SERVICE_ROLE_KEY_JWT_DECODE_FAILED"
+  | "SUPABASE_SERVICE_ROLE_KEY_NOT_SERVICE_ROLE"
+  | "NEXT_PUBLIC_SUPABASE_URL_MISSING"
+  | "NEXT_PUBLIC_SUPABASE_URL_INVALID"
+  | "SUPABASE_URL_PROJECT_REF_MISMATCH"
+  | "SUPABASE_ADMIN_CLIENT_CREATE_FAILED";
+
+export type SupabaseAdminDiagnostics = {
+  serviceRoleKeyPresent: boolean;
+  serviceRoleKeyStartsWithEyJ: boolean;
+  supabaseUrlPresent: boolean;
+  supabaseAdminClientCreated: boolean;
+  validationStepFailed: SupabaseAdminValidationStep;
+};
+
+const emptySupabaseAdminDiagnostics = (): SupabaseAdminDiagnostics => {
+  const serviceRoleKey = readEnvironmentValue("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrl = readEnvironmentValue("NEXT_PUBLIC_SUPABASE_URL");
+
+  return {
+    serviceRoleKeyPresent: Boolean(serviceRoleKey),
+    serviceRoleKeyStartsWithEyJ: serviceRoleKey.startsWith("eyJ"),
+    supabaseUrlPresent: Boolean(supabaseUrl),
+    supabaseAdminClientCreated: false,
+    validationStepFailed: "none",
+  };
+};
+
+const withFailedStep = (
+  diagnostics: SupabaseAdminDiagnostics,
+  validationStepFailed: SupabaseAdminValidationStep,
+): SupabaseAdminDiagnostics => ({
+  ...diagnostics,
+  supabaseAdminClientCreated: false,
+  validationStepFailed,
+});
+
+const decodeJwtPayload = (token: string) => {
+  const [, payload] = token.split(".");
+
+  if (!payload) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(
+      Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64")
+        .toString("utf8"),
+    ) as { ref?: unknown; role?: unknown };
+  } catch {
+    return null;
+  }
+};
+
+const getSupabaseProjectRefFromUrl = (supabaseUrl: string) => {
+  try {
+    const hostname = new URL(supabaseUrl).hostname;
+
+    if (!hostname.endsWith(".supabase.co")) {
+      return "custom";
+    }
+
+    const [projectRef] = hostname.split(".");
+
+    return projectRef || null;
+  } catch {
+    return null;
+  }
+};
+
+export const getSupabaseAdminValidationMessage = (
+  diagnostics: SupabaseAdminDiagnostics,
+) => {
+  switch (diagnostics.validationStepFailed) {
+    case "SUPABASE_SERVICE_ROLE_KEY_MISSING":
+      return "Paddle checkout is not configured: missing SUPABASE_SERVICE_ROLE_KEY.";
+    case "SUPABASE_SERVICE_ROLE_KEY_UNSUPPORTED_SB_SECRET":
+      return "Supabase service role key format is not supported here: use the legacy service_role JWT key that starts with eyJ, not an sb_secret key.";
+    case "SUPABASE_SERVICE_ROLE_KEY_INVALID_FORMAT":
+    case "SUPABASE_SERVICE_ROLE_KEY_JWT_DECODE_FAILED":
+      return "Supabase service role key format is invalid: use the legacy service_role JWT key that starts with eyJ.";
+    case "SUPABASE_SERVICE_ROLE_KEY_NOT_SERVICE_ROLE":
+      return "Supabase service role key is invalid: expected a legacy service_role JWT key.";
+    case "NEXT_PUBLIC_SUPABASE_URL_MISSING":
+      return "Paddle checkout is not configured: missing NEXT_PUBLIC_SUPABASE_URL.";
+    case "NEXT_PUBLIC_SUPABASE_URL_INVALID":
+      return "NEXT_PUBLIC_SUPABASE_URL is invalid.";
+    case "SUPABASE_URL_PROJECT_REF_MISMATCH":
+      return "Supabase URL mismatch or wrong project.";
+    case "SUPABASE_ADMIN_CLIENT_CREATE_FAILED":
+      return "Supabase admin client could not be created.";
+    default:
+      return "Billing database authorization failed: Supabase service role key is missing, invalid, or not active in this Vercel environment.";
+  }
+};
 
 export const getPaddleEnvironment = () =>
   readEnvironmentValue("PADDLE_ENVIRONMENT") === "production"
@@ -141,20 +241,122 @@ export const formatPaddleSetupDiagnosticMessage = (status: {
 export const getPaddleClientToken = () =>
   readEnvironmentValue("NEXT_PUBLIC_PADDLE_CLIENT_TOKEN");
 
-export const createPaddleSupabaseAdminClient = () => {
+export const createPaddleSupabaseAdminClientWithDiagnostics = () => {
   const serviceRoleKey = readEnvironmentValue("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrl = readEnvironmentValue("NEXT_PUBLIC_SUPABASE_URL");
+  const diagnostics = emptySupabaseAdminDiagnostics();
 
   if (!serviceRoleKey) {
-    return null;
+    return {
+      adminClient: null,
+      diagnostics: withFailedStep(
+        diagnostics,
+        "SUPABASE_SERVICE_ROLE_KEY_MISSING",
+      ),
+    };
   }
 
-  const { supabaseUrl } = getSupabaseConfig();
+  if (serviceRoleKey.startsWith("sb_secret")) {
+    return {
+      adminClient: null,
+      diagnostics: withFailedStep(
+        diagnostics,
+        "SUPABASE_SERVICE_ROLE_KEY_UNSUPPORTED_SB_SECRET",
+      ),
+    };
+  }
 
-  return createSupabaseClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false,
-    },
-  });
+  if (!serviceRoleKey.startsWith("eyJ")) {
+    return {
+      adminClient: null,
+      diagnostics: withFailedStep(
+        diagnostics,
+        "SUPABASE_SERVICE_ROLE_KEY_INVALID_FORMAT",
+      ),
+    };
+  }
+
+  const jwtPayload = decodeJwtPayload(serviceRoleKey);
+
+  if (!jwtPayload) {
+    return {
+      adminClient: null,
+      diagnostics: withFailedStep(
+        diagnostics,
+        "SUPABASE_SERVICE_ROLE_KEY_JWT_DECODE_FAILED",
+      ),
+    };
+  }
+
+  if (jwtPayload.role !== "service_role") {
+    return {
+      adminClient: null,
+      diagnostics: withFailedStep(
+        diagnostics,
+        "SUPABASE_SERVICE_ROLE_KEY_NOT_SERVICE_ROLE",
+      ),
+    };
+  }
+
+  if (!supabaseUrl) {
+    return {
+      adminClient: null,
+      diagnostics: withFailedStep(diagnostics, "NEXT_PUBLIC_SUPABASE_URL_MISSING"),
+    };
+  }
+
+  const projectRefFromUrl = getSupabaseProjectRefFromUrl(supabaseUrl);
+
+  if (!projectRefFromUrl) {
+    return {
+      adminClient: null,
+      diagnostics: withFailedStep(diagnostics, "NEXT_PUBLIC_SUPABASE_URL_INVALID"),
+    };
+  }
+
+  if (
+    typeof jwtPayload.ref === "string" &&
+    jwtPayload.ref &&
+    projectRefFromUrl !== "custom" &&
+    jwtPayload.ref !== projectRefFromUrl
+  ) {
+    return {
+      adminClient: null,
+      diagnostics: withFailedStep(
+        diagnostics,
+        "SUPABASE_URL_PROJECT_REF_MISMATCH",
+      ),
+    };
+  }
+
+  try {
+    return {
+      adminClient: createSupabaseClient(supabaseUrl, serviceRoleKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false,
+        },
+      }),
+      diagnostics: {
+        ...diagnostics,
+        supabaseAdminClientCreated: true,
+        validationStepFailed: "none" as const,
+      },
+    };
+  } catch {
+    return {
+      adminClient: null,
+      diagnostics: withFailedStep(
+        diagnostics,
+        "SUPABASE_ADMIN_CLIENT_CREATE_FAILED",
+      ),
+    };
+  }
+};
+
+export const createPaddleSupabaseAdminClient = () => {
+  const { adminClient } = createPaddleSupabaseAdminClientWithDiagnostics();
+
+  return adminClient;
 };

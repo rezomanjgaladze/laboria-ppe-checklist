@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import {
-  createPaddleSupabaseAdminClient,
+  createPaddleSupabaseAdminClientWithDiagnostics,
   formatPaddleSetupDiagnosticMessage,
   getPaddleClientToken,
   getPaddleEnvironment,
   getPaddlePurchase,
   getPaddleSetupStatus,
+  getSupabaseAdminValidationMessage,
+  type SupabaseAdminDiagnostics,
 } from "@/app/lib/paddleBilling";
 import { isPaddlePurchaseKey } from "@/app/lib/paddleCatalog";
 import {
@@ -30,6 +32,11 @@ type SafeSupabaseError = {
   hint?: string;
   status?: number;
 };
+
+type CheckoutSupabaseAdminDiagnostics =
+  Omit<SupabaseAdminDiagnostics, "validationStepFailed"> & {
+    validationStepFailed: string;
+  };
 
 const getErrorText = (error: SafeSupabaseError) =>
   [error.code, error.message, error.details, error.hint]
@@ -79,6 +86,7 @@ const getBillingPersistenceMessage = (
   operation: BillingPersistenceOperation,
   objectName: string,
   error: SafeSupabaseError,
+  supabaseAdminDiagnostics?: CheckoutSupabaseAdminDiagnostics,
 ) => {
   if (isTableMissingError(error)) {
     return `Billing database migration missing: ${objectName} table not found. Apply ${stagedBillingMigrationFile}.`;
@@ -89,6 +97,17 @@ const getBillingPersistenceMessage = (
   }
 
   if (isServiceRoleRejectedError(error)) {
+    if (
+      supabaseAdminDiagnostics?.validationStepFailed &&
+      supabaseAdminDiagnostics.validationStepFailed !== "none" &&
+      supabaseAdminDiagnostics.validationStepFailed !==
+        "SUPABASE_DATABASE_AUTHORIZATION_FAILED"
+    ) {
+      return getSupabaseAdminValidationMessage(
+        supabaseAdminDiagnostics as SupabaseAdminDiagnostics,
+      );
+    }
+
     return "Billing database authorization failed: Supabase service role key is missing, invalid, or not active in this Vercel environment.";
   }
 
@@ -105,12 +124,14 @@ const logBillingPersistenceError = ({
   operation,
   objectName,
   error,
+  supabaseAdminDiagnostics,
 }: {
   userId: string;
   purchaseKey: string;
   operation: BillingPersistenceOperation;
   objectName: string;
   error: SafeSupabaseError;
+  supabaseAdminDiagnostics?: CheckoutSupabaseAdminDiagnostics;
 }) => {
   console.error("[paddle-checkout] billing persistence readiness failed", {
     userId,
@@ -126,6 +147,7 @@ const logBillingPersistenceError = ({
     ].filter(Boolean),
     supabaseErrorCode: error.code || null,
     supabaseErrorStatus: error.status || null,
+    supabaseAdminDiagnostics: supabaseAdminDiagnostics || null,
   });
 };
 
@@ -135,12 +157,14 @@ const billingPersistenceErrorResponse = ({
   operation,
   objectName,
   error,
+  supabaseAdminDiagnostics,
 }: {
   userId: string;
   purchaseKey: string;
   operation: BillingPersistenceOperation;
   objectName: string;
   error: SafeSupabaseError;
+  supabaseAdminDiagnostics?: CheckoutSupabaseAdminDiagnostics;
 }) => {
   logBillingPersistenceError({
     userId,
@@ -148,15 +172,33 @@ const billingPersistenceErrorResponse = ({
     operation,
     objectName,
     error,
+    supabaseAdminDiagnostics,
   });
+
+  const responseDiagnostics =
+    supabaseAdminDiagnostics && isServiceRoleRejectedError(error)
+      ? {
+          ...supabaseAdminDiagnostics,
+          validationStepFailed:
+            supabaseAdminDiagnostics.validationStepFailed === "none"
+              ? "SUPABASE_DATABASE_AUTHORIZATION_FAILED"
+              : supabaseAdminDiagnostics.validationStepFailed,
+        }
+      : supabaseAdminDiagnostics;
 
   return NextResponse.json(
     {
-      error: getBillingPersistenceMessage(operation, objectName, error),
+      error: getBillingPersistenceMessage(
+        operation,
+        objectName,
+        error,
+        responseDiagnostics,
+      ),
       checkoutEnabled: false,
       failedReadinessCheck: operation,
       databaseObject: objectName,
       migrationRequired: stagedBillingMigrationFile,
+      supabaseAdminDiagnostics: responseDiagnostics || null,
     },
     { status: 503 },
   );
@@ -210,20 +252,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const adminClient = createPaddleSupabaseAdminClient();
+  const {
+    adminClient,
+    diagnostics: supabaseAdminDiagnostics,
+  } = createPaddleSupabaseAdminClientWithDiagnostics();
 
   if (!adminClient) {
     console.error("[paddle-checkout] setup incomplete", {
       userId: user.id,
       purchaseKey: purchase.key,
-      failedReadinessChecks: ["SUPABASE_SERVICE_ROLE_KEY"],
+      failedReadinessChecks: [supabaseAdminDiagnostics.validationStepFailed],
+      supabaseAdminDiagnostics,
     });
     return NextResponse.json(
       {
-        error:
-          "Paddle checkout is not configured: missing SUPABASE_SERVICE_ROLE_KEY.",
+        error: getSupabaseAdminValidationMessage(supabaseAdminDiagnostics),
         checkoutEnabled: false,
-        missingVariables: ["SUPABASE_SERVICE_ROLE_KEY"],
+        supabaseAdminDiagnostics,
       },
       { status: 503 },
     );
@@ -244,6 +289,7 @@ export async function POST(request: Request) {
         operation: "read_billing_account",
         objectName: "orbit_billing_accounts",
         error: billingAccountError,
+        supabaseAdminDiagnostics,
       });
     }
 
@@ -282,6 +328,7 @@ export async function POST(request: Request) {
       operation: "create_checkout_attempt",
       objectName: "orbit_paddle_checkout_attempts",
       error,
+      supabaseAdminDiagnostics,
     });
   }
 
@@ -292,6 +339,7 @@ export async function POST(request: Request) {
     environment: getPaddleEnvironment(),
     selectedPriceKey: purchase.priceEnvironmentVariable,
     selectedPriceIdPresent: Boolean(purchase.priceId),
+    supabaseAdminDiagnostics,
   });
 
   return NextResponse.json({
