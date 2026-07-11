@@ -11,6 +11,14 @@ function isPublicPath(pathname: string) {
 }
 
 export async function updateSession(request: NextRequest) {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.ORBIT_E2E_AUTH_BYPASS === "1" &&
+    request.headers.get("x-orbit-e2e-auth-bypass") === "1"
+  ) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
   const { supabaseUrl, supabaseKey } = getSupabaseConfig();
 

@@ -1985,7 +1985,7 @@ export default function Home() {
           };
 
   return (
-    <div className="min-h-screen flex justify-center relative overflow-x-hidden bg-[#050816] lg:pl-72">
+    <div className="relative flex min-h-screen w-full max-w-full min-w-0 justify-center overflow-x-hidden bg-[#050816] lg:pl-72">
       {/* SPACE GLOW BACKGROUND */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(56,189,248,0.15),transparent_40%),radial-gradient(circle_at_70%_60%,rgba(99,102,241,0.15),transparent_40%)]" />
 
@@ -1996,12 +1996,12 @@ export default function Home() {
         {renderWorkspaceNavigation()}
       </aside>
 
-      <div className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-[#071225]/92 px-4 py-3 text-[#F5F7FA] shadow-[0_18px_60px_rgba(0,0,0,0.25)] backdrop-blur-xl lg:hidden">
-        <div className="flex items-center justify-between gap-3">
+      <div className="fixed left-0 right-0 top-0 z-50 w-full max-w-full border-b border-white/10 bg-[#071225]/92 px-3 py-3 text-[#F5F7FA] shadow-[0_18px_60px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:px-4 lg:hidden">
+        <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-3">
           <button
             type="button"
             onClick={() => setShowWorkspaceMenu(true)}
-            className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-100 transition hover:bg-white/10"
+            className="shrink-0 rounded-xl border border-white/10 bg-white/5 p-2 text-slate-100 transition hover:bg-white/10"
             aria-label="Open workspace menu"
           >
             <Menu size={20} aria-hidden />
@@ -2022,7 +2022,7 @@ export default function Home() {
             alt="Laboria"
             width={86}
             height={30}
-            className="h-auto w-20 rounded-lg bg-white px-2 py-1"
+            className="h-auto w-14 shrink-0 rounded-lg bg-white px-1.5 py-1 sm:w-20 sm:px-2"
           />
         </div>
       </div>
@@ -3024,16 +3024,18 @@ export default function Home() {
       </div>
       ) : (
         activeWorkspaceModule === "command-center" ? (
-          <OrbitCommandCenterModule
-            userId={authUserId}
-            darkMode={darkMode}
-            workspaceSettings={workspaceSettings}
-            notifications={notifications}
-            onToggleTheme={toggleWorkspaceTheme}
-            onNavigate={handleWorkspaceNavigationIntent}
-            onOpenNotification={openNotification}
-            onOpenNotificationCenter={openNotificationCenter}
-          />
+          <div className="relative z-10 min-h-screen w-full max-w-full min-w-0 box-border pt-[4.75rem] lg:pt-0">
+            <OrbitCommandCenterModule
+              userId={authUserId}
+              darkMode={darkMode}
+              workspaceSettings={workspaceSettings}
+              notifications={notifications}
+              onToggleTheme={toggleWorkspaceTheme}
+              onNavigate={handleWorkspaceNavigationIntent}
+              onOpenNotification={openNotification}
+              onOpenNotificationCenter={openNotificationCenter}
+            />
+          </div>
         ) : activeWorkspaceModule === "action-tracker" ? (
           <ActionTrackerModule
             userId={authUserId}

@@ -1606,7 +1606,7 @@ export default function OrbitCommandCenterModule({
   return (
     <section
       className={joinClasses(
-        "relative overflow-hidden rounded-[2rem] border p-4 sm:p-5 xl:p-7",
+        "relative box-border w-full max-w-full min-w-0 overflow-hidden rounded-[2rem] border p-3 sm:p-5 xl:p-7",
         theme.shell,
       )}
     >
@@ -1624,10 +1624,10 @@ export default function OrbitCommandCenterModule({
         <div className="absolute left-1/2 top-0 h-px w-2/3 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#4DEBFF]/60 to-transparent" />
       </div>
 
-      <div className="relative z-10 space-y-6">
+      <div className="relative z-10 min-w-0 space-y-6">
         <header
           className={joinClasses(
-            "relative overflow-hidden rounded-[1.75rem] border p-5 sm:p-7",
+            "relative w-full max-w-full min-w-0 overflow-hidden rounded-[1.75rem] border p-4 sm:p-7",
             darkMode
               ? "border-[#4DEBFF]/15 bg-[#071225]/78"
               : "border-[#1E90FF]/15 bg-white/90",
@@ -1639,26 +1639,26 @@ export default function OrbitCommandCenterModule({
             <div className="absolute bottom-7 right-12 h-36 w-36 rounded-full border border-[#4DEBFF]/15" />
             <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-[#4DEBFF]/30 to-transparent" />
           </div>
-          <div className="relative grid gap-6 lg:grid-cols-[1.5fr_0.95fr] lg:items-center">
-            <div className="space-y-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#4DEBFF]/20 bg-[#4DEBFF]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-[#4DEBFF]">
+          <div className="relative grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,0.95fr)] lg:items-center">
+            <div className="min-w-0 space-y-5">
+              <div className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-[#4DEBFF]/20 bg-[#4DEBFF]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#4DEBFF] sm:tracking-[0.24em]">
                 <Radar size={14} aria-hidden />
                 Orbit live command layer
               </div>
               <div className="space-y-3">
                 <h1
                   className={joinClasses(
-                    "max-w-4xl text-3xl font-semibold tracking-tight sm:text-5xl",
+                    "max-w-4xl break-words text-3xl font-semibold tracking-tight sm:text-5xl",
                     theme.heading,
                   )}
                 >
                   Laboria Orbit Command Center
                 </h1>
-                <p className={joinClasses("max-w-2xl text-base sm:text-lg", theme.soft)}>
+                <p className={joinClasses("max-w-2xl break-words text-base sm:text-lg", theme.soft)}>
                   Real-time operational intelligence for health & safety teams.
                 </p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-3">
                 <HeroSignal
                   icon={ShieldCheck}
                   label="Subscription"
@@ -1680,7 +1680,7 @@ export default function OrbitCommandCenterModule({
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="min-w-0 space-y-3">
               <div className="flex justify-end">
                 <button
                   type="button"
@@ -1703,14 +1703,14 @@ export default function OrbitCommandCenterModule({
               </div>
               <div
                 className={joinClasses(
-                  "rounded-3xl border p-5",
+                  "w-full max-w-full min-w-0 rounded-3xl border p-4 sm:p-5",
                   darkMode
                     ? "border-white/10 bg-white/[0.055]"
                     : "border-slate-200 bg-slate-50/90",
                 )}
               >
-              <div className="flex items-center gap-4">
-                <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border border-[#4DEBFF]/25 bg-[#071225] shadow-[0_18px_50px_rgba(30,144,255,0.22)]">
+              <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-[#4DEBFF]/25 bg-[#071225] shadow-[0_18px_50px_rgba(30,144,255,0.22)] sm:h-16 sm:w-16">
                   {companyProfile.logoDataUrl ? (
                     <Image
                       src={companyProfile.logoDataUrl}
@@ -1728,10 +1728,10 @@ export default function OrbitCommandCenterModule({
                   <p className={joinClasses("text-xs font-semibold uppercase tracking-[0.2em]", theme.muted)}>
                     Active company
                   </p>
-                  <h2 className={joinClasses("truncate text-xl font-semibold", theme.heading)}>
+                  <h2 className={joinClasses("break-words text-xl font-semibold", theme.heading)}>
                     {companyName}
                   </h2>
-                  <p className={joinClasses("truncate text-sm", theme.muted)}>
+                  <p className={joinClasses("break-words text-sm", theme.muted)}>
                     {companyProfile.industrySector ||
                       companyProfile.mainSiteLocation ||
                       "Company profile ready for configuration"}
@@ -1754,7 +1754,7 @@ export default function OrbitCommandCenterModule({
           onChange={setFilters}
         />
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {kpis.map((item) => (
             <KpiCard
               key={item.label}
@@ -1775,13 +1775,13 @@ export default function OrbitCommandCenterModule({
           ))}
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <AiIntelligenceCenter
             darkMode={darkMode}
             plan={aiAccount.plan}
             onPreview={setAiPreviewToolId}
           />
-          <div className="space-y-5">
+          <div className="min-w-0 space-y-5">
             <QuickActionPanel
               darkMode={darkMode}
               aiCredits={aiAccount.credits}
@@ -1804,7 +1804,7 @@ export default function OrbitCommandCenterModule({
           </div>
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[1.35fr_0.9fr]">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)]">
           <RiskHeatmap
             risks={filteredData.risks}
             darkMode={darkMode}
@@ -1821,14 +1821,14 @@ export default function OrbitCommandCenterModule({
 
         <div
           ref={riskOverviewRef}
-          className="scroll-mt-6 grid gap-5 xl:grid-cols-[0.85fr_1.15fr]"
+          className="scroll-mt-6 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]"
         >
           <SafetyScorePanel
             score={metrics.safetyScore}
             attentionItems={attentionItems}
             darkMode={darkMode}
           />
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-2">
             <ChartCard
               title="Inspection Pass / Finding Trend"
               subtitle="Pass rate trend and failed finding pressure"
@@ -1850,7 +1850,7 @@ export default function OrbitCommandCenterModule({
           </div>
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-3">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-3">
           <ChartCard
             title="Incident Severity Breakdown"
             subtitle="Events by severity class"
@@ -1909,7 +1909,7 @@ function HeroSignal({
   return (
     <div
       className={joinClasses(
-        "rounded-2xl border p-3",
+        "w-full max-w-full min-w-0 rounded-2xl border p-3",
         darkMode ? "border-white/10 bg-white/[0.045]" : "border-slate-200 bg-white/80",
       )}
     >
@@ -1919,7 +1919,7 @@ function HeroSignal({
           {label}
         </span>
       </div>
-      <p className={joinClasses("mt-2 text-sm font-semibold", darkMode ? "text-white" : "text-slate-950")}>
+      <p className={joinClasses("mt-2 break-words text-sm font-semibold", darkMode ? "text-white" : "text-slate-950")}>
         {value}
       </p>
     </div>
@@ -1968,7 +1968,7 @@ function FilterBar({
   return (
     <div
       className={joinClasses(
-        "rounded-3xl border p-4",
+        "w-full max-w-full min-w-0 rounded-3xl border p-4",
         darkMode ? "border-white/10 bg-white/[0.045]" : "border-slate-200 bg-white",
       )}
     >
@@ -1978,7 +1978,7 @@ function FilterBar({
           Operational filters
         </h3>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 xl:grid-cols-5">
         <SelectField
           label="Site"
           value={filters.site}
@@ -2037,7 +2037,7 @@ function SelectField({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="space-y-1.5">
+    <label className="block w-full max-w-full min-w-0 space-y-1.5">
       <span className={joinClasses("text-xs font-semibold", darkMode ? "text-slate-400" : "text-slate-600")}>
         {label}
       </span>
@@ -2045,7 +2045,7 @@ function SelectField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className={joinClasses(
-          "w-full rounded-2xl border px-3 py-2.5 text-sm outline-none transition focus:border-[#4DEBFF]",
+          "block w-full max-w-full min-w-0 rounded-2xl border px-3 py-2.5 text-sm outline-none transition focus:border-[#4DEBFF]",
           darkMode
             ? "border-white/10 bg-[#08172D] text-white"
             : "border-slate-200 bg-white text-slate-900",
@@ -2080,14 +2080,14 @@ function KpiCard({
       onClick={onClick}
       aria-label={`Open ${item.label}`}
       className={joinClasses(
-        "group relative cursor-pointer overflow-hidden rounded-3xl border p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-[#4DEBFF]/45 focus:outline-none focus:ring-2 focus:ring-[#4DEBFF]/60",
+        "group relative w-full max-w-full min-w-0 cursor-pointer overflow-hidden rounded-3xl border p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-[#4DEBFF]/45 focus:outline-none focus:ring-2 focus:ring-[#4DEBFF]/60",
         darkMode ? "border-white/10 bg-white/[0.05]" : "border-slate-200 bg-white",
         tone.glow,
       )}
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#4DEBFF]/50 to-transparent opacity-0 transition group-hover:opacity-100" />
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className={joinClasses("text-xs font-semibold uppercase tracking-[0.18em]", darkMode ? "text-slate-400" : "text-slate-500")}>
             {item.label}
           </p>
@@ -2183,12 +2183,12 @@ function RiskHeatmap({
       darkMode={darkMode}
       icon={Radar}
     >
-      <div className="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center">
         <div className="hidden h-full writing-mode-vertical text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 lg:block">
           Severity
         </div>
-        <div>
-          <div className="grid grid-cols-5 gap-2">
+        <div className="min-w-0">
+          <div className="grid min-w-0 grid-cols-5 gap-1 sm:gap-2">
             {[5, 4, 3, 2, 1].flatMap((severity) =>
               [1, 2, 3, 4, 5].map((likelihood) => {
                 const score = likelihood * severity;
@@ -2210,7 +2210,7 @@ function RiskHeatmap({
                     aria-label={`Open likelihood ${likelihood}, severity ${severity} risks`}
                     onClick={() => onSelectCell(likelihood, severity)}
                     className={joinClasses(
-                      "group relative aspect-square cursor-pointer overflow-hidden rounded-2xl border bg-gradient-to-br p-2 text-left transition duration-300 hover:scale-[1.04] focus:outline-none focus:ring-2 focus:ring-white/70",
+                      "group relative min-w-0 aspect-square cursor-pointer overflow-hidden rounded-xl border bg-gradient-to-br p-1.5 text-left transition duration-300 hover:scale-[1.04] focus:outline-none focus:ring-2 focus:ring-white/70 sm:rounded-2xl sm:p-2",
                       color,
                     )}
                     style={{
@@ -2227,7 +2227,7 @@ function RiskHeatmap({
                       <span className="text-[10px] font-semibold text-white/80">
                         {likelihood}x{severity}
                       </span>
-                      <span className="text-2xl font-semibold text-white">
+                      <span className="text-lg font-semibold text-white sm:text-2xl">
                         {count}
                       </span>
                     </div>
@@ -2237,7 +2237,7 @@ function RiskHeatmap({
               }),
             )}
           </div>
-          <div className="mt-3 flex items-center justify-between text-xs">
+          <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-2 text-xs">
             <span className={theme.muted}>Likelihood</span>
             <span className={theme.muted}>{total} residual risk points mapped</span>
           </div>
@@ -2360,8 +2360,8 @@ function SafetyScorePanel({
       darkMode={darkMode}
       icon={Target}
     >
-      <div className="grid gap-5 md:grid-cols-[220px_1fr] md:items-center">
-        <div className="relative mx-auto h-52 w-52">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[220px_minmax(0,1fr)] md:items-center">
+        <div className="relative mx-auto h-44 w-44 sm:h-52 sm:w-52">
           <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90">
             <circle
               cx="70"
@@ -2385,10 +2385,10 @@ function SafetyScorePanel({
           </svg>
           <div className="absolute inset-0 grid place-items-center text-center">
             <div>
-              <p className={joinClasses("text-5xl font-semibold", theme.heading)}>
+              <p className={joinClasses("text-4xl font-semibold sm:text-5xl", theme.heading)}>
                 {score}%
               </p>
-              <p className={joinClasses("mt-1 text-xs font-semibold uppercase tracking-[0.2em]", theme.muted)}>
+              <p className={joinClasses("mt-1 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] sm:text-xs sm:tracking-[0.2em]", theme.muted)}>
                 Overall Orbit Safety Score
               </p>
             </div>
@@ -2461,18 +2461,18 @@ function ChartCard({
   return (
     <div
       className={joinClasses(
-        "relative overflow-hidden rounded-3xl border p-4 sm:p-5",
+        "relative box-border w-full max-w-full min-w-0 overflow-hidden rounded-3xl border p-4 sm:p-5",
         theme.card,
       )}
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#4DEBFF]/45 to-transparent" />
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div>
+      <div className="mb-5 flex min-w-0 items-start justify-between gap-4">
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             {Icon ? <Icon className="h-4 w-4 text-[#4DEBFF]" aria-hidden /> : null}
-            <h3 className={joinClasses("font-semibold", theme.heading)}>{title}</h3>
+            <h3 className={joinClasses("break-words font-semibold", theme.heading)}>{title}</h3>
           </div>
-          <p className={joinClasses("mt-1 text-sm", theme.muted)}>{subtitle}</p>
+          <p className={joinClasses("mt-1 break-words text-sm", theme.muted)}>{subtitle}</p>
         </div>
       </div>
       {children}
@@ -2606,7 +2606,7 @@ function DonutChart({ data, darkMode }: { data: ChartDatum[]; darkMode: boolean 
   }, []);
 
   return (
-    <div className="grid gap-4 sm:grid-cols-[150px_1fr] sm:items-center">
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-center">
       <svg viewBox="0 0 120 120" className="mx-auto h-40 w-40 -rotate-90">
         <circle
           cx="60"
@@ -2691,11 +2691,11 @@ function RadialDepartmentGrid({
           <div
             key={item.label}
             className={joinClasses(
-              "flex items-center gap-3 rounded-2xl border p-3",
+              "flex w-full max-w-full min-w-0 items-center gap-3 rounded-2xl border p-3",
               darkMode ? "border-white/10 bg-white/[0.035]" : "border-slate-200 bg-slate-50",
             )}
           >
-            <svg viewBox="0 0 64 64" className="h-14 w-14 -rotate-90">
+            <svg viewBox="0 0 64 64" className="h-14 w-14 shrink-0 -rotate-90">
               <circle cx="32" cy="32" r="24" fill="none" stroke={darkMode ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.08)"} strokeWidth="7" />
               <circle cx="32" cy="32" r="24" fill="none" stroke={color} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" strokeWidth="7" />
             </svg>
@@ -2925,14 +2925,14 @@ function AiIntelligenceCenter({
   return (
     <div
       className={joinClasses(
-        "relative overflow-hidden rounded-3xl border p-5",
+        "relative w-full max-w-full min-w-0 overflow-hidden rounded-3xl border p-4 sm:p-5",
         darkMode
           ? "border-[#4DEBFF]/15 bg-[#071225]/78 shadow-[0_24px_80px_rgba(77,235,255,0.08)]"
           : "border-[#1E90FF]/15 bg-white shadow-[0_20px_70px_rgba(30,144,255,0.10)]",
       )}
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(77,235,255,0.18),transparent_32%),radial-gradient(circle_at_90%_10%,rgba(30,144,255,0.14),transparent_30%)]" />
-      <div className="relative">
+      <div className="relative min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
@@ -2962,7 +2962,7 @@ function AiIntelligenceCenter({
                 key={insight.title}
                 onClick={() => onPreview(insight.toolId)}
                 className={joinClasses(
-                  "cursor-pointer rounded-2xl border p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#4DEBFF]/45 hover:shadow-[0_14px_42px_rgba(77,235,255,0.10)] focus:outline-none focus:ring-2 focus:ring-[#4DEBFF]/50",
+                  "w-full max-w-full min-w-0 cursor-pointer rounded-2xl border p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#4DEBFF]/45 hover:shadow-[0_14px_42px_rgba(77,235,255,0.10)] focus:outline-none focus:ring-2 focus:ring-[#4DEBFF]/50",
                   darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white/75",
                 )}
               >
