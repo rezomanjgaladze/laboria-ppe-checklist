@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { getPaddleSetupStatus } from "@/app/lib/paddleBilling";
+import { getLemonSqueezySetupStatus } from "@/app/lib/lemonSqueezyBilling";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const status = getPaddleSetupStatus();
+  const status = getLemonSqueezySetupStatus();
 
   return NextResponse.json({
     checkoutEnabled: status.checkoutEnabled,
-    environment: status.environment,
+    provider: status.provider,
     missingVariables: status.missingVariables,
     invalidVariables: status.invalidVariables,
     diagnostics: status.diagnostics,

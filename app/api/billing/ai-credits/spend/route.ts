@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createPaddleSupabaseAdminClient } from "@/app/lib/paddleBilling";
+import { createBillingSupabaseAdminClient } from "@/app/lib/billingServer";
 import {
   ORBIT_STARTER_PLAN,
   isOrbitPlanName,
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid AI credit amount." }, { status: 400 });
   }
 
-  const adminClient = createPaddleSupabaseAdminClient();
+  const adminClient = createBillingSupabaseAdminClient();
 
   if (!adminClient) {
     return NextResponse.json(

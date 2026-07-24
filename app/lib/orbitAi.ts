@@ -44,6 +44,11 @@ export type OrbitAiTool = {
 export type OrbitAiAccount = {
   plan: OrbitPlanName;
   credits: number;
+  subscriptionStatus?: string;
+  renewalDate?: string | null;
+  accessEndsAt?: string | null;
+  updatePaymentMethodUrl?: string | null;
+  customerPortalUrl?: string | null;
 };
 
 export type OrbitAiCreditTopUp = {
@@ -424,7 +429,26 @@ const normalizeOrbitAiAccount = (value: unknown): OrbitAiAccount => {
       ? Math.floor(candidate.credits)
       : getDefaultOrbitAiCredits();
 
-  return { plan, credits };
+  return {
+    plan,
+    credits,
+    subscriptionStatus:
+      typeof candidate.subscriptionStatus === "string"
+        ? candidate.subscriptionStatus
+        : undefined,
+    renewalDate:
+      typeof candidate.renewalDate === "string" ? candidate.renewalDate : null,
+    accessEndsAt:
+      typeof candidate.accessEndsAt === "string" ? candidate.accessEndsAt : null,
+    updatePaymentMethodUrl:
+      typeof candidate.updatePaymentMethodUrl === "string"
+        ? candidate.updatePaymentMethodUrl
+        : null,
+    customerPortalUrl:
+      typeof candidate.customerPortalUrl === "string"
+        ? candidate.customerPortalUrl
+        : null,
+  };
 };
 
 const orbitAiAccountCache = new Map<string, OrbitAiAccount>();

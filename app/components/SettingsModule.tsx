@@ -50,8 +50,7 @@ import {
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
 import { isOrbitAiTestCreditAdmin } from "@/app/lib/orbitAiAdmin";
-import { openOrbitPaddleCheckout } from "@/app/lib/paddleCheckout";
-import type { PaddlePurchaseKey } from "@/app/lib/paddleCatalog";
+import { openOrbitLemonSqueezyCheckout } from "@/app/lib/lemonSqueezyCheckout";
 import {
   ORBIT_PRO_PLAN,
   ORBIT_STARTER_PLAN,
@@ -62,6 +61,7 @@ import {
   orbitCreditPacks,
   orbitPlanOrder,
   orbitPlans,
+  type OrbitBillingProductType,
 } from "@/app/lib/orbitPlans";
 
 type SettingsSectionId =
@@ -94,50 +94,56 @@ type SettingsSection = {
   icon: LucideIcon;
 };
 
-type PaddleSetupState = {
+type LemonSetupState = {
   loading: boolean;
   checkoutEnabled: boolean;
-  environment: "sandbox" | "production";
+  provider: string;
   missingVariables: string[];
   invalidVariables: string[];
-  diagnostics: PaddleDiagnostics;
+  diagnostics: LemonDiagnostics;
 };
 
-type PaddleDiagnostics = {
+type LemonDiagnostics = {
   checkoutEnabled: boolean;
-  clientTokenPresent: boolean;
-  plusPricePresent: boolean;
-  proPricePresent: boolean;
-  starterTopupPricePresent: boolean;
-  plusPackPricePresent: boolean;
-  proPackPricePresent: boolean;
+  apiKeyPresent: boolean;
+  storeIdPresent: boolean;
+  webhookSecretPresent: boolean;
+  plusVariantPresent: boolean;
+  proVariantPresent: boolean;
+  starterTopupVariantPresent: boolean;
+  plusPackVariantPresent: boolean;
+  proPackVariantPresent: boolean;
 };
 
-const emptyPaddleDiagnostics: PaddleDiagnostics = {
+const emptyLemonDiagnostics: LemonDiagnostics = {
   checkoutEnabled: false,
-  clientTokenPresent: false,
-  plusPricePresent: false,
-  proPricePresent: false,
-  starterTopupPricePresent: false,
-  plusPackPricePresent: false,
-  proPackPricePresent: false,
+  apiKeyPresent: false,
+  storeIdPresent: false,
+  webhookSecretPresent: false,
+  plusVariantPresent: false,
+  proVariantPresent: false,
+  starterTopupVariantPresent: false,
+  plusPackVariantPresent: false,
+  proPackVariantPresent: false,
 };
 
-const normalizePaddleDiagnostics = (value: unknown): PaddleDiagnostics => {
+const normalizeLemonDiagnostics = (value: unknown): LemonDiagnostics => {
   if (!value || typeof value !== "object") {
-    return emptyPaddleDiagnostics;
+    return emptyLemonDiagnostics;
   }
 
-  const candidate = value as Partial<Record<keyof PaddleDiagnostics, unknown>>;
+  const candidate = value as Partial<Record<keyof LemonDiagnostics, unknown>>;
 
   return {
     checkoutEnabled: Boolean(candidate.checkoutEnabled),
-    clientTokenPresent: Boolean(candidate.clientTokenPresent),
-    plusPricePresent: Boolean(candidate.plusPricePresent),
-    proPricePresent: Boolean(candidate.proPricePresent),
-    starterTopupPricePresent: Boolean(candidate.starterTopupPricePresent),
-    plusPackPricePresent: Boolean(candidate.plusPackPricePresent),
-    proPackPricePresent: Boolean(candidate.proPackPricePresent),
+    apiKeyPresent: Boolean(candidate.apiKeyPresent),
+    storeIdPresent: Boolean(candidate.storeIdPresent),
+    webhookSecretPresent: Boolean(candidate.webhookSecretPresent),
+    plusVariantPresent: Boolean(candidate.plusVariantPresent),
+    proVariantPresent: Boolean(candidate.proVariantPresent),
+    starterTopupVariantPresent: Boolean(candidate.starterTopupVariantPresent),
+    plusPackVariantPresent: Boolean(candidate.plusPackVariantPresent),
+    proPackVariantPresent: Boolean(candidate.proPackVariantPresent),
   };
 };
 
@@ -271,7 +277,7 @@ const planCards = orbitPlanOrder.map((planName) => {
     ...plan,
     price: getOrbitPlanPriceLabel(plan),
     period: plan.monthlyPriceUsd > 0 ? "/ month" : undefined,
-    purchaseKey: plan.paddlePurchaseKey,
+    purchaseKey: plan.billingProductType,
   };
 });
 
@@ -575,47 +581,52 @@ export default function SettingsModule({
   const [aiAccount, setAiAccount] = useState(() => getOrbitAiAccount(userId));
   const [isAddingTestCredits, setIsAddingTestCredits] = useState(false);
   const [isUpdatingLogo, setIsUpdatingLogo] = useState(false);
-  const [activePaddlePurchase, setActivePaddlePurchase] =
-    useState<PaddlePurchaseKey | null>(null);
-  const [paddleCheckoutFeedback, setPaddleCheckoutFeedback] = useState<{
+  const [activeBillingProduct, setActiveBillingProduct] =
+    useState<OrbitBillingProductType | null>(null);
+  const [checkoutFeedback, setCheckoutFeedback] = useState<{
     message: string;
     type: "error" | "info" | "success";
   } | null>(null);
-  const [paddleSetup, setPaddleSetup] = useState<PaddleSetupState>({
+  const [lemonSetup, setLemonSetup] = useState<LemonSetupState>({
     loading: true,
     checkoutEnabled: false,
-    environment: "sandbox",
+    provider: "unconfigured",
     missingVariables: [],
     invalidVariables: [],
-    diagnostics: emptyPaddleDiagnostics,
+    diagnostics: emptyLemonDiagnostics,
   });
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const theme = getTheme(darkMode);
   const canAddTestCredits = isOrbitAiTestCreditAdmin(userEmail);
-  const paddleSetupMessage = [
-    paddleSetup.missingVariables.length
-      ? `missing ${paddleSetup.missingVariables.join(", ")}`
+  const lemonSetupMessage = [
+    lemonSetup.missingVariables.length
+      ? `missing ${lemonSetup.missingVariables.join(", ")}`
       : "",
-    paddleSetup.invalidVariables.length
-      ? `invalid ${paddleSetup.invalidVariables.join(", ")}`
+    lemonSetup.invalidVariables.length
+      ? `invalid ${lemonSetup.invalidVariables.join(", ")}`
       : "",
   ].filter(Boolean);
-  const paddleSetupDiagnosticMessage = paddleSetupMessage.length
-    ? `Paddle checkout is not configured: ${paddleSetupMessage.join("; ")}.`
-    : paddleSetup.checkoutEnabled
-      ? "Paddle checkout is configured."
-      : "Paddle checkout is not configured.";
-  const paddleDiagnosticRows = [
-    ["checkoutEnabled", paddleSetup.diagnostics.checkoutEnabled],
-    ["clientTokenPresent", paddleSetup.diagnostics.clientTokenPresent],
-    ["plusPricePresent", paddleSetup.diagnostics.plusPricePresent],
-    ["proPricePresent", paddleSetup.diagnostics.proPricePresent],
+  const lemonSetupDiagnosticMessage = lemonSetupMessage.length
+    ? `Lemon Squeezy checkout is not configured: ${lemonSetupMessage.join("; ")}.`
+    : lemonSetup.checkoutEnabled
+      ? "Lemon Squeezy checkout is configured."
+      : "Lemon Squeezy checkout is not configured.";
+  const lemonDiagnosticRows = [
+    ["billingProvider", lemonSetup.provider === "lemon" ? "lemon" : lemonSetup.provider],
+    ["lemonApiConfigured", lemonSetup.diagnostics.apiKeyPresent],
+    ["lemonStoreConfigured", lemonSetup.diagnostics.storeIdPresent],
     [
-      "starterTopupPricePresent",
-      paddleSetup.diagnostics.starterTopupPricePresent,
+      "lemonWebhookSecretConfigured",
+      lemonSetup.diagnostics.webhookSecretPresent,
     ],
-    ["plusPackPricePresent", paddleSetup.diagnostics.plusPackPricePresent],
-    ["proPackPricePresent", paddleSetup.diagnostics.proPackPricePresent],
+    ["plusVariantPresent", lemonSetup.diagnostics.plusVariantPresent],
+    ["proVariantPresent", lemonSetup.diagnostics.proVariantPresent],
+    [
+      "starterTopupVariantPresent",
+      lemonSetup.diagnostics.starterTopupVariantPresent,
+    ],
+    ["plusPackVariantPresent", lemonSetup.diagnostics.plusPackVariantPresent],
+    ["proPackVariantPresent", lemonSetup.diagnostics.proPackVariantPresent],
   ] as const;
 
   useEffect(() => {
@@ -658,26 +669,28 @@ export default function SettingsModule({
   useEffect(() => {
     let active = true;
 
-    fetch("/api/billing/paddle/config", { cache: "no-store" })
+    fetch("/api/billing/lemon/config", { cache: "no-store" })
       .then(async (response) => {
-        const payload = (await response.json()) as Partial<PaddleSetupState>;
+        const payload = (await response.json()) as Partial<LemonSetupState>;
 
         if (!active) {
           return;
         }
 
-        setPaddleSetup({
+        setLemonSetup({
           loading: false,
           checkoutEnabled: Boolean(response.ok && payload.checkoutEnabled),
-          environment:
-            payload.environment === "production" ? "production" : "sandbox",
+          provider:
+            typeof payload.provider === "string"
+              ? payload.provider
+              : "unconfigured",
           missingVariables: Array.isArray(payload.missingVariables)
             ? payload.missingVariables
             : [],
           invalidVariables: Array.isArray(payload.invalidVariables)
             ? payload.invalidVariables
             : [],
-          diagnostics: normalizePaddleDiagnostics(payload.diagnostics),
+          diagnostics: normalizeLemonDiagnostics(payload.diagnostics),
         });
       })
       .catch(() => {
@@ -685,7 +698,7 @@ export default function SettingsModule({
           return;
         }
 
-        setPaddleSetup((current) => ({
+        setLemonSetup((current) => ({
           ...current,
           loading: false,
           checkoutEnabled: false,
@@ -770,33 +783,35 @@ export default function SettingsModule({
     }
   };
 
-  const startPaddleCheckout = async (purchaseKey: PaddlePurchaseKey) => {
-    setActivePaddlePurchase(purchaseKey);
-    setPaddleCheckoutFeedback({
-      message: "Opening secure Paddle checkout...",
+  const startLemonCheckout = async (
+    productType: OrbitBillingProductType,
+  ) => {
+    setActiveBillingProduct(productType);
+    setCheckoutFeedback({
+      message: "Opening secure Lemon Squeezy checkout...",
       type: "info",
     });
 
     try {
-      await openOrbitPaddleCheckout({ purchaseKey, darkMode });
-      setPaddleCheckoutFeedback({
-        message: "Secure Paddle checkout opened.",
+      await openOrbitLemonSqueezyCheckout(productType);
+      setCheckoutFeedback({
+        message: "Secure Lemon Squeezy checkout opened.",
         type: "success",
       });
-      setNotice("Secure Paddle checkout opened.");
+      setNotice("Secure Lemon Squeezy checkout opened.");
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : "Payments are being configured. Please contact Laboria.";
 
-      setPaddleCheckoutFeedback({
+      setCheckoutFeedback({
         message,
         type: "error",
       });
       setNotice(message);
     } finally {
-      setActivePaddlePurchase(null);
+      setActiveBillingProduct(null);
     }
   };
 
@@ -1603,11 +1618,60 @@ export default function SettingsModule({
               <div className={joinClasses("mt-2 text-lg font-bold", theme.heading)}>
                 {aiAccount.plan}
               </div>
+              <div
+                className={joinClasses(
+                  "mt-2 text-sm font-semibold capitalize",
+                  theme.soft,
+                )}
+              >
+                Subscription status: {aiAccount.subscriptionStatus || "inactive"}
+              </div>
+              {aiAccount.renewalDate ? (
+                <div className={joinClasses("mt-1 text-sm", theme.muted)}>
+                  Renews {new Date(aiAccount.renewalDate).toLocaleDateString()}
+                </div>
+              ) : aiAccount.accessEndsAt ? (
+                <div className={joinClasses("mt-1 text-sm", theme.muted)}>
+                  Access ends{" "}
+                  {new Date(aiAccount.accessEndsAt).toLocaleDateString()}
+                </div>
+              ) : null}
               <p className={joinClasses("mt-2 text-sm leading-6", theme.muted)}>
-                {paddleSetup.checkoutEnabled
-                  ? "Secure Paddle checkout is ready. Plan changes and credit packs are applied only after verified payment events."
+                {lemonSetup.checkoutEnabled
+                  ? "Secure Lemon Squeezy checkout is ready. Plan changes and credit packs are applied only after verified payment events."
                   : "Payments are being configured. Please contact Laboria. AI credits remain account-specific and update Orbit tools immediately."}
               </p>
+              {aiAccount.customerPortalUrl ||
+              aiAccount.updatePaymentMethodUrl ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {aiAccount.customerPortalUrl ? (
+                    <a
+                      href={aiAccount.customerPortalUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={joinClasses(
+                        "inline-flex items-center justify-center rounded-xl border px-3 py-2 text-xs font-semibold transition",
+                        theme.buttonGhost,
+                      )}
+                    >
+                      Manage subscription
+                    </a>
+                  ) : null}
+                  {aiAccount.updatePaymentMethodUrl ? (
+                    <a
+                      href={aiAccount.updatePaymentMethodUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={joinClasses(
+                        "inline-flex items-center justify-center rounded-xl border px-3 py-2 text-xs font-semibold transition",
+                        theme.buttonGhost,
+                      )}
+                    >
+                      Update payment method
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
             {canAddTestCredits ? (
               <div
@@ -1659,14 +1723,14 @@ export default function SettingsModule({
                 theme.badge,
               )}
             >
-              {paddleSetup.checkoutEnabled
-                ? `Secure Paddle checkout · ${paddleSetup.environment}`
-                : paddleSetup.loading
+              {lemonSetup.checkoutEnabled
+                ? "Secure Lemon Squeezy checkout"
+                : lemonSetup.loading
                   ? "Checking payment setup"
                   : "Payment setup required"}
             </span>
           </div>
-          {!paddleSetup.loading && !paddleSetup.checkoutEnabled ? (
+          {!lemonSetup.loading && !lemonSetup.checkoutEnabled ? (
             <div
               className={joinClasses(
                 "mt-4 rounded-2xl border p-4",
@@ -1686,21 +1750,21 @@ export default function SettingsModule({
                     Payment setup required
                   </div>
                   <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
-                    {paddleSetupDiagnosticMessage}
+                    {lemonSetupDiagnosticMessage}
                   </p>
                 </div>
               </div>
             </div>
           ) : null}
-          {paddleCheckoutFeedback ? (
+          {checkoutFeedback ? (
             <div
               className={joinClasses(
                 "mt-4 rounded-2xl border p-4",
-                paddleCheckoutFeedback.type === "error"
+                checkoutFeedback.type === "error"
                   ? darkMode
                     ? "border-rose-300/20 bg-rose-400/[0.07]"
                     : "border-rose-300 bg-rose-50"
-                  : paddleCheckoutFeedback.type === "success"
+                  : checkoutFeedback.type === "success"
                     ? darkMode
                       ? "border-emerald-300/20 bg-emerald-400/[0.07]"
                       : "border-emerald-300 bg-emerald-50"
@@ -1710,13 +1774,13 @@ export default function SettingsModule({
               )}
             >
               <div className="flex items-start gap-3">
-                {paddleCheckoutFeedback.type === "error" ? (
+                {checkoutFeedback.type === "error" ? (
                   <TriangleAlert
                     size={18}
                     className="mt-0.5 shrink-0 text-rose-400"
                     aria-hidden
                   />
-                ) : paddleCheckoutFeedback.type === "success" ? (
+                ) : checkoutFeedback.type === "success" ? (
                   <CheckCircle2
                     size={18}
                     className="mt-0.5 shrink-0 text-emerald-400"
@@ -1731,10 +1795,10 @@ export default function SettingsModule({
                 )}
                 <div>
                   <div className={joinClasses("text-sm font-bold", theme.heading)}>
-                    Paddle checkout
+                    Lemon Squeezy checkout
                   </div>
                   <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
-                    {paddleCheckoutFeedback.message}
+                    {checkoutFeedback.message}
                   </p>
                 </div>
               </div>
@@ -1745,7 +1809,7 @@ export default function SettingsModule({
               Safe billing diagnostics
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {paddleDiagnosticRows.map(([label, value]) => (
+              {lemonDiagnosticRows.map(([label, value]) => (
                 <div
                   key={label}
                   className={joinClasses(
@@ -1759,7 +1823,9 @@ export default function SettingsModule({
                   <span
                     className={joinClasses(
                       "font-bold",
-                      value ? "text-emerald-400" : "text-amber-400",
+                      value === true || value === "lemon"
+                        ? "text-emerald-400"
+                        : "text-amber-400",
                     )}
                   >
                     {String(value)}
@@ -1858,16 +1924,18 @@ export default function SettingsModule({
                   }
                   if (!plan.purchaseKey) {
                     setNotice(
-                      `${ORBIT_STARTER_PLAN} is the free plan. Subscription management will be available after Paddle activation.`,
+                      aiAccount.customerPortalUrl
+                        ? "Use Manage subscription to change or cancel your current plan."
+                        : `${ORBIT_STARTER_PLAN} is the free plan.`,
                     );
                     return;
                   }
 
-                  void startPaddleCheckout(plan.purchaseKey);
+                  void startLemonCheckout(plan.purchaseKey);
                 }}
                 disabled={
                   Boolean(plan.purchaseKey) &&
-                  activePaddlePurchase === plan.purchaseKey
+                  activeBillingProduct === plan.purchaseKey
                 }
                 className={joinClasses(
                   "mt-6 w-full rounded-xl border px-4 py-3 text-sm font-semibold transition",
@@ -1882,7 +1950,7 @@ export default function SettingsModule({
               >
                 {plan.name === aiAccount.plan
                   ? "Current Plan"
-                  : plan.purchaseKey && activePaddlePurchase === plan.purchaseKey
+                  : plan.purchaseKey && activeBillingProduct === plan.purchaseKey
                     ? "Opening..."
                     : plan.purchaseKey
                       ? plan.buttonLabel
@@ -1944,7 +2012,10 @@ export default function SettingsModule({
                 ${pack.priceUsd}
               </div>
               <div className={joinClasses("mt-2 text-xs font-semibold", theme.muted)}>
-                Available for {pack.eligiblePlan}
+                Available for{" "}
+                {pack.key === "plus_pack"
+                  ? "Orbit Plus and Orbit Pro"
+                  : pack.eligiblePlan}
               </div>
               <button
                 type="button"
@@ -1954,15 +2025,15 @@ export default function SettingsModule({
                     return;
                   }
 
-                  void startPaddleCheckout(pack.key);
+                  void startLemonCheckout(pack.key);
                 }}
-                disabled={activePaddlePurchase === pack.key}
+                disabled={activeBillingProduct === pack.key}
                 className={joinClasses(
                   "mt-5 w-full rounded-xl border px-4 py-3 text-sm font-semibold transition",
                   theme.buttonGhost,
                 )}
               >
-                {activePaddlePurchase === pack.key
+                {activeBillingProduct === pack.key
                   ? "Opening..."
                   : isOrbitCreditPackAvailableForPlan(aiAccount.plan, pack)
                     ? "Buy Credits"

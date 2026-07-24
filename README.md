@@ -46,22 +46,22 @@ The storage policies limit each authenticated user to their own folder. When
 `SUPABASE_SERVICE_ROLE_KEY` is configured on the server, the upload route can
 also create the private bucket automatically.
 
-## Paddle Billing Staged Mode
+## Lemon Squeezy Billing
 
-Laboria Orbit includes a staged Paddle Billing integration. Checkout remains
-disabled until every required variable is configured and the server billing
-migration is applied. Client-side checkout success never grants a plan upgrade
-or AI credits. Only verified Paddle webhooks can update billing records and the
-AI credit ledger.
+Laboria Orbit uses Lemon Squeezy for subscriptions and AI credit packs.
+Checkout remains unavailable until every required variable is configured and
+the server billing migration is applied. Browser checkout success never grants
+a plan upgrade or AI credits. Only verified webhook events update billing
+records and the AI credit ledger.
 
 The approved Orbit package structure, operational limits, AI entitlements,
-credit packs, and Paddle purchase catalog live in one source file:
+credit packs, and billing product catalog live in one source file:
 
 ```text
 app/lib/orbitPlans.ts
 ```
 
-Create these recurring and one-time prices in Paddle sandbox:
+Create these recurring and one-time variants in Lemon Squeezy:
 
 - `Orbit Plus` subscription: `$19 / month`
 - `Orbit Pro` subscription: `$49 / month`
@@ -72,36 +72,42 @@ Create these recurring and one-time prices in Paddle sandbox:
 Configure these Vercel environment variables:
 
 ```bash
-PADDLE_API_KEY=
-PADDLE_WEBHOOK_SECRET=
-PADDLE_ENVIRONMENT=sandbox
-NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=
-NEXT_PUBLIC_PADDLE_PRICE_ORBIT_PLUS=
-NEXT_PUBLIC_PADDLE_PRICE_ORBIT_PRO=
-NEXT_PUBLIC_PADDLE_PRICE_STARTER_TOPUP=
-NEXT_PUBLIC_PADDLE_PRICE_PLUS_PACK=
-NEXT_PUBLIC_PADDLE_PRICE_PRO_PACK=
+LEMONSQUEEZY_API_KEY=
+LEMONSQUEEZY_STORE_ID=
+LEMONSQUEEZY_WEBHOOK_SECRET=
+LEMONSQUEEZY_VARIANT_ORBIT_PLUS=
+LEMONSQUEEZY_VARIANT_ORBIT_PRO=
+LEMONSQUEEZY_VARIANT_STARTER_TOPUP=
+LEMONSQUEEZY_VARIANT_PLUS_PACK=
+LEMONSQUEEZY_VARIANT_PRO_PACK=
+NEXT_PUBLIC_BILLING_PROVIDER=lemon
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-Apply the staged billing migration before enabling checkout:
+Apply the billing migration before enabling checkout:
 
 ```text
-supabase/migrations/20260602_paddle_billing_staged.sql
+supabase/migrations/20260725_lemon_squeezy_billing.sql
 ```
 
-Add this Paddle webhook destination:
+Add this Lemon Squeezy webhook destination:
 
 ```text
-https://laboria-ppe-checklist.vercel.app/api/billing/paddle/webhook
+https://laboria-ppe-checklist.vercel.app/api/billing/lemon/webhook
 ```
 
 Subscribe the destination to:
 
-- `transaction.completed`
-- `subscription.activated`
-- `subscription.updated`
-- `subscription.canceled`
+- `order_created`
+- `subscription_created`
+- `subscription_updated`
+- `subscription_cancelled`
+- `subscription_expired`
+- `subscription_resumed`
+- `subscription_paused`
+- `subscription_unpaused`
+- `subscription_payment_success`
+- `subscription_payment_failed`
 
 ## Production
 

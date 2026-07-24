@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createPaddleSupabaseAdminClient } from "@/app/lib/paddleBilling";
+import { createBillingSupabaseAdminClient } from "@/app/lib/billingServer";
 import { createClient } from "@/lib/supabase/server";
 import { isOrbitAiTestCreditAdmin } from "@/app/lib/orbitAiAdmin";
 import type { OrbitAiCreditTopUp } from "@/app/lib/orbitAi";
@@ -24,7 +24,7 @@ export async function POST() {
     reason: "testing",
   };
 
-  const adminClient = createPaddleSupabaseAdminClient();
+  const adminClient = createBillingSupabaseAdminClient();
 
   if (!adminClient) {
     return NextResponse.json(
@@ -38,7 +38,10 @@ export async function POST() {
     p_credits: topUp.creditsAdded,
     p_reason: "Testing AI credit top-up",
     p_entry_key: `testing:${topUp.id}`,
-    p_paddle_transaction_id: null,
+    p_provider_reference: null,
+    p_provider: null,
+    p_product_type: null,
+    p_source: "admin_test",
   });
 
   if (error) {

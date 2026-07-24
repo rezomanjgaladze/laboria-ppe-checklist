@@ -7,12 +7,12 @@ export type OrbitPlanName =
   | typeof ORBIT_PLUS_PLAN
   | typeof ORBIT_PRO_PLAN;
 
-export type OrbitPaddlePurchaseKey =
-  | "orbit-plus"
-  | "orbit-pro"
-  | "starter-topup"
-  | "plus-pack"
-  | "pro-pack";
+export type OrbitBillingProductType =
+  | "plus_subscription"
+  | "pro_subscription"
+  | "starter_topup"
+  | "plus_pack"
+  | "pro_pack";
 
 export type OrbitOperationalLimits = {
   inspectionTemplateIds: string[] | "unlimited";
@@ -33,25 +33,25 @@ export type OrbitPlanDefinition = {
   tone: string;
   popular?: boolean;
   premium?: boolean;
-  paddlePurchaseKey?: OrbitPaddlePurchaseKey;
+  billingProductType?: OrbitBillingProductType;
 };
 
 export type OrbitCreditPackDefinition = {
-  key: OrbitPaddlePurchaseKey;
+  key: OrbitBillingProductType;
   name: string;
   eligiblePlan: OrbitPlanName;
   credits: number;
   priceUsd: number;
   tone: string;
   badge?: string;
-  priceEnvironmentVariable: string;
+  variantEnvironmentVariable: string;
 };
 
-export type OrbitPaddlePurchaseDefinition = {
-  key: OrbitPaddlePurchaseKey;
+export type OrbitBillingProductDefinition = {
+  key: OrbitBillingProductType;
   label: string;
   purchaseType: "subscription" | "credit_pack";
-  priceEnvironmentVariable: string;
+  variantEnvironmentVariable: string;
   plan?: OrbitPlanName;
   credits?: number;
   eligiblePlans?: OrbitPlanName[];
@@ -111,7 +111,7 @@ export const orbitPlans: Record<OrbitPlanName, OrbitPlanDefinition> = {
     limits: unlimitedOperationalLimits,
     tone: "from-[#1E90FF]/34 to-[#4DEBFF]/16",
     popular: true,
-    paddlePurchaseKey: "orbit-plus",
+    billingProductType: "plus_subscription",
   },
   [ORBIT_PRO_PLAN]: {
     name: ORBIT_PRO_PLAN,
@@ -135,7 +135,7 @@ export const orbitPlans: Record<OrbitPlanName, OrbitPlanDefinition> = {
     limits: unlimitedOperationalLimits,
     tone: "from-violet-500/30 via-[#1E90FF]/18 to-[#4DEBFF]/12",
     premium: true,
-    paddlePurchaseKey: "orbit-pro",
+    billingProductType: "pro_subscription",
   },
 };
 
@@ -146,80 +146,85 @@ export const orbitPlanOrder: OrbitPlanName[] = [
 ];
 
 export const orbitCreditPacks: Record<string, OrbitCreditPackDefinition> = {
-  "starter-topup": {
-    key: "starter-topup",
+  starter_topup: {
+    key: "starter_topup",
     name: "Starter Top-Up",
     eligiblePlan: ORBIT_STARTER_PLAN,
     credits: 50,
     priceUsd: 9,
     tone: "from-slate-500/16 to-slate-400/5",
-    priceEnvironmentVariable: "NEXT_PUBLIC_PADDLE_PRICE_STARTER_TOPUP",
+    variantEnvironmentVariable: "LEMONSQUEEZY_VARIANT_STARTER_TOPUP",
   },
-  "plus-pack": {
-    key: "plus-pack",
+  plus_pack: {
+    key: "plus_pack",
     name: "Orbit Plus Discount Pack",
     eligiblePlan: ORBIT_PLUS_PLAN,
     credits: 100,
     priceUsd: 12,
     tone: "from-[#1E90FF]/24 to-[#4DEBFF]/10",
     badge: "Plus",
-    priceEnvironmentVariable: "NEXT_PUBLIC_PADDLE_PRICE_PLUS_PACK",
+    variantEnvironmentVariable: "LEMONSQUEEZY_VARIANT_PLUS_PACK",
   },
-  "pro-pack": {
-    key: "pro-pack",
+  pro_pack: {
+    key: "pro_pack",
     name: "Orbit Pro Best Value Pack",
     eligiblePlan: ORBIT_PRO_PLAN,
     credits: 100,
     priceUsd: 8,
     tone: "from-violet-500/26 to-[#4DEBFF]/12",
     badge: "Best Value",
-    priceEnvironmentVariable: "NEXT_PUBLIC_PADDLE_PRICE_PRO_PACK",
+    variantEnvironmentVariable: "LEMONSQUEEZY_VARIANT_PRO_PACK",
   },
 };
 
-export const orbitCreditPackOrder: OrbitPaddlePurchaseKey[] = [
-  "starter-topup",
-  "plus-pack",
-  "pro-pack",
+export const orbitCreditPackOrder: OrbitBillingProductType[] = [
+  "starter_topup",
+  "plus_pack",
+  "pro_pack",
 ];
 
-export const orbitPaddlePurchaseCatalog: Record<
-  OrbitPaddlePurchaseKey,
-  OrbitPaddlePurchaseDefinition
+export const orbitBillingProductCatalog: Record<
+  OrbitBillingProductType,
+  OrbitBillingProductDefinition
 > = {
-  "orbit-plus": {
-    key: "orbit-plus",
+  plus_subscription: {
+    key: "plus_subscription",
     label: ORBIT_PLUS_PLAN,
     purchaseType: "subscription",
-    priceEnvironmentVariable: "NEXT_PUBLIC_PADDLE_PRICE_ORBIT_PLUS",
+    variantEnvironmentVariable: "LEMONSQUEEZY_VARIANT_ORBIT_PLUS",
     plan: ORBIT_PLUS_PLAN,
   },
-  "orbit-pro": {
-    key: "orbit-pro",
+  pro_subscription: {
+    key: "pro_subscription",
     label: ORBIT_PRO_PLAN,
     purchaseType: "subscription",
-    priceEnvironmentVariable: "NEXT_PUBLIC_PADDLE_PRICE_ORBIT_PRO",
+    variantEnvironmentVariable: "LEMONSQUEEZY_VARIANT_ORBIT_PRO",
     plan: ORBIT_PRO_PLAN,
   },
-  "starter-topup": {
-    ...orbitCreditPacks["starter-topup"],
-    label: orbitCreditPacks["starter-topup"].name,
+  starter_topup: {
+    ...orbitCreditPacks.starter_topup,
+    label: orbitCreditPacks.starter_topup.name,
     purchaseType: "credit_pack",
     eligiblePlans: [ORBIT_STARTER_PLAN],
   },
-  "plus-pack": {
-    ...orbitCreditPacks["plus-pack"],
-    label: orbitCreditPacks["plus-pack"].name,
+  plus_pack: {
+    ...orbitCreditPacks.plus_pack,
+    label: orbitCreditPacks.plus_pack.name,
     purchaseType: "credit_pack",
-    eligiblePlans: [ORBIT_PLUS_PLAN],
+    eligiblePlans: [ORBIT_PLUS_PLAN, ORBIT_PRO_PLAN],
   },
-  "pro-pack": {
-    ...orbitCreditPacks["pro-pack"],
-    label: orbitCreditPacks["pro-pack"].name,
+  pro_pack: {
+    ...orbitCreditPacks.pro_pack,
+    label: orbitCreditPacks.pro_pack.name,
     purchaseType: "credit_pack",
     eligiblePlans: [ORBIT_PRO_PLAN],
   },
 };
+
+export const isOrbitBillingProductType = (
+  value: unknown,
+): value is OrbitBillingProductType =>
+  typeof value === "string" && value in orbitBillingProductCatalog;
 
 export const orbitProOnlyAiToolIds = new Set([
   "executive-summary",
@@ -244,7 +249,9 @@ export const getOrbitAiToolRequiredPlan = (toolId: string) =>
 export const isOrbitCreditPackAvailableForPlan = (
   plan: OrbitPlanName,
   pack: OrbitCreditPackDefinition,
-) => pack.eligiblePlan === plan;
+) =>
+  orbitBillingProductCatalog[pack.key].eligiblePlans?.includes(plan) ??
+  pack.eligiblePlan === plan;
 
 export const hasOrbitLimitCapacity = (
   limit: number | "unlimited",
