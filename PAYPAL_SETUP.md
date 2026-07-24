@@ -38,75 +38,43 @@ It does not delete historical billing rows. New production writes use
 
 ## 3. Create the Product and Subscription Plans
 
-Use the Sandbox credentials to request an OAuth access token from:
+The server-only endpoint `POST /api/admin/setup-paypal-sandbox` creates or
+reuses the required Sandbox product and monthly plans. It:
+
+- refuses to run unless `PAYPAL_MODE=sandbox`
+- is restricted to the existing Laboria admin email allowlist
+- rejects cross-origin browser requests
+- compares existing product and plan configuration before reusing IDs
+- activates matching inactive plans instead of creating duplicates
+- never returns or logs PayPal credentials
+
+While signed in with an approved admin account, run this in the browser console
+on the Laboria Orbit origin:
+
+```js
+const response = await fetch("/api/admin/setup-paypal-sandbox", {
+  method: "POST",
+});
+console.log(await response.json());
+```
+
+The response contains IDs only:
 
 ```text
-POST https://api-m.sandbox.paypal.com/v1/oauth2/token
-Content-Type: application/x-www-form-urlencoded
-Authorization: Basic base64(PAYPAL_CLIENT_ID:PAYPAL_CLIENT_SECRET)
-
-grant_type=client_credentials
+PAYPAL_PRODUCT_ID=PROD-...
+PAYPAL_PLAN_ORBIT_PLUS=P-...
+PAYPAL_PLAN_ORBIT_PRO=P-...
 ```
 
-Create the product:
-
-```text
-POST https://api-m.sandbox.paypal.com/v1/catalogs/products
-Authorization: Bearer ACCESS_TOKEN
-Content-Type: application/json
-
-{
-  "name": "Laboria Orbit",
-  "description": "AI-powered health and safety workspace",
-  "type": "SERVICE",
-  "category": "SOFTWARE"
-}
-```
-
-Copy the returned product ID. Create the Plus plan with:
-
-```json
-{
-  "product_id": "PAYPAL_PRODUCT_ID",
-  "name": "Orbit Plus",
-  "status": "ACTIVE",
-  "billing_cycles": [
-    {
-      "frequency": { "interval_unit": "MONTH", "interval_count": 1 },
-      "tenure_type": "REGULAR",
-      "sequence": 1,
-      "total_cycles": 0,
-      "pricing_scheme": {
-        "fixed_price": { "value": "19.00", "currency_code": "USD" }
-      }
-    }
-  ],
-  "payment_preferences": {
-    "auto_bill_outstanding": true,
-    "setup_fee": { "value": "0", "currency_code": "USD" },
-    "setup_fee_failure_action": "CONTINUE",
-    "payment_failure_threshold": 1
-  }
-}
-```
-
-Send that JSON to:
-
-```text
-POST https://api-m.sandbox.paypal.com/v1/billing/plans
-```
-
-Create Orbit Pro through the same endpoint using the name `Orbit Pro` and
-fixed price `49.00`. Both plans must use the same PayPal product so PayPal can
-revise an existing subscription between Plus and Pro. Copy the returned plan
-IDs, which begin with `P-`.
-
-Set:
+Add the two plan IDs to Vercel:
 
 ```bash
 PAYPAL_PLAN_ORBIT_PLUS=P-...
 PAYPAL_PLAN_ORBIT_PRO=P-...
 ```
+
+The product ID does not need to be configured by the current checkout
+implementation.
 
 The one-time AI credit packs do not need PayPal plan IDs. Laboria Orbit creates
 Orders API payments directly for:
