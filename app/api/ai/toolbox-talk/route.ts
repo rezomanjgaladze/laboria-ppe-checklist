@@ -2,6 +2,10 @@ import OpenAI from "openai";
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import {
+  checkOrbitAiCredits,
+  spendOrbitAiCreditsAfterSuccess,
+} from "@/app/lib/orbitAiCreditsServer";
 import type {
   ToolboxTalkContent,
   ToolboxTalkInputs,
@@ -22,6 +26,8 @@ const REVIEW_NOTE =
 const OPENAI_MODEL = process.env.OPENAI_MODEL?.trim() || "gpt-5.4-mini";
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_REQUESTS = 6;
+const BASIC_TOOLBOX_CREDITS = 3;
+const TOOLBOX_QUIZ_CREDITS = 5;
 const generationRequests = new Map<string, number[]>();
 
 const toolboxTalkSchema = {
@@ -338,6 +344,17 @@ export async function POST(request: Request) {
     );
   }
 
+  const requiredCredits =
+    variant === "quiz" ? TOOLBOX_QUIZ_CREDITS : BASIC_TOOLBOX_CREDITS;
+  const creditCheck = await checkOrbitAiCredits(user.id, requiredCredits);
+
+  if (!creditCheck.ok) {
+    return NextResponse.json(
+      { error: creditCheck.error, account: creditCheck.account },
+      { status: creditCheck.status },
+    );
+  }
+
   try {
     console.info("AI Toolbox Talk OpenAI request started", {
       configuration: openAiConfiguration,
@@ -346,7 +363,11 @@ export async function POST(request: Request) {
       riskAssessmentHazards: riskAssessment?.hazards.length || 0,
     });
 
-    const openai = new OpenAI({ apiKey: openAiApiKey });
+    const openai = new OpenAI({
+      apiKey: openAiApiKey,
+      timeout: 60_000,
+      maxRetries: 1,
+    });
     const response = await openai.responses.create({
       model: OPENAI_MODEL,
       input: buildPrompt(inputs, variant, sourceType, riskAssessment),
@@ -374,7 +395,22 @@ export async function POST(request: Request) {
       sourceType,
     });
 
-    return NextResponse.json({ content });
+    const creditSpend = await spendOrbitAiCreditsAfterSuccess(
+      creditCheck.adminClient,
+      user.id,
+      requiredCredits,
+      `ai-toolbox-talk:${response.id}`,
+      `AI Toolbox Talk: ${variant}`,
+    );
+
+    if (!creditSpend.ok) {
+      return NextResponse.json(
+        { error: creditSpend.error, account: creditSpend.account },
+        { status: creditSpend.status },
+      );
+    }
+
+    return NextResponse.json({ content, account: creditSpend.account });
   } catch (error) {
     const errorDetails = getOpenAiErrorDetails(error);
 

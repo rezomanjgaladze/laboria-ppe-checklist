@@ -18,6 +18,29 @@ const allowedLogoTypes = new Map([
   ["image/webp", "webp"],
 ]);
 
+export const isAllowedCompanyLogoSignature = (
+  bytes: Uint8Array,
+  contentType: string,
+) => {
+  if (contentType === "image/png") {
+    const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    return signature.every((value, index) => bytes[index] === value);
+  }
+
+  if (contentType === "image/jpeg") {
+    return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  }
+
+  if (contentType === "image/webp") {
+    return (
+      String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" &&
+      String.fromCharCode(...bytes.slice(8, 12)) === "WEBP"
+    );
+  }
+
+  return false;
+};
+
 const getAdminClient = () => {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -189,6 +212,15 @@ export async function POST(request: Request) {
   if (logo.size > maxCompanyLogoBytes) {
     return NextResponse.json(
       { error: "Company logo must be 2 MB or smaller." },
+      { status: 400 },
+    );
+  }
+
+  const logoBytes = new Uint8Array(await logo.arrayBuffer());
+
+  if (!isAllowedCompanyLogoSignature(logoBytes, logo.type)) {
+    return NextResponse.json(
+      { error: "The selected file content does not match its image format." },
       { status: 400 },
     );
   }

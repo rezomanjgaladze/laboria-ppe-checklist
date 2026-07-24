@@ -10,6 +10,15 @@ import {
   ORBIT_PRO_PLAN,
   orbitProOnlyAiToolIds,
 } from "@/app/lib/orbitPlans";
+import {
+  getOrbitAiTool,
+  type OrbitAiContext,
+  type OrbitAiToolId,
+} from "@/app/lib/orbitAi";
+import {
+  checkOrbitAiCredits,
+  spendOrbitAiCreditsAfterSuccess,
+} from "@/app/lib/orbitAiCreditsServer";
 
 type OrbitAiRequest = {
   toolId?: string;
@@ -17,6 +26,7 @@ type OrbitAiRequest = {
   toolDescription?: string;
   sourceModule?: string;
   sourceMode?: "manual" | "existing_data" | "workspace_data";
+  context?: OrbitAiContext;
   inputs?: Record<string, unknown>;
   sourceRecord?: {
     id?: unknown;
@@ -276,6 +286,18 @@ const sanitizeInputs = (inputs: Record<string, unknown> | undefined) =>
       .filter(([key, value]) => key && value),
   );
 
+const sanitizePositiveCount = (value: unknown, maximum: number) =>
+  typeof value === "number" && Number.isFinite(value)
+    ? Math.min(maximum, Math.max(1, Math.floor(value)))
+    : undefined;
+
+const sanitizeContext = (context: OrbitAiContext | undefined): OrbitAiContext => ({
+  hazardCount: sanitizePositiveCount(context?.hazardCount, 100),
+  inspectionItemCount: sanitizePositiveCount(context?.inspectionItemCount, 500),
+  departmentCount: sanitizePositiveCount(context?.departmentCount, 500),
+  sourceRecordId: sanitizeText(context?.sourceRecordId, 160),
+});
+
 const getConfiguration = (rawApiKey: string | undefined) => {
   const apiKey = rawApiKey?.trim() || "";
 
@@ -436,6 +458,7 @@ export async function POST(request: Request) {
       ? body.sourceMode
       : "manual";
   const inputs = sanitizeInputs(body.inputs);
+  const context = sanitizeContext(body.context);
   const sourceRecord =
     sourceMode !== "manual" && body.sourceRecord
       ? {
@@ -453,33 +476,32 @@ export async function POST(request: Request) {
     );
   }
 
-  if (orbitProOnlyAiToolIds.has(toolId)) {
-    const { data: billingAccount, error: billingAccountError } = await supabase
-      .from("orbit_billing_accounts")
-      .select("plan")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (billingAccountError) {
-      console.warn("Orbit AI Pro entitlement lookup failed", {
-        userId: user.id,
-        toolId,
-        error: billingAccountError,
-      });
-    }
-
-    if (billingAccount?.plan !== ORBIT_PRO_PLAN) {
-      return NextResponse.json(
-        { error: `${ORBIT_PRO_PLAN} is required for this AI feature.` },
-        { status: 403 },
-      );
-    }
-  }
-
   if (sourceMode === "manual" && Object.keys(inputs).length === 0) {
     return NextResponse.json(
       { error: "Please add operational context before generating." },
       { status: 400 },
+    );
+  }
+
+  const requiredCredits = getOrbitAiTool(
+    toolId as OrbitAiToolId,
+  ).getCredits(context);
+  const creditCheck = await checkOrbitAiCredits(user.id, requiredCredits);
+
+  if (!creditCheck.ok) {
+    return NextResponse.json(
+      { error: creditCheck.error, account: creditCheck.account },
+      { status: creditCheck.status },
+    );
+  }
+
+  if (
+    orbitProOnlyAiToolIds.has(toolId) &&
+    creditCheck.account.plan !== ORBIT_PRO_PLAN
+  ) {
+    return NextResponse.json(
+      { error: `${ORBIT_PRO_PLAN} is required for this AI feature.` },
+      { status: 403 },
     );
   }
 
@@ -499,7 +521,7 @@ export async function POST(request: Request) {
   });
 
   try {
-    const openai = new OpenAI({ apiKey });
+    const openai = new OpenAI({ apiKey, timeout: 60_000, maxRetries: 1 });
     const response = await openai.responses.create({
       model: OPENAI_MODEL,
       input: buildPrompt({
@@ -568,13 +590,44 @@ export async function POST(request: Request) {
         );
       }
 
+      const creditSpend = await spendOrbitAiCreditsAfterSuccess(
+        creditCheck.adminClient,
+        user.id,
+        requiredCredits,
+        `ai-generation:${response.id}`,
+        `Orbit AI: ${toolId}`,
+      );
+
+      if (!creditSpend.ok) {
+        return NextResponse.json(
+          { error: creditSpend.error, account: creditSpend.account },
+          { status: creditSpend.status },
+        );
+      }
+
       return NextResponse.json({
         content: structuredResponse.content,
         structuredRiskAssessment,
+        account: creditSpend.account,
       });
     }
 
-    return NextResponse.json({ content: parsed });
+    const creditSpend = await spendOrbitAiCreditsAfterSuccess(
+      creditCheck.adminClient,
+      user.id,
+      requiredCredits,
+      `ai-generation:${response.id}`,
+      `Orbit AI: ${toolId}`,
+    );
+
+    if (!creditSpend.ok) {
+      return NextResponse.json(
+        { error: creditSpend.error, account: creditSpend.account },
+        { status: creditSpend.status },
+      );
+    }
+
+    return NextResponse.json({ content: parsed, account: creditSpend.account });
   } catch (error) {
     const errorDetails = getErrorDetails(error);
     console.error("Orbit AI generation failed", {

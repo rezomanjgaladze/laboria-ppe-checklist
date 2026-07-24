@@ -21,7 +21,7 @@ import {
   orbitAiAccountUpdatedEvent,
   refreshOrbitAiAccount,
   requestOrbitAiNavigation,
-  spendOrbitAiCredits,
+  writeOrbitAiAccount,
   type OrbitAiAccount,
   type OrbitAiSourceModule,
 } from "@/app/lib/orbitAi";
@@ -280,21 +280,14 @@ export default function ToolboxTalkGeneratorModal({
       });
       const payload = (await response.json()) as {
         content?: ToolboxTalkContent;
+        account?: OrbitAiAccount;
         error?: string;
       };
 
-      if (!response.ok || !payload.content) {
+      if (!response.ok || !payload.content || !payload.account) {
         throw new Error(
           payload.error ||
             "Could not generate the toolbox talk. No AI credits were deducted.",
-        );
-      }
-
-      const updatedAccount = await spendOrbitAiCredits(userId, requiredCredits);
-
-      if (!updatedAccount) {
-        throw new Error(
-          "Your AI credit balance changed before this talk could be saved. No AI credits were deducted.",
         );
       }
 
@@ -314,7 +307,8 @@ export default function ToolboxTalkGeneratorModal({
         content: payload.content,
       };
       const updatedTalks = appendToolboxTalk(userId, talk);
-      setAccount(updatedAccount);
+      writeOrbitAiAccount(userId, payload.account);
+      setAccount(payload.account);
       setTalks(updatedTalks);
       setSelectedTalk(talk);
       setViewMode("result");

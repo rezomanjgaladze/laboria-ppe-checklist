@@ -36,17 +36,11 @@ import {
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { ALL_CHECKLISTS } from "./data/checklists";
-import ActionTrackerModule from "./components/ActionTrackerModule";
-import OrbitCommandCenterModule from "./components/OrbitCommandCenterModule";
-import RiskAssessmentsModule from "./components/RiskAssessmentsModule";
-import TrainingManagementModule from "./components/TrainingManagementModule";
-import IncidentManagementModule from "./components/IncidentManagementModule";
-import HseAnalyticsModule from "./components/HseAnalyticsModule";
-import SettingsModule from "./components/SettingsModule";
 import NotificationCenterDrawer from "./components/NotificationCenterDrawer";
 import OrbitAiToolStrip from "./components/OrbitAiToolStrip";
 import { createClient } from "@/lib/supabase/client";
@@ -94,6 +88,27 @@ import {
 import { orbitAiGenerationsUpdatedEvent } from "@/app/lib/orbitAiGenerations";
 import { toolboxTalksUpdatedEvent } from "@/app/lib/toolboxTalks";
 import type { User } from "@supabase/supabase-js";
+
+const ActionTrackerModule = dynamic(
+  () => import("./components/ActionTrackerModule"),
+);
+const OrbitCommandCenterModule = dynamic(
+  () => import("./components/OrbitCommandCenterModule"),
+  { ssr: false },
+);
+const RiskAssessmentsModule = dynamic(
+  () => import("./components/RiskAssessmentsModule"),
+);
+const TrainingManagementModule = dynamic(
+  () => import("./components/TrainingManagementModule"),
+);
+const IncidentManagementModule = dynamic(
+  () => import("./components/IncidentManagementModule"),
+);
+const HseAnalyticsModule = dynamic(
+  () => import("./components/HseAnalyticsModule"),
+);
+const SettingsModule = dynamic(() => import("./components/SettingsModule"));
 
 type InspectionResult = {
   percent: number;

@@ -22,7 +22,8 @@ import {
   orbitAiAccountUpdatedEvent,
   refreshOrbitAiAccount,
   requestOrbitAiNavigation,
-  spendOrbitAiCredits,
+  writeOrbitAiAccount,
+  type OrbitAiAccount,
   type OrbitAiContext,
   type OrbitAiSourceModule,
   type OrbitAiToolId,
@@ -275,6 +276,7 @@ export default function OrbitAiModal({
           toolDescription: tool.description,
           sourceModule: sourceModule || tool.sourceModule,
           sourceMode,
+          context,
           inputs: formValues,
           sourceRecord: selectedSource,
         }),
@@ -282,10 +284,11 @@ export default function OrbitAiModal({
       const payload = (await response.json()) as {
         content?: OrbitAiGeneratedContent;
         structuredRiskAssessment?: unknown;
+        account?: OrbitAiAccount;
         error?: string;
       };
 
-      if (!response.ok || !payload.content) {
+      if (!response.ok || !payload.content || !payload.account) {
         throw new Error(
           payload.error ||
             "Could not generate this Orbit AI draft. No AI credits were deducted.",
@@ -313,13 +316,6 @@ export default function OrbitAiModal({
         );
       }
 
-      const updatedAccount = await spendOrbitAiCredits(userId, requiredCredits);
-      if (!updatedAccount) {
-        throw new Error(
-          "Your AI credit balance changed before this draft could be saved. No AI credits were deducted.",
-        );
-      }
-
       const generation: OrbitAiGeneration = {
         id: createOrbitAiGenerationId(),
         userId,
@@ -335,7 +331,8 @@ export default function OrbitAiModal({
         structuredRiskAssessment: structuredRiskAssessment || undefined,
       };
       const updatedGenerations = appendOrbitAiGeneration(userId, generation);
-      setAccount(updatedAccount);
+      writeOrbitAiAccount(userId, payload.account);
+      setAccount(payload.account);
       setGenerations(updatedGenerations);
       setSelectedGeneration(generation);
       setMessage(

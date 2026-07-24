@@ -37,7 +37,7 @@ const safeFileName = (value: string) =>
 const getRiskCellColor = (score: number): Rgb =>
   score >= 15 ? [254, 226, 226] : score >= 4 ? [254, 243, 199] : [220, 252, 231];
 
-export const exportAiReportPdf = (report: AiReportDocument) => {
+export const buildAiReportPdf = (report: AiReportDocument) => {
   const pdf = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -330,5 +330,10 @@ export const exportAiReportPdf = (report: AiReportDocument) => {
     });
   }
 
+  return pdf;
+};
+
+export const exportAiReportPdf = (report: AiReportDocument) => {
+  const pdf = buildAiReportPdf(report);
   pdf.save(`${safeFileName(report.title) || "laboria-orbit-ai-report"}.pdf`);
 };
