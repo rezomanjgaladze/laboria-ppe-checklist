@@ -44,16 +44,16 @@ export type OrbitCreditPackDefinition = {
   priceUsd: number;
   tone: string;
   badge?: string;
-  variantEnvironmentVariable: string;
 };
 
 export type OrbitBillingProductDefinition = {
   key: OrbitBillingProductType;
   label: string;
   purchaseType: "subscription" | "credit_pack";
-  variantEnvironmentVariable: string;
+  paypalPlanEnvironmentVariable?: string;
   plan?: OrbitPlanName;
   credits?: number;
+  priceUsd?: number;
   eligiblePlans?: OrbitPlanName[];
 };
 
@@ -153,7 +153,6 @@ export const orbitCreditPacks: Record<string, OrbitCreditPackDefinition> = {
     credits: 50,
     priceUsd: 9,
     tone: "from-slate-500/16 to-slate-400/5",
-    variantEnvironmentVariable: "LEMONSQUEEZY_VARIANT_STARTER_TOPUP",
   },
   plus_pack: {
     key: "plus_pack",
@@ -163,7 +162,6 @@ export const orbitCreditPacks: Record<string, OrbitCreditPackDefinition> = {
     priceUsd: 12,
     tone: "from-[#1E90FF]/24 to-[#4DEBFF]/10",
     badge: "Plus",
-    variantEnvironmentVariable: "LEMONSQUEEZY_VARIANT_PLUS_PACK",
   },
   pro_pack: {
     key: "pro_pack",
@@ -173,7 +171,6 @@ export const orbitCreditPacks: Record<string, OrbitCreditPackDefinition> = {
     priceUsd: 8,
     tone: "from-violet-500/26 to-[#4DEBFF]/12",
     badge: "Best Value",
-    variantEnvironmentVariable: "LEMONSQUEEZY_VARIANT_PRO_PACK",
   },
 };
 
@@ -191,15 +188,17 @@ export const orbitBillingProductCatalog: Record<
     key: "plus_subscription",
     label: ORBIT_PLUS_PLAN,
     purchaseType: "subscription",
-    variantEnvironmentVariable: "LEMONSQUEEZY_VARIANT_ORBIT_PLUS",
+    paypalPlanEnvironmentVariable: "PAYPAL_PLAN_ORBIT_PLUS",
     plan: ORBIT_PLUS_PLAN,
+    priceUsd: orbitPlans[ORBIT_PLUS_PLAN].monthlyPriceUsd,
   },
   pro_subscription: {
     key: "pro_subscription",
     label: ORBIT_PRO_PLAN,
     purchaseType: "subscription",
-    variantEnvironmentVariable: "LEMONSQUEEZY_VARIANT_ORBIT_PRO",
+    paypalPlanEnvironmentVariable: "PAYPAL_PLAN_ORBIT_PRO",
     plan: ORBIT_PRO_PLAN,
+    priceUsd: orbitPlans[ORBIT_PRO_PLAN].monthlyPriceUsd,
   },
   starter_topup: {
     ...orbitCreditPacks.starter_topup,

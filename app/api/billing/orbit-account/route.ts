@@ -18,28 +18,37 @@ type BillingSubscriptionRow = {
   status?: unknown;
   renews_at?: unknown;
   ends_at?: unknown;
-  update_payment_method_url?: unknown;
-  customer_portal_url?: unknown;
-};
-
-const normalizeLemonSqueezyUrl = (value: unknown) => {
-  if (typeof value !== "string" || !value) return null;
-
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" ? url.toString() : null;
-  } catch {
-    return null;
-  }
+  current_period_end?: unknown;
 };
 
 const normalizeBillingAccount = (
   row: BillingAccountRow | null | undefined,
   subscription?: BillingSubscriptionRow | null,
 ) => {
-  const plan: OrbitPlanName = isOrbitPlanName(row?.plan)
+  const storedPlan: OrbitPlanName = isOrbitPlanName(row?.plan)
     ? row.plan
     : ORBIT_STARTER_PLAN;
+  const subscriptionStatus =
+    typeof subscription?.status === "string"
+      ? subscription.status.toLowerCase()
+      : "inactive";
+  const periodEnd =
+    typeof subscription?.current_period_end === "string"
+      ? subscription.current_period_end
+      : typeof subscription?.renews_at === "string"
+        ? subscription.renews_at
+        : typeof subscription?.ends_at === "string"
+          ? subscription.ends_at
+          : null;
+  const accessExpired =
+    periodEnd !== null &&
+    Number.isFinite(Date.parse(periodEnd)) &&
+    Date.parse(periodEnd) <= Date.now();
+  const plan =
+    subscriptionStatus === "expired" ||
+    (subscriptionStatus === "cancelled" && accessExpired)
+      ? ORBIT_STARTER_PLAN
+      : storedPlan;
   const credits =
     typeof row?.ai_credits_balance === "number" &&
     Number.isFinite(row.ai_credits_balance) &&
@@ -50,22 +59,13 @@ const normalizeBillingAccount = (
   return {
     plan,
     credits,
-    subscriptionStatus:
-      typeof subscription?.status === "string"
-        ? subscription.status
-        : "inactive",
+    subscriptionStatus,
     renewalDate:
-      typeof subscription?.renews_at === "string"
-        ? subscription.renews_at
-        : null,
+      subscriptionStatus === "active" ? periodEnd : null,
     accessEndsAt:
-      typeof subscription?.ends_at === "string" ? subscription.ends_at : null,
-    updatePaymentMethodUrl: normalizeLemonSqueezyUrl(
-      subscription?.update_payment_method_url,
-    ),
-    customerPortalUrl: normalizeLemonSqueezyUrl(
-      subscription?.customer_portal_url,
-    ),
+      subscriptionStatus === "cancelled" ? periodEnd : null,
+    updatePaymentMethodUrl: null,
+    customerPortalUrl: null,
   };
 };
 
@@ -116,9 +116,8 @@ export async function GET() {
 
   const { data: subscription, error: subscriptionError } = await billingClient
     .from("billing_subscriptions")
-    .select(
-      "status, renews_at, ends_at, update_payment_method_url, customer_portal_url",
-    )
+    .select("status, renews_at, ends_at, current_period_end")
+    .eq("provider", "paypal")
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false })
     .limit(1)
@@ -131,7 +130,27 @@ export async function GET() {
     });
   }
 
-  return NextResponse.json({
-    account: normalizeBillingAccount(data, subscription),
-  });
+  const normalizedAccount = normalizeBillingAccount(data, subscription);
+
+  if (
+    adminClient &&
+    data?.plan !== normalizedAccount.plan &&
+    normalizedAccount.plan === ORBIT_STARTER_PLAN
+  ) {
+    const { error: downgradeError } = await adminClient
+      .from("orbit_billing_accounts")
+      .update({
+        plan: ORBIT_STARTER_PLAN,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", user.id);
+    if (downgradeError) {
+      console.warn("[orbit-billing-account] could not finalize expired access", {
+        userId: user.id,
+        errorCode: downgradeError.code || null,
+      });
+    }
+  }
+
+  return NextResponse.json({ account: normalizedAccount });
 }

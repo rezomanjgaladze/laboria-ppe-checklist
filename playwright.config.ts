@@ -41,8 +41,13 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       ...process.env,
-      LEMONSQUEEZY_WEBHOOK_SECRET: "audit-webhook-secret-not-production",
-      NEXT_PUBLIC_BILLING_PROVIDER: "lemon",
+      PAYPAL_MODE: "sandbox",
+      PAYPAL_CLIENT_ID: "audit-client-id-not-production",
+      PAYPAL_CLIENT_SECRET: "audit-client-secret-not-production",
+      PAYPAL_WEBHOOK_ID: "audit-webhook-id-not-production",
+      PAYPAL_PLAN_ORBIT_PLUS: "P-AUDITPLUS000000000000000",
+      PAYPAL_PLAN_ORBIT_PRO: "P-AUDITPRO0000000000000000",
+      NEXT_PUBLIC_BILLING_PROVIDER: "paypal",
     },
   },
 });

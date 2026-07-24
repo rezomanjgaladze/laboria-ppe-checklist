@@ -23,7 +23,7 @@ Authenticated end-to-end validation was also blocked by an unavailable local
 Supabase project and the absence of dedicated audit accounts.
 
 The billing implementation referenced in the original audit has since been
-replaced. Billing must be reassessed against the current Lemon Squeezy routes,
+replaced. Billing must be reassessed against the current PayPal routes,
 generic Supabase billing tables, signed webhook fixtures, and a real provider
 test-mode transaction before launch.
 
@@ -120,7 +120,7 @@ in a non-production Supabase test project.
 4. Exercise all module CRUD and cross-module links on desktop, tablet, mobile.
 5. Upload, retrieve, and delete logos; attempt cross-user storage access.
 6. Run AI success, failure, timeout, and ledger checks with a test API key.
-7. Run Lemon Squeezy test-mode checkout, renewal, cancellation, failed payment,
+7. Run PayPal Sandbox checkout, renewal, cancellation, failed payment,
    retry, refund, duplicate event, and plan-change scenarios.
 8. Export empty, long, Unicode, and special-character PDFs from every module.
 9. Run authenticated accessibility and keyboard checks.

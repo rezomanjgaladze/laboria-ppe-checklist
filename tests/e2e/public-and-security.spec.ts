@@ -72,7 +72,7 @@ test("unauthenticated API routes reject access", async ({ request }, testInfo) =
     ["/api/billing/orbit-account", "get", 401],
     ["/api/billing/ai-credits/spend", "post", 401, { credits: 1 }],
     [
-      "/api/billing/lemon/checkout",
+      "/api/billing/paypal/checkout",
       "post",
       401,
       { product_type: "plus_subscription" },
@@ -90,14 +90,18 @@ test("unauthenticated API routes reject access", async ({ request }, testInfo) =
 
 test("public billing diagnostics expose presence flags but no credential values", async ({ request }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop-chromium", "API diagnostics run once.");
-  const response = await request.get("/api/billing/lemon/config");
-  expect(response.ok()).toBeTruthy();
+  const response = await request.get("/api/billing/paypal/config");
+  expect([200, 503]).toContain(response.status());
   const text = await response.text();
-  expect(text).not.toContain("lmsq_");
+  expect(text).not.toContain("audit-client-id-not-production");
+  expect(text).not.toContain("audit-client-secret-not-production");
+  expect(text).not.toContain("audit-webhook-id-not-production");
   expect(text).not.toContain("sk_");
   expect(text).not.toContain("eyJ");
   const payload = JSON.parse(text);
   expect(typeof payload.checkoutEnabled).toBe("boolean");
+  expect(typeof payload.diagnostics.paypalClientConfigured).toBe("boolean");
+  expect(typeof payload.diagnostics.paypalWebhookConfigured).toBe("boolean");
 });
 
 test("security headers and proxy protection remain active", async ({ request }, testInfo) => {

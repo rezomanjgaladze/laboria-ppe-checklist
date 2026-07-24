@@ -50,7 +50,7 @@ import {
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
 import { isOrbitAiTestCreditAdmin } from "@/app/lib/orbitAiAdmin";
-import { openOrbitLemonSqueezyCheckout } from "@/app/lib/lemonSqueezyCheckout";
+import { openOrbitPayPalCheckout } from "@/app/lib/paypalCheckout";
 import {
   ORBIT_PRO_PLAN,
   ORBIT_STARTER_PLAN,
@@ -94,56 +94,60 @@ type SettingsSection = {
   icon: LucideIcon;
 };
 
-type LemonSetupState = {
+type PayPalSetupState = {
   loading: boolean;
   checkoutEnabled: boolean;
   provider: string;
+  mode: string;
   missingVariables: string[];
   invalidVariables: string[];
-  diagnostics: LemonDiagnostics;
+  diagnostics: PayPalDiagnostics;
 };
 
-type LemonDiagnostics = {
+type PayPalDiagnostics = {
   checkoutEnabled: boolean;
-  apiKeyPresent: boolean;
-  storeIdPresent: boolean;
-  webhookSecretPresent: boolean;
-  plusVariantPresent: boolean;
-  proVariantPresent: boolean;
-  starterTopupVariantPresent: boolean;
-  plusPackVariantPresent: boolean;
-  proPackVariantPresent: boolean;
+  billingProvider: string;
+  paypalMode: string;
+  paypalClientConfigured: boolean;
+  paypalWebhookConfigured: boolean;
+  plusPlanPresent: boolean;
+  proPlanPresent: boolean;
+  serviceRolePresent: boolean;
 };
 
-const emptyLemonDiagnostics: LemonDiagnostics = {
+const emptyPayPalDiagnostics: PayPalDiagnostics = {
   checkoutEnabled: false,
-  apiKeyPresent: false,
-  storeIdPresent: false,
-  webhookSecretPresent: false,
-  plusVariantPresent: false,
-  proVariantPresent: false,
-  starterTopupVariantPresent: false,
-  plusPackVariantPresent: false,
-  proPackVariantPresent: false,
+  billingProvider: "unconfigured",
+  paypalMode: "unconfigured",
+  paypalClientConfigured: false,
+  paypalWebhookConfigured: false,
+  plusPlanPresent: false,
+  proPlanPresent: false,
+  serviceRolePresent: false,
 };
 
-const normalizeLemonDiagnostics = (value: unknown): LemonDiagnostics => {
+const normalizePayPalDiagnostics = (value: unknown): PayPalDiagnostics => {
   if (!value || typeof value !== "object") {
-    return emptyLemonDiagnostics;
+    return emptyPayPalDiagnostics;
   }
 
-  const candidate = value as Partial<Record<keyof LemonDiagnostics, unknown>>;
+  const candidate = value as Partial<Record<keyof PayPalDiagnostics, unknown>>;
 
   return {
     checkoutEnabled: Boolean(candidate.checkoutEnabled),
-    apiKeyPresent: Boolean(candidate.apiKeyPresent),
-    storeIdPresent: Boolean(candidate.storeIdPresent),
-    webhookSecretPresent: Boolean(candidate.webhookSecretPresent),
-    plusVariantPresent: Boolean(candidate.plusVariantPresent),
-    proVariantPresent: Boolean(candidate.proVariantPresent),
-    starterTopupVariantPresent: Boolean(candidate.starterTopupVariantPresent),
-    plusPackVariantPresent: Boolean(candidate.plusPackVariantPresent),
-    proPackVariantPresent: Boolean(candidate.proPackVariantPresent),
+    billingProvider:
+      typeof candidate.billingProvider === "string"
+        ? candidate.billingProvider
+        : "unconfigured",
+    paypalMode:
+      typeof candidate.paypalMode === "string"
+        ? candidate.paypalMode
+        : "unconfigured",
+    paypalClientConfigured: Boolean(candidate.paypalClientConfigured),
+    paypalWebhookConfigured: Boolean(candidate.paypalWebhookConfigured),
+    plusPlanPresent: Boolean(candidate.plusPlanPresent),
+    proPlanPresent: Boolean(candidate.proPlanPresent),
+    serviceRolePresent: Boolean(candidate.serviceRolePresent),
   };
 };
 
@@ -587,46 +591,42 @@ export default function SettingsModule({
     message: string;
     type: "error" | "info" | "success";
   } | null>(null);
-  const [lemonSetup, setLemonSetup] = useState<LemonSetupState>({
+  const [paypalSetup, setPayPalSetup] = useState<PayPalSetupState>({
     loading: true,
     checkoutEnabled: false,
     provider: "unconfigured",
+    mode: "unconfigured",
     missingVariables: [],
     invalidVariables: [],
-    diagnostics: emptyLemonDiagnostics,
+    diagnostics: emptyPayPalDiagnostics,
   });
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const theme = getTheme(darkMode);
   const canAddTestCredits = isOrbitAiTestCreditAdmin(userEmail);
-  const lemonSetupMessage = [
-    lemonSetup.missingVariables.length
-      ? `missing ${lemonSetup.missingVariables.join(", ")}`
+  const paypalSetupMessage = [
+    paypalSetup.missingVariables.length
+      ? `missing ${paypalSetup.missingVariables.join(", ")}`
       : "",
-    lemonSetup.invalidVariables.length
-      ? `invalid ${lemonSetup.invalidVariables.join(", ")}`
+    paypalSetup.invalidVariables.length
+      ? `invalid ${paypalSetup.invalidVariables.join(", ")}`
       : "",
   ].filter(Boolean);
-  const lemonSetupDiagnosticMessage = lemonSetupMessage.length
-    ? `Lemon Squeezy checkout is not configured: ${lemonSetupMessage.join("; ")}.`
-    : lemonSetup.checkoutEnabled
-      ? "Lemon Squeezy checkout is configured."
-      : "Lemon Squeezy checkout is not configured.";
-  const lemonDiagnosticRows = [
-    ["billingProvider", lemonSetup.provider === "lemon" ? "lemon" : lemonSetup.provider],
-    ["lemonApiConfigured", lemonSetup.diagnostics.apiKeyPresent],
-    ["lemonStoreConfigured", lemonSetup.diagnostics.storeIdPresent],
+  const paypalSetupDiagnosticMessage = paypalSetupMessage.length
+    ? `PayPal checkout cannot open: ${paypalSetupMessage.join("; ")}.`
+    : paypalSetup.checkoutEnabled
+      ? "PayPal checkout is configured."
+      : "PayPal checkout is not configured.";
+  const paypalDiagnosticRows = [
+    ["billingProvider", paypalSetup.diagnostics.billingProvider],
+    ["paypalMode", paypalSetup.diagnostics.paypalMode],
+    ["paypalClientConfigured", paypalSetup.diagnostics.paypalClientConfigured],
     [
-      "lemonWebhookSecretConfigured",
-      lemonSetup.diagnostics.webhookSecretPresent,
+      "paypalWebhookConfigured",
+      paypalSetup.diagnostics.paypalWebhookConfigured,
     ],
-    ["plusVariantPresent", lemonSetup.diagnostics.plusVariantPresent],
-    ["proVariantPresent", lemonSetup.diagnostics.proVariantPresent],
-    [
-      "starterTopupVariantPresent",
-      lemonSetup.diagnostics.starterTopupVariantPresent,
-    ],
-    ["plusPackVariantPresent", lemonSetup.diagnostics.plusPackVariantPresent],
-    ["proPackVariantPresent", lemonSetup.diagnostics.proPackVariantPresent],
+    ["plusPlanPresent", paypalSetup.diagnostics.plusPlanPresent],
+    ["proPlanPresent", paypalSetup.diagnostics.proPlanPresent],
+    ["serviceRolePresent", paypalSetup.diagnostics.serviceRolePresent],
   ] as const;
 
   useEffect(() => {
@@ -669,28 +669,30 @@ export default function SettingsModule({
   useEffect(() => {
     let active = true;
 
-    fetch("/api/billing/lemon/config", { cache: "no-store" })
+    fetch("/api/billing/paypal/config", { cache: "no-store" })
       .then(async (response) => {
-        const payload = (await response.json()) as Partial<LemonSetupState>;
+        const payload = (await response.json()) as Partial<PayPalSetupState>;
 
         if (!active) {
           return;
         }
 
-        setLemonSetup({
+        setPayPalSetup({
           loading: false,
           checkoutEnabled: Boolean(response.ok && payload.checkoutEnabled),
           provider:
             typeof payload.provider === "string"
               ? payload.provider
               : "unconfigured",
+          mode:
+            typeof payload.mode === "string" ? payload.mode : "unconfigured",
           missingVariables: Array.isArray(payload.missingVariables)
             ? payload.missingVariables
             : [],
           invalidVariables: Array.isArray(payload.invalidVariables)
             ? payload.invalidVariables
             : [],
-          diagnostics: normalizeLemonDiagnostics(payload.diagnostics),
+          diagnostics: normalizePayPalDiagnostics(payload.diagnostics),
         });
       })
       .catch(() => {
@@ -698,7 +700,7 @@ export default function SettingsModule({
           return;
         }
 
-        setLemonSetup((current) => ({
+        setPayPalSetup((current) => ({
           ...current,
           loading: false,
           checkoutEnabled: false,
@@ -783,22 +785,22 @@ export default function SettingsModule({
     }
   };
 
-  const startLemonCheckout = async (
+  const startPayPalCheckout = async (
     productType: OrbitBillingProductType,
   ) => {
     setActiveBillingProduct(productType);
     setCheckoutFeedback({
-      message: "Opening secure Lemon Squeezy checkout...",
+      message: "Opening secure PayPal checkout...",
       type: "info",
     });
 
     try {
-      await openOrbitLemonSqueezyCheckout(productType);
+      await openOrbitPayPalCheckout(productType);
       setCheckoutFeedback({
-        message: "Secure Lemon Squeezy checkout opened.",
+        message: "Secure PayPal checkout opened.",
         type: "success",
       });
-      setNotice("Secure Lemon Squeezy checkout opened.");
+      setNotice("Secure PayPal checkout opened.");
     } catch (error) {
       const message =
         error instanceof Error
@@ -1637,8 +1639,8 @@ export default function SettingsModule({
                 </div>
               ) : null}
               <p className={joinClasses("mt-2 text-sm leading-6", theme.muted)}>
-                {lemonSetup.checkoutEnabled
-                  ? "Secure Lemon Squeezy checkout is ready. Plan changes and credit packs are applied only after verified payment events."
+                {paypalSetup.checkoutEnabled
+                  ? "Secure PayPal checkout is ready. Plan changes and credit packs are applied only after verified PayPal payment events."
                   : "Payments are being configured. Please contact Laboria. AI credits remain account-specific and update Orbit tools immediately."}
               </p>
               {aiAccount.customerPortalUrl ||
@@ -1671,6 +1673,13 @@ export default function SettingsModule({
                     </a>
                   ) : null}
                 </div>
+              ) : null}
+              {aiAccount.plan !== ORBIT_STARTER_PLAN &&
+              !aiAccount.customerPortalUrl ? (
+                <p className={joinClasses("mt-3 text-xs leading-5", theme.muted)}>
+                  To manage or cancel a PayPal subscription, open PayPal
+                  Settings and select Payments, then Automatic Payments.
+                </p>
               ) : null}
             </div>
             {canAddTestCredits ? (
@@ -1723,14 +1732,14 @@ export default function SettingsModule({
                 theme.badge,
               )}
             >
-              {lemonSetup.checkoutEnabled
-                ? "Secure Lemon Squeezy checkout"
-                : lemonSetup.loading
+              {paypalSetup.checkoutEnabled
+                ? "Secure PayPal checkout"
+                : paypalSetup.loading
                   ? "Checking payment setup"
                   : "Payment setup required"}
             </span>
           </div>
-          {!lemonSetup.loading && !lemonSetup.checkoutEnabled ? (
+          {!paypalSetup.loading && !paypalSetup.checkoutEnabled ? (
             <div
               className={joinClasses(
                 "mt-4 rounded-2xl border p-4",
@@ -1750,7 +1759,7 @@ export default function SettingsModule({
                     Payment setup required
                   </div>
                   <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
-                    {lemonSetupDiagnosticMessage}
+                    {paypalSetupDiagnosticMessage}
                   </p>
                 </div>
               </div>
@@ -1795,7 +1804,7 @@ export default function SettingsModule({
                 )}
                 <div>
                   <div className={joinClasses("text-sm font-bold", theme.heading)}>
-                    Lemon Squeezy checkout
+                    PayPal checkout
                   </div>
                   <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
                     {checkoutFeedback.message}
@@ -1809,7 +1818,7 @@ export default function SettingsModule({
               Safe billing diagnostics
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {lemonDiagnosticRows.map(([label, value]) => (
+              {paypalDiagnosticRows.map(([label, value]) => (
                 <div
                   key={label}
                   className={joinClasses(
@@ -1823,7 +1832,9 @@ export default function SettingsModule({
                   <span
                     className={joinClasses(
                       "font-bold",
-                      value === true || value === "lemon"
+                      value === true ||
+                      value === "paypal" ||
+                      value === "sandbox"
                         ? "text-emerald-400"
                         : "text-amber-400",
                     )}
@@ -1931,7 +1942,7 @@ export default function SettingsModule({
                     return;
                   }
 
-                  void startLemonCheckout(plan.purchaseKey);
+                  void startPayPalCheckout(plan.purchaseKey);
                 }}
                 disabled={
                   Boolean(plan.purchaseKey) &&
@@ -2025,7 +2036,7 @@ export default function SettingsModule({
                     return;
                   }
 
-                  void startLemonCheckout(pack.key);
+                  void startPayPalCheckout(pack.key);
                 }}
                 disabled={activeBillingProduct === pack.key}
                 className={joinClasses(

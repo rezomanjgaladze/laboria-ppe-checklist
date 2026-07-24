@@ -46,13 +46,13 @@ The storage policies limit each authenticated user to their own folder. When
 `SUPABASE_SERVICE_ROLE_KEY` is configured on the server, the upload route can
 also create the private bucket automatically.
 
-## Lemon Squeezy Billing
+## PayPal Billing
 
-Laboria Orbit uses Lemon Squeezy for subscriptions and AI credit packs.
-Checkout remains unavailable until every required variable is configured and
-the server billing migration is applied. Browser checkout success never grants
-a plan upgrade or AI credits. Only verified webhook events update billing
-records and the AI credit ledger.
+Laboria Orbit uses direct PayPal REST APIs for subscriptions and AI credit
+packs. Checkout remains unavailable until the required PayPal variables are
+configured and the server billing migration is applied. Browser approval alone
+never grants a plan upgrade or AI credits. Entitlements are applied only after
+server-side capture or verified PayPal webhook events.
 
 The approved Orbit package structure, operational limits, AI entitlements,
 credit packs, and billing product catalog live in one source file:
@@ -61,10 +61,13 @@ credit packs, and billing product catalog live in one source file:
 app/lib/orbitPlans.ts
 ```
 
-Create these recurring and one-time variants in Lemon Squeezy:
+Create these PayPal subscription plans:
 
 - `Orbit Plus` subscription: `$19 / month`
 - `Orbit Pro` subscription: `$49 / month`
+
+One-time credit packs use the PayPal Orders API:
+
 - `Starter Top-Up`: `50 AI Credits` for `$9`
 - `Orbit Plus Discount Pack`: `100 AI Credits` for `$12`
 - `Orbit Pro Best Value Pack`: `100 AI Credits` for `$8`
@@ -72,42 +75,42 @@ Create these recurring and one-time variants in Lemon Squeezy:
 Configure these Vercel environment variables:
 
 ```bash
-LEMONSQUEEZY_API_KEY=
-LEMONSQUEEZY_STORE_ID=
-LEMONSQUEEZY_WEBHOOK_SECRET=
-LEMONSQUEEZY_VARIANT_ORBIT_PLUS=
-LEMONSQUEEZY_VARIANT_ORBIT_PRO=
-LEMONSQUEEZY_VARIANT_STARTER_TOPUP=
-LEMONSQUEEZY_VARIANT_PLUS_PACK=
-LEMONSQUEEZY_VARIANT_PRO_PACK=
-NEXT_PUBLIC_BILLING_PROVIDER=lemon
+PAYPAL_MODE=sandbox
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_WEBHOOK_ID=
+PAYPAL_PLAN_ORBIT_PLUS=
+PAYPAL_PLAN_ORBIT_PRO=
+NEXT_PUBLIC_BILLING_PROVIDER=paypal
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
 Apply the billing migration before enabling checkout:
 
 ```text
-supabase/migrations/20260725_lemon_squeezy_billing.sql
+supabase/migrations/20260726_paypal_billing.sql
 ```
 
-Add this Lemon Squeezy webhook destination:
+Add this PayPal webhook destination:
 
 ```text
-https://laboria-ppe-checklist.vercel.app/api/billing/lemon/webhook
+https://laboria-ppe-checklist.vercel.app/api/billing/paypal/webhook
 ```
 
 Subscribe the destination to:
 
-- `order_created`
-- `subscription_created`
-- `subscription_updated`
-- `subscription_cancelled`
-- `subscription_expired`
-- `subscription_resumed`
-- `subscription_paused`
-- `subscription_unpaused`
-- `subscription_payment_success`
-- `subscription_payment_failed`
+- `BILLING.SUBSCRIPTION.CREATED`
+- `BILLING.SUBSCRIPTION.ACTIVATED`
+- `BILLING.SUBSCRIPTION.UPDATED`
+- `BILLING.SUBSCRIPTION.CANCELLED`
+- `BILLING.SUBSCRIPTION.SUSPENDED`
+- `BILLING.SUBSCRIPTION.EXPIRED`
+- `BILLING.SUBSCRIPTION.PAYMENT.FAILED`
+- `PAYMENT.SALE.COMPLETED`
+- `PAYMENT.CAPTURE.COMPLETED`
+
+See [PAYPAL_SETUP.md](PAYPAL_SETUP.md) for complete Sandbox setup and testing
+steps.
 
 ## Production
 
