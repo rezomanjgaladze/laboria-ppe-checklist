@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { isOrbitAiTestCreditAdmin } from "@/app/lib/orbitAiAdmin";
 import { createClient } from "@/lib/supabase/server";
+import { PayPalSetupControl } from "./PayPalSetupControl";
 
 export const dynamic = "force-dynamic";
 
@@ -27,18 +28,7 @@ export default async function PayPalSandboxSetupPage() {
           This action is Sandbox-only and reuses exact matching Laboria Orbit
           product and plan records.
         </p>
-        <form
-          action="/api/admin/setup-paypal-sandbox"
-          method="post"
-          className="mt-6"
-        >
-          <button
-            type="submit"
-            className="w-full rounded-md bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-200"
-          >
-            Create or reuse Sandbox plans
-          </button>
-        </form>
+        <PayPalSetupControl />
       </section>
     </main>
   );
