@@ -11,6 +11,7 @@ import {
   CreditCard,
   Database,
   Download,
+  ExternalLink,
   FileText,
   GraduationCap,
   LoaderCircle,
@@ -50,7 +51,10 @@ import {
   type OrbitAiToolId,
 } from "@/app/lib/orbitAi";
 import { isOrbitAiTestCreditAdmin } from "@/app/lib/orbitAiAdmin";
-import { openOrbitPayPalCheckout } from "@/app/lib/paypalCheckout";
+import {
+  cancelOrbitPayPalPendingApproval,
+  openOrbitPayPalCheckout,
+} from "@/app/lib/paypalCheckout";
 import {
   ORBIT_PRO_PLAN,
   ORBIT_STARTER_PLAN,
@@ -591,6 +595,9 @@ export default function SettingsModule({
     message: string;
     type: "error" | "info" | "success";
   } | null>(null);
+  const [checkoutApprovalUrl, setCheckoutApprovalUrl] = useState<string | null>(
+    null,
+  );
   const [paypalSetup, setPayPalSetup] = useState<PayPalSetupState>({
     loading: true,
     checkoutEnabled: false,
@@ -603,6 +610,7 @@ export default function SettingsModule({
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const theme = getTheme(darkMode);
   const canAddTestCredits = isOrbitAiTestCreditAdmin(userEmail);
+  const pendingApproval = aiAccount.pendingApproval;
   const paypalSetupMessage = [
     paypalSetup.missingVariables.length
       ? `missing ${paypalSetup.missingVariables.join(", ")}`
@@ -733,6 +741,49 @@ export default function SettingsModule({
     return () => window.clearTimeout(timeoutId);
   }, [navigationIntent, onNavigationIntentHandled]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const billingResult = params.get("billing");
+    if (!billingResult) return;
+
+    const suppliedMessage = params.get("billing_message")?.trim();
+    const feedback =
+      billingResult === "cancelled"
+        ? {
+            message:
+              suppliedMessage ||
+              "PayPal approval was cancelled. You can restart whenever you are ready.",
+            type: "info" as const,
+          }
+        : billingResult === "pending" ||
+            billingResult === "subscription-approved"
+          ? {
+              message: suppliedMessage || "Payment confirmation pending.",
+              type: "info" as const,
+            }
+          : billingResult === "success"
+            ? {
+                message: suppliedMessage || "PayPal payment confirmed.",
+                type: "success" as const,
+              }
+            : {
+                message:
+                  suppliedMessage || "PayPal could not complete the request.",
+                type: "error" as const,
+              };
+
+    setActiveSection("billing-subscription");
+    setCheckoutFeedback(feedback);
+    void refreshOrbitAiAccount(userId)
+      .then(setAiAccount)
+      .catch(() => undefined);
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}${window.location.hash}`,
+    );
+  }, [userId]);
+
   const persistSettings = (nextSettings: WorkspaceSettings, message?: string) => {
     writeWorkspaceSettings(userId, nextSettings);
     setSettings(nextSettings);
@@ -795,22 +846,71 @@ export default function SettingsModule({
     });
 
     try {
-      await openOrbitPayPalCheckout(productType);
+      const result = await openOrbitPayPalCheckout(productType);
+      setCheckoutApprovalUrl(result.approvalUrl);
+      const refreshedAccount = await refreshOrbitAiAccount(userId);
+      setAiAccount(refreshedAccount);
+
+      if (result.paymentConfirmationPending) {
+        setCheckoutFeedback({
+          message: "Payment confirmation pending.",
+          type: "info",
+        });
+        setNotice("Payment confirmation pending.");
+        return;
+      }
+
       setCheckoutFeedback({
-        message: "Secure PayPal checkout opened.",
+        message: result.reusedPendingApproval
+          ? "Your existing PayPal approval is ready to continue."
+          : result.popupOpened
+            ? "Secure PayPal checkout opened."
+            : "Use the link below to open PayPal checkout.",
         type: "success",
       });
-      setNotice("Secure PayPal checkout opened.");
+      setNotice(
+        result.reusedPendingApproval
+          ? "Continue your existing PayPal approval."
+          : "Secure PayPal checkout is ready.",
+      );
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : "Payments are being configured. Please contact Laboria.";
 
+      void refreshOrbitAiAccount(userId)
+        .then(setAiAccount)
+        .catch(() => undefined);
       setCheckoutFeedback({
         message,
         type: "error",
       });
+      setNotice(message);
+    } finally {
+      setActiveBillingProduct(null);
+    }
+  };
+
+  const restartPayPalApproval = async () => {
+    setActiveBillingProduct(pendingApproval?.productType || null);
+    setCheckoutApprovalUrl(null);
+    setCheckoutFeedback({
+      message: "Cancelling the previous PayPal approval...",
+      type: "info",
+    });
+
+    try {
+      const productType = await cancelOrbitPayPalPendingApproval();
+      const refreshedAccount = await refreshOrbitAiAccount(userId);
+      setAiAccount(refreshedAccount);
+      await startPayPalCheckout(productType);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "The pending PayPal approval could not be restarted.";
+      setCheckoutFeedback({ message, type: "error" });
       setNotice(message);
     } finally {
       setActiveBillingProduct(null);
@@ -1809,7 +1909,72 @@ export default function SettingsModule({
                   <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
                     {checkoutFeedback.message}
                   </p>
+                  {checkoutApprovalUrl ? (
+                    <a
+                      href={checkoutApprovalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#1E90FF] transition hover:text-[#4DEBFF]"
+                    >
+                      Open PayPal checkout in new tab
+                      <ExternalLink size={14} aria-hidden />
+                    </a>
+                  ) : null}
                 </div>
+              </div>
+            </div>
+          ) : null}
+          {pendingApproval ? (
+            <div
+              className={joinClasses(
+                "mt-4 rounded-2xl border p-4",
+                darkMode
+                  ? "border-amber-300/25 bg-amber-400/[0.07]"
+                  : "border-amber-300 bg-amber-50",
+              )}
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <div className={joinClasses("text-sm font-bold", theme.heading)}>
+                    {pendingApproval.confirmationPending
+                      ? "Payment confirmation pending"
+                      : "PayPal approval pending"}
+                  </div>
+                  <p className={joinClasses("mt-1 text-sm leading-6", theme.muted)}>
+                    {pendingApproval.confirmationPending
+                      ? `${pendingApproval.plan} was approved in PayPal. Orbit will activate access only after the verified PayPal webhook arrives.`
+                      : `Continue the existing ${pendingApproval.plan} approval, or start over with a fresh PayPal checkout.`}
+                  </p>
+                </div>
+                {!pendingApproval.confirmationPending ? (
+                  <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void startPayPalCheckout(pendingApproval.productType)
+                      }
+                      disabled={
+                        activeBillingProduct === pendingApproval.productType
+                      }
+                      className="rounded-xl border border-[#1E90FF] bg-[#1E90FF] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1878d6] disabled:cursor-wait disabled:opacity-60"
+                    >
+                      {activeBillingProduct === pendingApproval.productType
+                        ? "Opening..."
+                        : "Continue PayPal approval"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void restartPayPalApproval()}
+                      disabled={activeBillingProduct !== null}
+                      className={joinClasses(
+                        "rounded-xl border px-4 py-2.5 text-sm font-semibold transition disabled:cursor-wait disabled:opacity-60",
+                        theme.buttonGhost,
+                      )}
+                    >
+                      Start over
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : null}
@@ -1963,6 +2128,10 @@ export default function SettingsModule({
                   ? "Current Plan"
                   : plan.purchaseKey && activeBillingProduct === plan.purchaseKey
                     ? "Opening..."
+                    : plan.purchaseKey &&
+                        pendingApproval?.productType === plan.purchaseKey &&
+                        !pendingApproval.confirmationPending
+                      ? "Continue PayPal approval"
                     : plan.purchaseKey
                       ? plan.buttonLabel
                       : "Free tier"}

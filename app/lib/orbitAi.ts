@@ -49,6 +49,12 @@ export type OrbitAiAccount = {
   accessEndsAt?: string | null;
   updatePaymentMethodUrl?: string | null;
   customerPortalUrl?: string | null;
+  pendingApproval?: {
+    productType: "plus_subscription" | "pro_subscription";
+    plan: "Orbit Plus" | "Orbit Pro";
+    createdAt: string | null;
+    confirmationPending: boolean;
+  } | null;
 };
 
 export type OrbitAiCreditTopUp = {
@@ -447,6 +453,24 @@ const normalizeOrbitAiAccount = (value: unknown): OrbitAiAccount => {
     customerPortalUrl:
       typeof candidate.customerPortalUrl === "string"
         ? candidate.customerPortalUrl
+        : null,
+    pendingApproval:
+      candidate.pendingApproval &&
+      (candidate.pendingApproval.productType === "plus_subscription" ||
+        candidate.pendingApproval.productType === "pro_subscription") &&
+      (candidate.pendingApproval.plan === "Orbit Plus" ||
+        candidate.pendingApproval.plan === "Orbit Pro")
+        ? {
+            productType: candidate.pendingApproval.productType,
+            plan: candidate.pendingApproval.plan,
+            createdAt:
+              typeof candidate.pendingApproval.createdAt === "string"
+                ? candidate.pendingApproval.createdAt
+                : null,
+            confirmationPending: Boolean(
+              candidate.pendingApproval.confirmationPending,
+            ),
+          }
         : null,
   };
 };

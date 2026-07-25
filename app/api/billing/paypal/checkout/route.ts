@@ -13,6 +13,13 @@ import {
 } from "@/app/lib/paypalBilling";
 import { buildPayPalCustomId } from "@/app/lib/paypalBillingPersistence";
 import {
+  cancelPayPalPendingSubscription,
+  createPayPalSubscriptionReturnState,
+  getTrustedPayPalApprovalUrl,
+  inspectPayPalSubscription,
+  isPayPalPendingApprovalExpired,
+} from "@/app/lib/paypalPendingApproval";
+import {
   ORBIT_STARTER_PLAN,
   isOrbitBillingProductType,
   isOrbitPlanName,
@@ -24,28 +31,10 @@ export const runtime = "nodejs";
 const billingMigrationFile =
   "supabase/migrations/20260726_paypal_billing.sql";
 
-type PayPalLink = {
-  href?: unknown;
-  rel?: unknown;
-};
-
 type PayPalCheckoutPayload = {
   id?: unknown;
   status?: unknown;
   links?: unknown;
-};
-
-const getApprovalUrl = (payload: PayPalCheckoutPayload | null) => {
-  const links = Array.isArray(payload?.links)
-    ? (payload.links as PayPalLink[])
-    : [];
-  const approvalLink = links.find(
-    (link) =>
-      (link.rel === "approve" || link.rel === "payer-action") &&
-      typeof link.href === "string",
-  );
-
-  return typeof approvalLink?.href === "string" ? approvalLink.href : "";
 };
 
 const getApplicationOrigin = (request: Request) => {
@@ -184,7 +173,9 @@ export async function POST(request: Request) {
   const { data: existingSubscription, error: existingSubscriptionError } =
     await adminClient
       .from("billing_subscriptions")
-      .select("paypal_subscription_id, product_type, plan, status")
+      .select(
+        "paypal_subscription_id, product_type, plan, status, created_at, updated_at",
+      )
       .eq("provider", "paypal")
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false })
@@ -226,11 +217,23 @@ export async function POST(request: Request) {
   }
 
   const customId = buildPayPalCustomId(user.id, product.key);
+  const returnState = createPayPalSubscriptionReturnState(user.id);
+  const subscriptionReturnUrl = new URL(
+    "/api/billing/paypal/subscription-return",
+    origin,
+  );
+  subscriptionReturnUrl.searchParams.set("result", "approved");
+  subscriptionReturnUrl.searchParams.set("state", returnState);
+  const subscriptionCancelUrl = new URL(subscriptionReturnUrl);
+  subscriptionCancelUrl.searchParams.set("result", "cancelled");
   const returnUrl =
     product.purchaseType === "credit_pack"
       ? `${origin}/api/billing/paypal/capture`
-      : `${origin}/?billing=subscription-approved`;
-  const cancelUrl = `${origin}/?billing=cancelled`;
+      : subscriptionReturnUrl.toString();
+  const cancelUrl =
+    product.purchaseType === "credit_pack"
+      ? `${origin}/?billing=cancelled`
+      : subscriptionCancelUrl.toString();
 
   try {
     if (product.purchaseType === "subscription") {
@@ -248,17 +251,88 @@ export async function POST(request: Request) {
         ? existingSubscription.product_type
         : null;
 
+      if (existingSubscriptionId && existingStatus === "approved") {
+        return NextResponse.json({
+          payment_confirmation_pending: true,
+          checkout_type: "subscription",
+          message: "Payment confirmation pending.",
+        });
+      }
+
       if (
         existingSubscriptionId &&
-        ["approval_pending", "approved"].includes(existingStatus)
+        existingStatus === "approval_pending"
       ) {
-        return NextResponse.json(
-          {
-            error:
-              "A PayPal subscription approval is already pending for this account.",
-          },
-          { status: 409 },
+        const sameProduct = existingProductType === product.key;
+        const expired = isPayPalPendingApprovalExpired(
+          existingSubscription?.created_at,
         );
+        const inspection = await inspectPayPalSubscription(
+          existingSubscriptionId,
+        );
+
+        if (["active", "approved"].includes(inspection.status)) {
+          const { error: pendingUpdateError } = await adminClient
+            .from("billing_subscriptions")
+            .update({
+              status: "approved",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("paypal_subscription_id", existingSubscriptionId);
+          if (pendingUpdateError) throw pendingUpdateError;
+
+          return NextResponse.json({
+            payment_confirmation_pending: true,
+            checkout_type: "subscription",
+            message: "Payment confirmation pending.",
+          });
+        }
+
+        if (["cancelled", "expired"].includes(inspection.status)) {
+          const { error: pendingUpdateError } = await adminClient
+            .from("billing_subscriptions")
+            .update({
+              status: inspection.status,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("paypal_subscription_id", existingSubscriptionId);
+          if (pendingUpdateError) throw pendingUpdateError;
+        } else if (!expired && sameProduct && inspection.approvalUrl) {
+          return NextResponse.json({
+            approval_url: inspection.approvalUrl,
+            checkout_type: "subscription",
+            reused_pending_approval: true,
+          });
+        } else {
+          const cancellation = await cancelPayPalPendingSubscription(
+            existingSubscriptionId,
+            expired
+              ? "Laboria Orbit pending approval expired"
+              : "Laboria Orbit buyer restarted approval",
+          );
+
+          if (!cancellation.cancelled) {
+            return NextResponse.json(
+              {
+                error:
+                  cancellation.error ||
+                  "The pending PayPal approval could not be restarted safely.",
+                recoverable_pending_approval: true,
+              },
+              { status: 409 },
+            );
+          }
+
+          const { error: pendingUpdateError } = await adminClient
+            .from("billing_subscriptions")
+            .update({
+              status: expired ? "expired" : "cancelled",
+              cancelled_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("paypal_subscription_id", existingSubscriptionId);
+          if (pendingUpdateError) throw pendingUpdateError;
+        }
       }
 
       if (
@@ -281,7 +355,7 @@ export async function POST(request: Request) {
             },
             randomUUID(),
           );
-        const approvalUrl = getApprovalUrl(payload);
+        const approvalUrl = getTrustedPayPalApprovalUrl(payload);
 
         if (!response.ok || !approvalUrl) {
           const error = getSafePayPalApiError(
@@ -350,7 +424,7 @@ export async function POST(request: Request) {
           },
           randomUUID(),
         );
-      const approvalUrl = getApprovalUrl(payload);
+      const approvalUrl = getTrustedPayPalApprovalUrl(payload);
       const subscriptionId =
         typeof payload?.id === "string" ? payload.id : "";
 
@@ -434,7 +508,7 @@ export async function POST(request: Request) {
       },
       randomUUID(),
     );
-    const approvalUrl = getApprovalUrl(payload);
+    const approvalUrl = getTrustedPayPalApprovalUrl(payload);
     const orderId = typeof payload?.id === "string" ? payload.id : "";
 
     if (!response.ok || !approvalUrl || !orderId) {

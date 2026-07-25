@@ -105,7 +105,9 @@ const getAccountPlanForStatus = ({
   status: string;
   accessEndsAt: string | null;
 }) => {
-  if (status === "active") return targetPlan;
+  // Subscription activation confirms buyer approval, but paid entitlement is
+  // granted only by the verified PAYMENT.SALE.COMPLETED handler.
+  if (status === "active") return currentPlan;
   if (status === "expired") return ORBIT_STARTER_PLAN;
   if (status === "cancelled") {
     const endTime = accessEndsAt ? Date.parse(accessEndsAt) : Number.NaN;

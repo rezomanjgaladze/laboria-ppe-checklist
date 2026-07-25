@@ -820,6 +820,23 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const billingResult = new URLSearchParams(window.location.search).get(
+      "billing",
+    );
+    if (!billingResult) return;
+
+    setWorkspaceNavigationIntent(
+      createWorkspaceNavigationIntent({
+        moduleId: "settings",
+        action: "billing",
+      }),
+    );
+    setActiveWorkspaceModule("settings");
+    setShowWorkspaceMenu(false);
+    setShowHistory(false);
+  }, []);
+
+  useEffect(() => {
     const refreshNotifications = () => {
       setNotifications(syncOrbitNotifications(authUserId, workspaceSettings));
     };

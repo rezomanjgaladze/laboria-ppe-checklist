@@ -16,9 +16,12 @@ type BillingAccountRow = {
 
 type BillingSubscriptionRow = {
   status?: unknown;
+  product_type?: unknown;
+  plan?: unknown;
   renews_at?: unknown;
   ends_at?: unknown;
   current_period_end?: unknown;
+  created_at?: unknown;
 };
 
 const normalizeBillingAccount = (
@@ -55,6 +58,26 @@ const normalizeBillingAccount = (
     row.ai_credits_balance >= 0
       ? Math.floor(row.ai_credits_balance)
       : 0;
+  const pendingApproval =
+    ["approval_pending", "approved"].includes(subscriptionStatus) &&
+    (subscription?.product_type === "plus_subscription" ||
+      subscription?.product_type === "pro_subscription")
+      ? {
+          productType: subscription.product_type,
+          plan:
+            subscription?.plan === "Orbit Plus" ||
+            subscription?.plan === "Orbit Pro"
+              ? subscription.plan
+              : subscription.product_type === "pro_subscription"
+                ? "Orbit Pro"
+                : "Orbit Plus",
+          createdAt:
+            typeof subscription.created_at === "string"
+              ? subscription.created_at
+              : null,
+          confirmationPending: subscriptionStatus === "approved",
+        }
+      : null;
 
   return {
     plan,
@@ -66,6 +89,7 @@ const normalizeBillingAccount = (
       subscriptionStatus === "cancelled" ? periodEnd : null,
     updatePaymentMethodUrl: null,
     customerPortalUrl: null,
+    pendingApproval,
   };
 };
 
@@ -116,7 +140,9 @@ export async function GET() {
 
   const { data: subscription, error: subscriptionError } = await billingClient
     .from("billing_subscriptions")
-    .select("status, renews_at, ends_at, current_period_end")
+    .select(
+      "status, product_type, plan, renews_at, ends_at, current_period_end, created_at",
+    )
     .eq("provider", "paypal")
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false })
